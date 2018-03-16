@@ -26,7 +26,7 @@ def get_log_path():
     # convert string to list
     dir_path_list=dir_path.split(os.path.sep)
     # find starting point, 'src' directory, and truncate everything after it
-    index=dir_path_list.index('src')
+    index=len(dir_path_list) - 1 - dir_path_list[::-1].index('src')
     dir_path_list=dir_path_list[0:index]
     dir_path='/'.join(dir_path_list)
     log_name=os.path.splitext(os.path.basename(inspect.getfile(sys._getframe(1))))[0] + '.log'

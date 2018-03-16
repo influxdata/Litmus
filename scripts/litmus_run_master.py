@@ -24,8 +24,11 @@ parser.add_option('--nocapture', action='store', dest='nocapture', help='')
 parser.add_option('--traceback', action='store', dest='traceback', help='')
 parser.add_option('--testsubset', action='store', dest='testsubset', help='')
 
-# options for running REST tests
-parser.add_option('--baseurl', action='store', help='CHRONOGRAF BASE URL, e.g. http://localhost:8888')
+# options for running REST tests (By default these options will be derived from the output o the pcl list command
+parser.add_option('--chronograf', action='store', help='CHRONOGRAF BASE URL, e.g. http://localhost:8888')
+parser.add_option('--datanode', action='store', help='URL OF THE DATA NODE, e.g. http://datanode:8086')
+parser.add_option('--metanode', action='store', help='URL OF THE META NODE, e.g. http://metanode:8091')
+parser.add_option('--kapacitor', action='store', help='KAPACITOR URL, e.g. http://kapacitor9092:')
 
 # tests to run
 parser.add_option('--tests', action='append', dest='tests', help='')
@@ -47,13 +50,18 @@ pytest_parameters.append('--disable-pytest-warnings')
 pytest_parameters.append('-rxfX')
 pytest_parameters.append('--html=report.html')
 
-if options.baseurl is not None: pytest_parameters.append('--baseurl=' + options.baseurl)
-
-#if options.tests is not None: pytest_parameters.extend(options.tests)
-#else: print 'There are no tests to run. Exiting', exit(1)
-
 # Installation part goes here
 #return_code=subprocess.call('install script goes here', shell=True, stdout=File)
+
+if options.chronograf is not None: pytest_parameters.append('--chronograf=' + options.chronograf)
+else: pass # get chronograf URL from pcl list -c <cluster>
+if options.datanode is not None: pytest_parameters.append('--datanode=' + options.datanode)
+else: pass # get data-node URL from pcl list -c <cluster>
+if options.metanode is not None: pytest_parameters.append('--metanode=' + options.metanode)
+else: pass # get meta-node URL from pcl list -c <cluster>
+if options.kapacitor is not None: pytest_parameters.append('--kapacitor=' + options.kapacitor)
+else: pass # get kapacitor URL from pcl list -c <cluster>
+
 
 data_node=['http://54.190.199.92:8086', 'http://1.2.3.4:8086']
 data_node_str=' '.join(data_node)

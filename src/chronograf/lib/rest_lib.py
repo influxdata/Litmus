@@ -79,19 +79,20 @@ class RestLib(BaseLib):
         assert response is not None, self.log.info('RestLib.delete() - ASSERTION ERROR')
         return response
 
-    def delete_source(self, base_url, source_id):
+    def delete_source(self, base_url, source_url, source_id):
         '''
         :param base_url:
+        :param source_url:
         :param source_id:
         :return: does not return anything
         '''
-        self.log.info('RestLib.delete_source() - sources path : get_chronograf_paths()')
-        path=self.get_chronograf_paths(base_url).get('sources')
-        assert path is not None, self.log.info('RestLib.delete_source() CANNOT GET sources path')
+        #self.log.info('RestLib.delete_source() - sources path : get_chronograf_paths()')
+        #path=self.get_chronograf_paths(base_url).get('sources')
+        #assert path is not None, self.log.info('RestLib.delete_source() CANNOT GET sources path')
         self.log.info('RestLib.delete_source() is called with parameters: base_url='
-                      + str(base_url) + ', path=' + str(path) + ', source id='
+                      + str(base_url) + ', path=' + str(source_url) + ', source id='
                       + str(source_id))
-        url_to_delete=(base_url + path + os.path.sep + source_id)
+        url_to_delete=(base_url + source_url + os.path.sep + source_id)
         self.log.info('RestLib.delete_source() - URL=' + str(url_to_delete))
         response=self.delete(url_to_delete)
         assert response.status_code == 204, self.log.info('RestLib.delete_source() status_code='
@@ -120,22 +121,23 @@ class RestLib(BaseLib):
         assert response is not None, self.log.info('RestLib.patch() response is none')
         return response
 
-    def patch_source(self, base_url, json, source_id, data=None, headers=None):
+    def patch_source(self, base_url, source_url, json, source_id, data=None, headers=None):
         '''
         :param base_url:
+        :param source_url:
         :param json:
         :param source_id:
         :param data:
         :param headers:
         :return: response object
         '''
-        self.log.info('RestLib.patch_source() - sources path : get_chronograf_paths()')
-        path = self.get_chronograf_paths(base_url).get('sources')
-        assert path is not None, self.log.info('RestLib.patch_source() CANNOT GET sources path')
+        #self.log.info('RestLib.patch_source() - sources path : get_chronograf_paths()')
+        #path = self.get_chronograf_paths(base_url).get('sources')
+        #assert path is not None, self.log.info('RestLib.patch_source() CANNOT GET sources path')
         self.log.info('RestLib.patch_source() is called with parameters: base_url='
-                      + str(base_url) + ', path=' + str(path) + ', source id='
+                      + str(base_url) + ', path=' + str(source_url) + ', source id='
                       + str(source_id) + ', data=' + str(data) + ', headers=' + str(headers))
-        url_to_update=(base_url + path + os.path.sep + source_id)
+        url_to_update=(base_url + source_url + os.path.sep + source_id)
         response=self.patch(url_to_update, json, data=data, headers=headers)
         assert response.status_code == 200, self.log.info('RestLib.patch_source() status code='
                                                           + str(response.status_code) + ' message='
@@ -167,7 +169,7 @@ class RestLib(BaseLib):
         mappings --> /chronograf/v1/mappings
         '''
         for key, value in result.items():
-            self.log.info('RestLib.get_chronograf_paths() - add key/value' + str(key) + '/' + str(value))
+            self.log.info('RestLib.get_chronograf_paths() - add key/value ' + str(key) + '/' + str(value))
             chronograf_path[str(key)]= str(value)
         return chronograf_path
 
@@ -253,7 +255,7 @@ class RestLib(BaseLib):
         db_link=source.get('links')['databases']
         self.log.info('RestLib.%s() DATABASE LINK=' % function + str(db_link))
         assert db_link is not None
-        sources[source_id] = {'NAME': source_name, 'DATA_URL': data_url, 'META_URL': meta_url, 'TYPE': type,
+        sources[source_id]={'NAME': source_name, 'DATA_URL': data_url, 'META_URL': meta_url, 'TYPE': type,
                               'DEFAULT': default_source, 'USERNAME': username, 'PASSWORD': password,
                               'TELEGRAF_DB': telegraf_db, 'KAPACITOR': kapacitors_link, 'PROXY': proxy_link,
                               "WRITE": write_link, 'QUERY': queries_link, 'USERS': users_link,
@@ -263,9 +265,50 @@ class RestLib(BaseLib):
                       str(sources))
         return sources
 
-    def create_source(self, base_url, json):
+    def get_kapacitor_data(self, kapacitor, function):
+        '''
+        :param kapacitor:
+        :param function:
+        :return:
+        '''
+        kapacitor_result={}
+        # user facing name of kapacitor instance
+        name=kapacitor.get('name')
+        assert name is not None, self.log.info('RestLib.%s NAME IS NONE' % function)
+        self.log.info('RestLib.%s NAME=' % function + name)
+        username=kapacitor.get('username')
+        if username is None: username=''
+        self.log.info('RestLib.%s USERNAME=' % function + username)
+        password=kapacitor.get('password')
+        if password is None: password=''
+        self.log.info('RestLib.%s PASSWORD=' % function + password)
+        url=kapacitor.get('url')
+        assert url is not None, self.log.info('RestLib.%s URL IS NONE' % function)
+        self.log.info('RestLib.%s URL=' % function + url)
+        active=kapacitor.get('active')
+        assert active is not None, self.log.info('RestLib.%s ACTIVE IS NONE' % function)
+        self.log.info('RestLib.%s ACTIVE=' % function + str(active))
+        kapacitor_id=kapacitor.get('id')
+        assert kapacitor_id is not None, self.log.info('RestLib.%s ID IS NONE' % function)
+        self.log.info('RestLib.%s ID=' % function + kapacitor_id)
+        rules_link=kapacitor.get('links').get('rules')
+        self.log.info('RestLib.%s RULES_LINK=' % function + rules_link)
+        tasks_link=kapacitor.get('links').get('tasks')
+        self.log.info('RestLib.%s TASKS_LINK=' % function + tasks_link)
+        ping_link=kapacitor.get('links').get('ping')
+        self.log.info('RestLib.%s PING_LINK=' % function + ping_link)
+        proxy_link=kapacitor.get('links').get('proxy')
+        self.log.info('RestLib.%s PROXY_LINK=' % function + proxy_link)
+        kapacitor_result[kapacitor_id]={'NAME':name, 'USERNAME':username, 'PASSWORD':password, 'URL':url,
+                                        'ACTIVE':active, 'RULES':rules_link, 'TASKS':tasks_link,
+                                        'PING':ping_link, 'PROXY':proxy_link}
+        self.log.info('RestLib.%s RESULT KAPACITOR =' % function + str(kapacitor_result))
+        return kapacitor_result
+
+    def create_source(self, base_url, source_url, json):
         '''
         :param base_url: the URL of chronograf, e.g. http://12.34.56.78:8888
+        :param source_url: the URL of the source
         :param json: request body in JSON format, e.g.:
                      '{"url":"http://54.149.168.44:8086"}' - URL is required
                       Other options for data sources creation
@@ -273,28 +316,28 @@ class RestLib(BaseLib):
                  result['message'] will be empty and status code and source_id won't and if source was not created
                  successfully then status code and result['message'] won't be ampty and source_id will be.
         '''
-        chronograf_path = self.get_chronograf_paths(base_url)
-        source_path = chronograf_path.get('sources')
-        self.log.info('RestLib.create_source() - source_path=' + str(source_path))
-        assert source_path is not None, self.log.info('RestLib.create_source() - source path is None')
-        response=self.post(base_url, source_path, json)
+        #chronograf_path = self.get_chronograf_paths(base_url)
+        #source_path = chronograf_path.get('sources')
+        #self.log.info('RestLib.create_source() - source_path=' + str(source_path))
+        #assert source_path is not None, self.log.info('RestLib.create_source() - source path is None')
+        response=self.post(base_url, source_url, json)
         try:
-            self.log.info('RestLib.create_source() - GET response BODY')
-            result = response.json()
-            self.log.info('RestLib.create_source() - post BODY=' + str(result))
+            source_id = response.json().get('id')
+            if source_id is not None:
+                self.log.info('RestLib.create_source() - Source ID = ' + str(source_id))
+                return (response.status_code, '', source_id)
+            else:
+                self.log.info('RestLib.create_source() - Source ID is None')
+                return (response.status_code, response.json()['message'], source_id)
         # if JSON object cannot be decoded, the Value Error is raised.
         except ValueError, e:
             self.log.info('RestLib.create_source() - Value Error :' + str(e.message))
-            result=None
-        assert result is not None, self.log.info('RestLib.create_source() - ASSERTION ERROR')
-        source_id=result.get('id')
-        self.log.info('RestLib.create_source() - Source ID = ' + str(source_id))
-        if source_id is None:
-            return (response.status_code, result['message'], source_id)
-        return (response.status_code,'', source_id)
+            return (response.status_code, response.json()['message'], None)
 
-    def get_sources(self, base_url):
+    def get_sources(self, base_url, source_url):
         '''
+        :param base_url:
+        :param source_url:
         :return:
         '''
         sources ={}
@@ -314,10 +357,10 @@ class RestLib(BaseLib):
         type --> influx-enterprise
         id --> 7
         '''
-        chronograf_path=self.get_chronograf_paths(base_url)
-        source_path = chronograf_path.get('sources')
-        assert source_path is not None, self.log.info('RestLib.get_sources() - source path is None')
-        response = self.get(base_url, source_path)
+        #chronograf_path=self.get_chronograf_paths(base_url)
+        #source_path = chronograf_path.get('sources')
+        #assert source_path is not None, self.log.info('RestLib.get_sources() - source path is None')
+        response = self.get(base_url, source_url)
         # get the list of all existing sources
         result = response.json()['sources']
         if len(result) == 0:
@@ -333,23 +376,67 @@ class RestLib(BaseLib):
         self.log.info('RestLib.get_sources() FINAL SOURCES : ' + str(sources))
         return sources
 
-    def get_source(self, base_url, source_id):
+    def get_source(self, base_url, source_url, source_id):
         '''
-        :param base_url:
-        :param source_id:
+        :param base_url: Chronograf URL
+        :param source_url: path to a source URL
+        :param source_id: id of the created source
         :return:
         '''
         self.log.info('rest_lib.RestLib:get_source() START')
-        source_result = {}
-        self.log.info('rest_lib.RestLib:get_source() : STEP 1 - GET CHRONOGRAF PATHS')
-        chronograf_path = self.get_chronograf_paths(base_url)
-        source_path = chronograf_path.get('sources')
-        self.log.info('rest_lib.RestLib:get_source() : STEP 2 - GET SOURCE PATH = ' + str(source_path))
-        assert source_path is not None, self.log.info('RestLib.get_sources() - source path is None')
-        source_path=source_path + os.path.sep + source_id
-        self.log.info('rest_lib.RestLib:get_source() : STEP 3 - GET ' + str(base_url) + str(source_path) + ' URL')
+        #source_result = {}
+        #self.log.info('rest_lib.RestLib:get_source() : STEP 1 - GET CHRONOGRAF PATHS')
+        #chronograf_path = self.get_chronograf_paths(base_url)
+        #source_path = chronograf_path.get('sources')
+        #self.log.info('rest_lib.RestLib:get_source() : STEP 2 - GET SOURCE PATH = ' + str(source_path))
+        #assert source_path is not None, self.log.info('RestLib.get_sources() - source path is None')
+        source_path=source_url + os.path.sep + source_id
+        self.log.info('rest_lib.RestLib:get_source() : STEP 1 - GET ' + str(base_url) + str(source_path) + ' URL')
         response = self.get(base_url, source_path)
         # get the list of a source eith id = source_id
         source = response.json()
-        self.log.info('rest_lib.RestLib:get_source() : STEP 4 - GET ALL OF THE RESPONSE DATA')
+        self.log.info('rest_lib.RestLib:get_source() : STEP 2 - GET ALL OF THE RESPONSE DATA')
         return self.get_source_data(source, 'get_source')
+
+    def create_kapacitor(self, base_url, kapacitor_url, json):
+        '''
+        :param base_url: url of the chronograf
+        :param source_url: path to a source url
+        :param json: request body in JSON format
+        :return: tuple of (status, message, kapacitor_id), where status is a status of the request, message -
+                 if any error return message, id of the kapacitor if it was created successfully, otherwise - None
+        '''
+
+        self.log.info('RestLib.create_kapacitor() - create a POST requests with following params: base_url=' + str(base_url)
+                      + ', kapacitor_url=' + str(kapacitor_url) + ', json=' + str(json))
+        response=self.post(base_url, kapacitor_url, json)
+        try:
+            kapacitor_id=response.json().get('id')
+            if kapacitor_id is not None:
+                self.log.info('RestLib.create_kapacitor() Kapacitor ID=' + str(kapacitor_id))
+                return (response.status_code, '', kapacitor_id)
+            else:
+                self.log.info('RestLib.create_kapacitor() Kapacitor ID is None')
+                return (response.status_code, response.json()['message'], None)
+        except ValueError, e:
+            self.log.info('RestLib.create_kapacitor() ValueError = ' + str(e.message))
+            return (response.status_code, response.json()['message'], None)
+
+    def get_kapacitor(self, base_url, kapacitor_url, kapacitor_id):
+        '''
+        :param base_url: URL of the chronograf
+        :param kapacitor_url: path to a kapacitor URL for a specific source
+        :param kapacitor_id: id of the created kapacitor
+        :return: dictionary of the response data
+        '''
+        self.log.info('RestLib.get_kapacitor() METHOD IS BEING CALLED')
+        kapacitor_path=kapacitor_url + os.path.sep + kapacitor_id
+        self.log.info('rest_lib.RestLib:get_source() : STEP 1 - GET ' + str(base_url) + str(kapacitor_path) + ' URL')
+        response=self.get(base_url, kapacitor_path)
+        # get the list of a kapacitor with id = kapacitor_id
+        kapacitor_result=response.json()
+        self.log.info('rest_lib.RestLib:get_source() : STEP 2 - GET ALL OF THE RESPONSE DATA')
+        return self.get_kapacitor_data(kapacitor_result, 'get_kapacitor')
+
+
+
