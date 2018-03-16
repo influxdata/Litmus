@@ -4,12 +4,12 @@ import src.util.login_util as lu
 mylog=lu.log(lu.get_log_path(), 'w', __name__)
 
 def pytest_addoption(parser):
-    parser.addoption('--baseurl', action='store')
+    parser.addoption('--chronograf', action='store')
     parser.addoption('--datanodes', action='store')
     parser.addoption('--metanodes', action='store')
 
 def get_base_url(request):
-    return request.config.getoption('--baseurl')
+    return request.config.getoption('--chronograf')
 
 def get_data_nodes(request):
     return request.config.getoption('--datanodes')
