@@ -7,45 +7,75 @@ def pytest_addoption(parser):
     parser.addoption('--chronograf', action='store')
     parser.addoption('--datanodes', action='store')
     parser.addoption('--metanodes', action='store')
+    parser.addoption('--kapacitor', action='store')
 
-def get_base_url(request):
+def get_chronograf(request):
     return request.config.getoption('--chronograf')
 
 def get_data_nodes(request):
     return request.config.getoption('--datanodes')
 
-def get_meta_nmodes(request):
+def get_meta_nodes(request):
     return request.config.getoption('--metanodes')
 
+def get_kapacitor(request):
+    return request.config.getoption('--kapacitor')
+
 @pytest.fixture(scope='class')
-def base_url(request):
+def chronograf(request):
+    http='http://'
+    port=':8888'
     try:
-        request.cls.mylog.info('FIXTURE base_url(): getting base URL')
-        base_url=get_base_url(request)
-        request.cls.mylog.info('FIXTURE base_url(): base_url=' + str(base_url))
+        request.cls.mylog.info('FIXTURE chronograf(): GETTING CHRONOGRAF URL')
+        chronograf=get_chronograf(request)
+        request.cls.mylog.info('FIXTURE chronograf(): chronograf=' + str(chronograf))
     except:
-        base_url=None
-    request.cls.base_url=base_url
-    return request.cls.base_url
+        chronograf=None
+    assert chronograf is not None, request.cls.mylog.info('FIXTURE chronograf() returned None')
+    request.cls.mylog.info('FIXTURE chronograf(): chronograf url=' + str(http+chronograf+port))
+    request.cls.chronograf=http+chronograf+port
+    return request.cls.chronograf
 
 @pytest.fixture(scope='class')
 def data_nodes(request):
+    http='http://'
+    port=':8086'
     try:
-        request.cls.mylog.info('FIXTURE data_nodes(): getting data nodes')
+        request.cls.mylog.info('FIXTURE data_nodes(): GETTING DATA NODES')
         data_nodes=get_data_nodes(request)
         request.cls.mylog.info('FIXTURE data_nodes(): data_nodes=' + str(data_nodes))
     except:
         data_nodes=None
-    request.cls.data_nodes=data_nodes
+    assert data_nodes is not None, request.cls.mylog.info('FIXTURE data_nodes() returned None')
+    request.cls.data_nodes=[http+node+port for node in data_nodes.split(',')]
     return request.cls.data_nodes
 
 @pytest.fixture(scope='class')
 def meta_nodes(request):
+    http='http://'
+    port=':8091'
     try:
-        request.cls.mylog.info('FIXTURE meta_nodes(): getting meta nodes')
-        meta_nodes=get_data_nodes(request)
+        request.cls.mylog.info('FIXTURE meta_nodes(): GETTING DATA NODES')
+        meta_nodes=get_meta_nodes(request)
         request.cls.mylog.info('FIXTURE data_nodes(): meta_nodes=' + str(meta_nodes))
     except:
         meta_nodes=None
-    request.cls.meta_nodes=meta_nodes
+    assert meta_nodes is not None, request.cls.mylog.info('FIXTURE meta_nodes returned None')
+    request.cls.meta_nodes=[http+node+port for node in meta_nodes.split(',')]
     return request.cls.meta_nodes
+
+@pytest.fixture(scope='class')
+def kapacitor(request):
+    http='http://'
+    port=':9092'
+    try:
+        request.cls.mylog.info('FIXTURE kapacitor(): GETTING KAPACITOR URL ')
+        kapacitor=get_kapacitor(request)
+        request.cls.mylog.info('FIXTURE data_nodes(): kapacitor=' + str(kapacitor))
+    except:
+        kapacitor=None
+    assert kapacitor is not None, request.cls.mylog.info('FIXTURE kapacitor() returned None')
+    kapacitor=http+kapacitor+port
+    request.cls.mylog.info('FIXTURE kapacitor() kapacitor url=' + str(kapacitor))
+    request.cls.kapacitor=kapacitor
+    return request.cls.kapacitor
