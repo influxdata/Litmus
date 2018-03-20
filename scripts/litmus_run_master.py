@@ -26,9 +26,9 @@ parser.add_option('--testsubset', action='store', dest='testsubset', help='')
 
 # options for running REST tests (By default these options will be derived from the output o the pcl list command
 parser.add_option('--chronograf', action='store', help='CHRONOGRAF BASE URL, e.g. http://localhost:8888')
-parser.add_option('--datanode', action='store', help='URL OF THE DATA NODE, e.g. http://datanode:8086')
-parser.add_option('--metanode', action='store', help='URL OF THE META NODE, e.g. http://metanode:8091')
-parser.add_option('--kapacitor', action='store', help='KAPACITOR URL, e.g. http://kapacitor9092:')
+parser.add_option('--datanodes', action='store', help='URL OF THE DATA NODE, e.g. http://datanode:8086')
+parser.add_option('--metanodes', action='store', help='URL OF THE META NODE, e.g. http://metanode:8091')
+parser.add_option('--kapacitor', action='store', help='KAPACITOR URL, e.g. http://kapacitor:9092:')
 
 # tests to run
 parser.add_option('--tests', action='append', dest='tests', help='')
@@ -53,23 +53,29 @@ pytest_parameters.append('--html=report.html')
 # Installation part goes here
 #return_code=subprocess.call('install script goes here', shell=True, stdout=File)
 
-if options.chronograf is not None: pytest_parameters.append('--chronograf=' + options.chronograf)
+
+if options.chronograf is not None:
+    pytest_parameters.append('--chronograf=' + options.chronograf)
 else: pass # get chronograf URL from pcl list -c <cluster>
-if options.datanode is not None: pytest_parameters.append('--datanode=' + options.datanode)
-else: pass # get data-node URL from pcl list -c <cluster>
-if options.metanode is not None: pytest_parameters.append('--metanode=' + options.metanode)
-else: pass # get meta-node URL from pcl list -c <cluster>
-if options.kapacitor is not None: pytest_parameters.append('--kapacitor=' + options.kapacitor)
-else: pass # get kapacitor URL from pcl list -c <cluster>
-
-
-data_node=['http://54.190.199.92:8086', 'http://1.2.3.4:8086']
-data_node_str=' '.join(data_node)
-print data_node_str
+if options.datanodes is not None:
+    data_node_str=options.datanodes
+else: # get data-node URL from pcl list -c <cluster>s
+    data_nodes=['34.217.102.209','54.218.122.160']
+    data_node_str=','.join(data_nodes)
 pytest_parameters.append('--datanodes=' + data_node_str)
-meta_node=['http://34.217.16.7:8091', '1.2.3.4.5']
-meta_node_str=' '.join(meta_node)
+if options.metanodes is not None:
+    meta_node_str=options.metanodes
+else: # get meta-node URL from pcl list -c <cluster>
+    meta_nodes = ['54.202.76.159', '54.202.5.229','52.42.51.117']
+    meta_node_str = ','.join(meta_nodes)
 pytest_parameters.append('--metanodes=' + meta_node_str)
+if options.kapacitor is not None:
+    kapacitor_str=options.kapacitor
+    pytest_parameters.append('--kapacitor=' + options.kapacitor)
+else:
+    kapacitor=['54.71.255.156']
+    kapacitor_str=','.join(kapacitor)
+pytest_parameters.append('--kapacitor=' + kapacitor_str)
 
 if options.tests is not None: pytest_parameters.extend(options.tests)
 else: print 'There are no tests to run. Exiting', exit(1)
