@@ -56,7 +56,8 @@ pytest_parameters.append('--html=report.html')
 
 if options.chronograf is not None:
     pytest_parameters.append('--chronograf=' + options.chronograf)
-else: pass # get chronograf URL from pcl list -c <cluster>
+else:
+    pass
 if options.datanodes is not None:
     data_node_str=options.datanodes
 else: # get data-node URL from pcl list -c <cluster>s
