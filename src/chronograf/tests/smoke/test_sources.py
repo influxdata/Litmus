@@ -4,9 +4,11 @@ import src.util.login_util as lu
 import src.util.sources_util as su
 import src.util.kapacitor_util as ku
 from src.chronograf.lib import rest_lib
+from random import choice
 
 # before running test suite make sure there are no sources.
-@pytest.mark.usefixtures('delete_sources', 'chronograf', 'data_nodes', 'meta_nodes', 'kapacitor', 'get_source_path')
+@pytest.mark.usefixtures('delete_created_sources', 'chronograf',
+                         'data_nodes', 'meta_nodes', 'kapacitor', 'get_source_path')
 class TestSources():
     '''
     TODO
@@ -18,6 +20,7 @@ class TestSources():
     CUSTOM_NAME='Test Create Source User Options'
     UPDATE_NAME='Test Update Source Name'
     UPDATED_NAME='Updated Name Of The Source'
+    DELETE_NAME='Delete source name'
 
     ####################################################################################################################
     def verify_source(self, expected, source_id, source):
@@ -109,6 +112,18 @@ class TestSources():
         self.mylog.info('#######################################################')
         self.mylog.info('')
 
+    def test_get_default_sources_count(self):
+        '''
+        '''
+        self.header('test_get_default_sources_count')
+        self.mylog.info('test_get_default_sources_count - STEP 1: Get all default sources')
+        sources=self.rl.get_sources(self.chronograf, self.get_source_path)
+        assert len(sources) == len(self.data_nodes), \
+            self.mylog.info('test_get_default_sources_count() ASSERTION '
+                            'FAILURE expected ' + str(len(sources)) + ', actual ' +
+                            str(len(self.data_nodes)))
+        self.footer('test_get_default_sources_count')
+
     def test_create_source_url_only(self):
         '''
         1. Creates source by using only one required param in request body - url of the data node.
@@ -118,7 +133,7 @@ class TestSources():
         '''
         # choose a data node from a list of existing data nodes. For now use the first one
         source_url=self.get_source_path
-        DATA_URL=self.data_nodes[0]
+        DATA_URL=choice(self.data_nodes)
         JSON_URL_ONLY = {'url': DATA_URL}
         self.header('test_create_source_url_only')
         self.mylog.info('test_create_source_url_only - STEP 1: CALL RestLib.create_source()')
@@ -127,7 +142,7 @@ class TestSources():
         self.mylog.info('test_create_source_url_only - STEP 1: DONE SOURCE_ID=' + str(source_id))
         # Expected dictionary
         expected = {'USERNAME':'', 'INSECURE_SKIP_VERIFY':False, 'DATA_URL':DATA_URL, 'NAME': '',
-                    'ROLES':'/chronograf/v1/sources/%s/roles' % source_id, 'DEFAULT':1, 'TELEGRAF_DB':'telegraf',
+                    'ROLES':'/chronograf/v1/sources/%s/roles' % source_id, 'DEFAULT':0, 'TELEGRAF_DB':'telegraf',
                     'SHARED_SECRET':'', 'META_URL':'',
                     'KAPACITOR':'/chronograf/v1/sources/%s/kapacitors' % source_id,
                     'WRITE':'/chronograf/v1/sources/%s/write' % source_id,
@@ -174,8 +189,8 @@ class TestSources():
         '''
         # Choose meta and data node from the list of existing nodes. For now use the first one in the list
         source_url = self.get_source_path
-        DATA_URL=self.data_nodes[0]
-        META_URL=self.meta_nodes[0]
+        DATA_URL=choice(self.data_nodes)
+        META_URL=choice(self.meta_nodes)
         JSON_USER_OPTIONS={'url':DATA_URL, 'metaUrl':META_URL, 'name':self.CUSTOM_NAME, 'telegraf':'telegraf',
                            'default':True}
 
@@ -256,6 +271,29 @@ class TestSources():
         self.mylog.info('test_update_source_name_field - STEP 4: DONE')
         self.verify_source(expected_updated, source_id, source)
         self.footer('test_update_source_name_field')
+
+    def test_delete_source(self):
+        '''
+         1. Create source using data that user would be able to enter via UI, i.e:
+             URL of data node, Name of the source, metaURL and telegraf database (All values are correct)
+             Username and Password won't be used (requires different cluster configuration)
+        2. Assert that ID of the source is not None
+        3. Delete Created Source
+        '''
+        source_url = self.get_source_path
+        DATA_URL=choice(self.data_nodes)
+        META_URL=choice(self.meta_nodes)
+        JSON_USER_OPTIONS={'url':DATA_URL, 'metaUrl':META_URL, 'name':self.DELETE_NAME, 'telegraf':'telegraf',
+                           'default':True}
+
+        self.header('test_delete_source')
+        self.mylog.info('test_delete_source - STEP 1: CALL RestLib.create_source()')
+        (status, message, source_id) = self.rl.create_source(self.chronograf, source_url, JSON_USER_OPTIONS)
+        assert source_id is not None, self.mylog.info(
+            'test_create_source_user_options : ASSERTION FAILED, source_id is None')
+        self.mylog.info('test_create_user_options - STEP 1: DONE SOURCE_ID=' + str(source_id))
+        self.mylog.info('test_delete_source - STEP 2 : DELETING SOURCE FOR source_id=' + str(source_id))
+        self.rl.delete_source(self.chronograf, source_url, source_id)
 
     def test_create_kapacitor(self):
         '''
@@ -342,6 +380,7 @@ class TestSources():
         new_name=ku.get_kapacitor_name(self, kapacitor_id, kapacitor_dictionary)
         assert new_name == KAPACITOR_UPDATED_NAME, self.mylog.info('test_update_kapacitor_name updated name='
                                                                    + str(new_name) + ', but expected ' + KAPACITOR_UPDATED_NAME)
+        self.footer('test_update_kapacitor_name')
 
     def test_delete_kapacitor(self):
         '''
@@ -384,6 +423,7 @@ class TestSources():
                                                             str(response.status_code))
         self.mylog.info('test_delete_kapacitor - STEP 7: DELETE KAPACITOR ID=' + str(kapacitor_id))
         self.rl.delete_kapacitor(self.chronograf, kapacitor_url, kapacitor_id)
+        self.footer('test_delete_kapacitor')
 
 
 

@@ -1,0 +1,140 @@
+
+import pytest
+from random import choice
+from src.chronograf.lib import rest_lib
+
+@pytest.fixture(scope='class')
+def get_all_paths(request, chronograf):
+    '''
+    :param request:request object to introspect the requesting test function, class or module context
+    :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
+    :return:all of the paths:
+            me --> /chronograf/v1/me
+            organizations --> /chronograf/v1/organizations
+            users --> /chronograf/v1/organizations/default/users
+            allUsers --> /chronograf/v1/users
+            dashboards --> /chronograf/v1/dashboards
+            auth --> []
+            environment --> /chronograf/v1/env
+            sources --> /chronograf/v1/sources
+            layouts --> /chronograf/v1/layouts
+            external --> {u'statusFeed': u'https://www.influxdata.com/feed/json'}
+            config --> {u'self': u'/chronograf/v1/config', u'auth': u'/chronograf/v1/config/auth'}
+            mappings --> /chronograf/v1/mappings
+    '''
+    rl=rest_lib.RestLib(request.cls.mylog)
+    request.cls.mylog.info('get_all_paths() FIXTURE IS CALLED')
+    response=rl.get_chronograf_paths(chronograf)
+    request.cls.get_all_paths=response
+    request.cls.mylog.info('get_all_paths() FIXTURE IS DONE')
+    return request.cls.get_all_paths
+
+@pytest.fixture(scope='class')
+def get_source_path(request, chronograf):
+    '''
+    :param request:request object to introspect the rtequesting test function, class or module context
+    :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
+    :return:source path, e.g. ['sources':'/chronograf/v1/sources']
+    '''
+    request.cls.mylog.info('get_source_path() FIXTURE IS CALLED')
+    request.cls.mylog.info('get_source_path() CALL get_all_paths() FIXTURE')
+    source_path=get_all_paths(request, chronograf)['sources']
+    assert source_path is not None, request.cls.mylog.info('get_source_path() ASSERTION ERROR')
+    request.cls.mylog.info('get_source_path() source_path=' + str(source_path))
+    request.cls.get_source_path=source_path
+    request.cls.mylog.info('get_source_path() FIXTURE IS DONE')
+    return request.cls.get_source_path
+
+@pytest.fixture(scope='class')
+def create_source(request, chronograf, data_nodes, meta_nodes):
+    '''
+    :param request:request object to introspect the rtequesting test function, class or module context
+    :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
+    :param data_nodes: list of data nodes passed or returned by pcl installer
+    :param meta_nodes: list of meta nodes passed or returned by pcl installer
+    :return: tuple of source_id and source response object
+    '''
+    rl=rest_lib.RestLib(request.cls.mylog)
+    (source_name)=request.param
+    request.cls.mylog.info('create_source() FIXTURE IS CALLED')
+    # assert lists of data and meta nodes are not empty
+    assert len(data_nodes) != 0 and len(meta_nodes) != 0, \
+        request.cls.mylog.info('create_source() ASSERTION ERROR, '
+                               'meta nodes are ' + str(len(meta_nodes)) +
+                               ', data nodes are' + str(len(data_nodes)))
+    # randomly select data node and meta node from the list of nodes
+    datanode=choice(data_nodes)
+    request.cls.mylog.info('create_source() datanode=' + str(datanode))
+    metanode=choice(meta_nodes)
+    request.cls.mylog.info('create_source() metanode=' + str(metanode))
+    # create source
+    source_path=get_source_path(request, chronograf)
+    data={'url':datanode, 'metaUrl':metanode, 'name':source_name}
+    (status, data, source_id)=rl.create_source(chronograf,
+                                               source_url=source_path, json=data)
+    assert status == 201, request.cls.mylog.info('create_source.'
+                                                 'create_source() status=' + str(status))
+    assert source_id is not None, request.cls.mylog.info('create_source.'
+                                                 'create_source() source_id=' + str(source_id))
+    # get created source data
+    result_dic=rl.get_source(chronograf, source_path, source_id)
+    request.cls.create_source=(source_id, result_dic)
+    return request.cls.create_source
+
+@pytest.fixture(scope='class')
+def default_sources(request, chronograf, clustername):
+    '''
+    :param request:
+    :param chronograf:
+    :param clustername:
+    :return:
+    '''
+    default_sources={}
+    rl=rest_lib.RestLib(request.cls.mylog)
+    request.cls.mylog.info('default_sources() FIXTURE IS CALLED')
+    request.cls.mylog.info('default_sources() : GET ALL OF THE SOURCES')
+    source_path=get_source_path(request, chronograf)
+    sources=rl.get_sources(chronograf, source_path)
+    for source in sources.keys():
+        if (sources[source].get('NAME')).find(clustername) != -1:
+            request.cls.mylog.info('default_sources() : GETTING SOURCE ID=' + str(source))
+            default_sources[source]=sources[source]
+    request.cls.mylog.info('default_sources(): DEFAULTS SOURCES : '  +str(default_sources))
+    request.cls.default_sources=default_sources
+    return request.cls.default_sources
+
+@pytest.fixture(scope='class')
+def delete_sources(request, chronograf):
+    '''
+    :param request:request object to introspect the rtequesting test function, class or module context
+    :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
+    :return: does not return, make an assertion status code == 204
+    '''
+    rl=rest_lib.RestLib(request.cls.mylog)
+    request.cls.mylog.info('delete_sources() FIXTURE IS CALLED')
+    request.cls.mylog.info('delete_sources() : GET ALL OF THE SOURCES')
+    source_path=get_source_path(request, chronograf)
+    sources=rl.get_sources(chronograf, source_path)
+    for source in sources.keys():
+        request.cls.mylog.info('delete_sources() : DELETING SOURCE ID=' + str(source))
+        rl.delete_source(chronograf, source_path, source)
+    request.cls.mylog.info('delete_sources() IS DONE')
+
+@pytest.fixture(scope='class')
+def delete_created_sources(request, chronograf, clustername):
+    '''
+    :param request:request object to introspect the rtequesting test function, class or module context
+    :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
+    :param clustername:Name of the cluster
+    :return: does nto return, make an assertion status code == 204
+    '''
+    rl=rest_lib.RestLib(request.cls.mylog)
+    request.cls.mylog.info('delete_created_sources() FIXTURE IS CALLED')
+    request.cls.mylog.info('delete_created_sources() : GET ALL OF THE SOURCES')
+    source_path=get_source_path(request, chronograf)
+    sources=rl.get_sources(chronograf, source_path)
+    for source in sources.keys():
+        if (sources[source].get('NAME')).find(clustername) == -1:
+            request.cls.mylog.info('delete_sources() : DELETING SOURCE ID=' + str(source))
+            rl.delete_source(chronograf, source_path, source)
+    request.cls.mylog.info('delete_sources() IS DONE')

@@ -4,10 +4,14 @@ import src.util.login_util as lu
 mylog=lu.log(lu.get_log_path(), 'w', __name__)
 
 def pytest_addoption(parser):
+    parser.addoption('--clustername', action='store')
     parser.addoption('--chronograf', action='store')
     parser.addoption('--datanodes', action='store')
     parser.addoption('--metanodes', action='store')
     parser.addoption('--kapacitor', action='store')
+
+def get_clustername(request):
+    return request.config.getoption('--clustername')
 
 def get_chronograf(request):
     return request.config.getoption('--chronograf')
@@ -20,6 +24,14 @@ def get_meta_nodes(request):
 
 def get_kapacitor(request):
     return request.config.getoption('--kapacitor')
+
+@pytest.fixture(scope='class')
+def clustername(request):
+    request.cls.mylog.info('FIXTURE clustername(): GETTING CLUSTER NAME')
+    clustername=get_clustername(request)
+    request.cls.mylog.info('FIXTURE clustername(): clustername=' + str(clustername))
+    request.cls.clustername=clustername
+    return request.cls.clustername
 
 @pytest.fixture(scope='class')
 def chronograf(request):
@@ -55,7 +67,7 @@ def meta_nodes(request):
     http='http://'
     port=':8091'
     try:
-        request.cls.mylog.info('FIXTURE meta_nodes(): GETTING DATA NODES')
+        request.cls.mylog.info('FIXTURE meta_nodes(): GETTING META NODES')
         meta_nodes=get_meta_nodes(request)
         request.cls.mylog.info('FIXTURE data_nodes(): meta_nodes=' + str(meta_nodes))
     except:
