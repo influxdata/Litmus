@@ -6,7 +6,7 @@ from src.chronograf.lib.base_lib import BaseLib
 
 class RestLib(BaseLib):
     '''
-    TODO
+    TODO DESCRIPTION
     '''
 
     CHRONOGRAF_PATH = '/chronograf/v1' # Should we make it as option passed to master script???
@@ -105,7 +105,7 @@ class RestLib(BaseLib):
 
     ####################################################################################################################
 
-    def get_chronograf_paths(self, base_url): # this method is used as a fixure for chronograf regression tests. Should
+    def get_chronograf_paths(self, base_url): # this method is used as a fixure for chronograf smoke tests. Should
                                               # it be moved to a root conftest.py so every other method/function has an
                                               # access to it????
         '''
@@ -285,7 +285,7 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib:get_source() START')
         # http://<chronograf IP>:8888/chronograf/v1/sources/{id}, where /chronograf/v1/sources/{id} is
         # source_url + os.path.sep + source_id
-        source_path=source_url + os.path.sep + source_id
+        source_path=source_url + '/' + source_id
         self.log.info('rest_lib.RestLib:get_source() : STEP 1 - GET ' + str(base_url) + str(source_path) + ' URL')
         response = self.get(base_url, source_path)
         # get the list of a source with id = source_id
@@ -331,7 +331,7 @@ class RestLib(BaseLib):
                       + str(source_id))
         # http://34.211.227.112:8888/chronograf/v1/sources/{id}, where 34.211.227.112 IP of chronograf and
         # /chronograf/v1/sources/{id} is source_url + source ID to be deleted
-        url_to_delete=(source_url + os.path.sep + source_id)
+        url_to_delete=(source_url + '/' + source_id)
         self.log.info('rest_lib.RestLib:delete_source() : STEP 1 - DELETE ' + str(base_url) +
                       str(url_to_delete) + ' URL')
         response=self.delete(base_url, url_to_delete)
@@ -352,7 +352,7 @@ class RestLib(BaseLib):
         self.log.info('RestLib.patch_source() is called with parameters: base_url='
                       + str(base_url) + ', path=' + str(source_url) + ', json=' + str(json) + ', source id='
                       + str(source_id) + ', data=' + str(data) + ', headers=' + str(headers))
-        url_to_update=(source_url + os.path.sep + source_id)
+        url_to_update=(source_url + '/' + source_id)
         # http://34.211.227.112:8888/chronograf/v1/sources/{id}, where url_to_update is /chronograf/v1/sources/{id}
         response=self.patch(base_url, url_to_update, json, data=data, headers=headers)
         assert response.status_code == 200, self.log.info('RestLib.patch_source() status code='
@@ -458,7 +458,7 @@ class RestLib(BaseLib):
         :return: dictionary of the response data
         '''
         self.log.info('RestLib.get_kapacitor() METHOD IS BEING CALLED')
-        kapacitor_path=kapacitor_url + os.path.sep + kapacitor_id
+        kapacitor_path=kapacitor_url + '/' + kapacitor_id
         self.log.info('rest_lib.RestLib:get_source() : STEP 1 - GET ' + str(base_url) + str(kapacitor_path) + ' URL')
         response=self.get(base_url, kapacitor_path)
         # http://34.211.227.112:8888/chronograf/v1/sources/{id}/kapacitors/{kapa_id}, where
@@ -506,7 +506,7 @@ class RestLib(BaseLib):
         self.log.info('RestLib.patch_kapacitor() is called with parameters: base_url='
                       + str(base_url) + ', path=' + str(kapacitor_url) + ', kapacitor id='
                       + str(kapacitor_id) + ', json=' + str(json) + ', data=' + str(data) + ', headers=' + str(headers))
-        url_to_update=(kapacitor_url + os.path.sep + kapacitor_id)
+        url_to_update=(kapacitor_url + '/' + kapacitor_id)
         # http://34.211.227.112:8888/chronograf/v1/sources/{id}, where url_to_update is /chronograf/v1/sources/{id}
         response = self.patch(base_url, url_to_update, json, data=data, headers=headers)
         assert response.status_code == 200, self.log.info('RestLib.patch_kapacitor() status code='
@@ -526,10 +526,60 @@ class RestLib(BaseLib):
                       + str(kapacitor_id))
         # http://34.211.227.112:8888/chronograf/v1/kapacitors/{id}, where 34.211.227.112 IP of chronograf and
         # /chronograf/v1/kapacitors/{id} is kapacitor_url + kapacitor ID to be deleted
-        url_to_delete = (kapacitor_url + os.path.sep + kapacitor_id)
+        url_to_delete = (kapacitor_url + '/' + kapacitor_id)
         self.log.info('rest_lib.RestLib:delete_kapacitor() : STEP 1 - DELETE ' + str(base_url) +
                       str(url_to_delete) + ' URL')
         response = self.delete(base_url, url_to_delete)
         assert response.status_code == 204, self.log.info('RestLib.delete_kapacitor() status_code='
                                                           + str(response.status_code) + ' message='
                                                           + str(response.json()))
+
+    def get_databases_for_source_data(self, databases, function) :
+        '''
+        :param databases:
+        :param function:
+        :return:
+        '''
+        retention_policy_results={}
+        databases_result={}
+        # Could be multiple databases for the same source
+        for database in databases:
+            db_name=database.get('name')
+            assert db_name is not None, self.log.info('SOME MESSAGE')
+            # could be multiple retention policies
+            for retention_policy in database.get('retentionPolicies'):
+                retentionpolicy_name=retention_policy.get('name')
+                assert retentionpolicy_name is not None, self.log.info('SOME MESSAGE')
+                retentionpolicy_duration=retention_policy.get('duration')
+                assert retentionpolicy_duration is not None, self.log.info('SOME MESSAGE')
+                retentionpolicy_replication=retention_policy.get('replication')
+                assert retentionpolicy_replication is not None, self.log.info('SOME MESSAGE')
+                retentionpolicy_shardDuration=retention_policy.get('shardDuration')
+                assert retentionpolicy_shardDuration is not None, self.log.info('SOME MESSAGE')
+                retentionpolicy_is_default=retention_policy.get('isDefault')
+                assert retentionpolicy_is_default is not None, self.log.info('SOME MESSAGE')
+                retentionpolicy_name_link=retention_policy.get('links').get('self')
+                assert retentionpolicy_name_link is not None, self.log.info('SOME MESSAGE')
+                retention_policy_results[retentionpolicy_name]={'DURATION':retentionpolicy_duration,
+                    'REPLICATION':retentionpolicy_replication, 'SHARD_DURATION':retentionpolicy_shardDuration,
+                    'DEFAULT':retentionpolicy_is_default, 'POLICY_LINK':retentionpolicy_name_link}
+            retentionpolicies_link=database.get('links').get('retentionPolicies')
+            assert retentionpolicies_link is not None, self.log.info('SOME MESSAGE')
+            databases_result[db_name]={'POLICY_LINKS':retentionpolicies_link, 'RETENTION_POLICIES':retention_policy_results}
+        self.log.info('rest_lib.RestLib.get_databases_for_source() RESULT DICTIONARY = ' + str(databases_result))
+        return databases_result
+
+    def get_databases_for_source(self, base_url, source_db_url):
+        '''
+        :param base_url:
+        :param source_db_url:
+        :return:
+        '''
+        self.log.info('rest_lib.RestLib:get_databases_for_source() START')
+        # http://<chronograf IP>:8888/chronograf/v1/sources/{id}/dbs,
+        self.log.info('rest_lib.RestLib:get_databases_for_source() : '
+                      'STEP 1 - GET ' + str(base_url) + str(source_db_url) + ' URL')
+        response = self.get(base_url, source_db_url)
+        dbs_result=response.json()['databases']
+        self.log.info('rest_lib.RestLib:get_source() : STEP 2 - GET ALL OF THE RESPONSE DATA')
+        return self.get_databases_for_source_data(dbs_result, 'get_databases_for_source')

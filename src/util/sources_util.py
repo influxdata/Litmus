@@ -12,7 +12,6 @@ def get_sources_count(test_class_instance, sources_dictionary):
 
 # When the source is being created, then id of the source is returned as part of the request. Means we always know
 # source data we are interested in.
-
 def get_key(test_class_instance, source_id, sources_dictionary, key):
     '''
     :param test_class_instance:
@@ -29,6 +28,17 @@ def get_key(test_class_instance, source_id, sources_dictionary, key):
         test_class_instance.mylog.info('sources_util.get_key() - AttributeError: ' + str(e.message))
         key_value=None
     return key_value
+
+def get_source_dbs_link(test_class_instance, source_id, sources_dictionary):
+    '''
+    :param test_class_instance:
+    :param source_id:
+    :param source_dictionary:
+    :return:
+    '''
+    test_class_instance.mylog.info('sources_util.get_source_name() - '
+                                   'Getting NAME of the source for ID ' + str(source_id))
+    return get_key(test_class_instance, source_id, sources_dictionary, 'DBS')
 
 def get_source_name(test_class_instance, source_id, sources_dictionary):
     '''
