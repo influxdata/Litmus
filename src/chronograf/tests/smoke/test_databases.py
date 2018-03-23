@@ -212,6 +212,7 @@ class TestDefaultDatabases():
         response=self.rl.create_retention_policy_for_database(self.chronograf, rp_link, json=data)
         self.mylog.info('test_alter_rp - STEP 6: ALTER RETENTION POLICY')
         response=self.rl.patch_retention_policy_for_database(self.chronograf, rp_link, rp_name, json=updated_data )
+        client.drop_retention_policy(rp_name, database='_internal')
         assert response['name'] == rp_name
         assert response['duration'] == '72h0m0s'
         assert response['replication'] == 2
