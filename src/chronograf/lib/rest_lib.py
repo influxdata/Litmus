@@ -6,7 +6,10 @@ from src.chronograf.lib.base_lib import BaseLib
 
 class RestLib(BaseLib):
     '''
-    TODO DESCRIPTION
+    defines generic - post, get, delete and patch methods (built on top of requests library)
+    defines Sources get, post, patch and delete methods
+    defines Kapacitor get, post, patch and delete methods (work in progress)
+    defines database/retention policies get, post, patch and delete methods
     '''
 
     CHRONOGRAF_PATH = '/chronograf/v1' # Should we make it as option passed to master script???
@@ -89,7 +92,8 @@ class RestLib(BaseLib):
         :param headers: optional
         :return: response object
         '''
-        self.log.info('RestLib.patch() is called with parameters: base_url=' + str(base_url) + ', json=' + str(json) +
+        self.log.info('RestLib.patch() is called with parameters: base_url='
+                      + str(base_url) + ', path=' + str(path) +  ', json=' + str(json) +
                       ', data=' + str(data) + ', headers=' + str(headers))
         try:
             response=requests.patch(base_url + path, json=json, data=data, headers=headers)
@@ -103,7 +107,7 @@ class RestLib(BaseLib):
         assert response is not None, self.log.info('RestLib.patch() response is none')
         return response
 
-    ####################################################################################################################
+    ##############################################################################################################
 
     def get_chronograf_paths(self, base_url): # this method is used as a fixure for chronograf smoke tests. Should
                                               # it be moved to a root conftest.py so every other method/function has an
@@ -360,6 +364,8 @@ class RestLib(BaseLib):
                                                           + str(response.json()))
         return response.json()
 
+    ################################### Kapacitor METHODS #########################################################
+
     def get_kapacitor_data(self, kapacitor, function):
         '''
         :param kapacitor:kapacitor response object
@@ -534,52 +540,253 @@ class RestLib(BaseLib):
                                                           + str(response.status_code) + ' message='
                                                           + str(response.json()))
 
-    def get_databases_for_source_data(self, databases, function) :
+    ################################## DATABASE/RETENTION POLICIES METHODS ######################################
+
+    def get_databases_data(self, databases) :
         '''
-        :param databases:
-        :param function:
-        :return:
+        :param databases:of all of the dbs for a specific source
+        :return:dictionary of the response data for the databases for a specific source
         '''
-        retention_policy_results={}
         databases_result={}
         # Could be multiple databases for the same source
         for database in databases:
+            retention_policy_results={}
             db_name=database.get('name')
-            assert db_name is not None, self.log.info('SOME MESSAGE')
+            self.log.info('rest_lib.RestLib:get_databases_data() name=' + str(db_name))
+            assert db_name is not None
             # could be multiple retention policies
             for retention_policy in database.get('retentionPolicies'):
                 retentionpolicy_name=retention_policy.get('name')
-                assert retentionpolicy_name is not None, self.log.info('SOME MESSAGE')
+                self.log.info('rest_lib.RestLib:get_databases_data() rp name=' + str(retentionpolicy_name))
+                assert retentionpolicy_name is not None
                 retentionpolicy_duration=retention_policy.get('duration')
-                assert retentionpolicy_duration is not None, self.log.info('SOME MESSAGE')
+                self.log.info('rest_lib.RestLib:get_databases_data() rp duration=' + str(retentionpolicy_duration))
+                assert retentionpolicy_duration is not None
                 retentionpolicy_replication=retention_policy.get('replication')
-                assert retentionpolicy_replication is not None, self.log.info('SOME MESSAGE')
+                self.log.info('rest_lib.RestLib:get_databases_data() rp replication=' + str(retentionpolicy_replication))
+                assert retentionpolicy_replication is not None
                 retentionpolicy_shardDuration=retention_policy.get('shardDuration')
-                assert retentionpolicy_shardDuration is not None, self.log.info('SOME MESSAGE')
+                self.log.info('rest_lib.RestLib:get_databases_data() rp shard duration=' + str(retentionpolicy_shardDuration))
+                assert retentionpolicy_shardDuration is not None
                 retentionpolicy_is_default=retention_policy.get('isDefault')
-                assert retentionpolicy_is_default is not None, self.log.info('SOME MESSAGE')
+                self.log.info('rest_lib.RestLib:get_databases_data() rp isDefault=' + str(retentionpolicy_is_default))
+                assert retentionpolicy_is_default is not None
                 retentionpolicy_name_link=retention_policy.get('links').get('self')
-                assert retentionpolicy_name_link is not None, self.log.info('SOME MESSAGE')
+                assert retentionpolicy_name_link is not None
+                self.log.info('rest_lib.RestLib:get_databases_data() rp links self=' + str(retentionpolicy_name_link))
                 retention_policy_results[retentionpolicy_name]={'DURATION':retentionpolicy_duration,
                     'REPLICATION':retentionpolicy_replication, 'SHARD_DURATION':retentionpolicy_shardDuration,
                     'DEFAULT':retentionpolicy_is_default, 'POLICY_LINK':retentionpolicy_name_link}
             retentionpolicies_link=database.get('links').get('retentionPolicies')
+            self.log.info('rest_lib.RestLib:get_databases_data() rp links =' + str(retentionpolicies_link))
             assert retentionpolicies_link is not None, self.log.info('SOME MESSAGE')
             databases_result[db_name]={'POLICY_LINKS':retentionpolicies_link, 'RETENTION_POLICIES':retention_policy_results}
-        self.log.info('rest_lib.RestLib.get_databases_for_source() RESULT DICTIONARY = ' + str(databases_result))
+        self.log.info('rest_lib.RestLib.get_databases() RESULT DICTIONARY = ' + str(databases_result))
         return databases_result
 
-    def get_databases_for_source(self, base_url, source_db_url):
+    def create_database(self, base_url, source_db_url, json):
         '''
-        :param base_url:
-        :param source_db_url:
-        :return:
+        :param base_url:chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888
+        :param source_db_url: /chronograf/v1/sources/{id}/dbs db url for a specific source
+        :param json: request body in JSON format
+        :return: response object
         '''
-        self.log.info('rest_lib.RestLib:get_databases_for_source() START')
+        '''
+        request body:
+        {
+            "name": "NOAA_water_database", REQUIRED
+            "duration": "3d",
+            "replication": 3,
+            "shardDuration": "3h",
+            "retentionPolicies": [
+                {
+                    "name": "weekly", REQUIRED
+                    "duration": "7d", REQUIRED
+                    "replication": 1, REQUIRED
+                    "shardDuration": "7d",
+                    "default": true,
+                    "links": {
+                        "self": "/chronograf/v1/ousrces/1/dbs/NOAA_water_database/rps/liquid"
+                    }
+                }
+             ],
+            "links": {
+                 "self": "/chronograf/v1/sources/1/dbs/NOAA_water_database",
+                "rps": "/chronograf/v1/sources/1/dbs/NOAA_water_database/rps"
+        }
+                
+        response body:
+        {
+            "name":"test database",
+            "retentionPolicies":
+                    [
+                        {   "name":"autogen",
+                            "duration":"0s",
+                            "replication":2,
+                            "shardDuration":"168h0m0s",
+                            "isDefault":true,
+                            "links":{
+                                "self":"/chronograf/v1/sources/1/dbs/test database/rps/autogen"}
+                        }
+                    ],
+            "links":{
+                    "self":"/chronograf/v1/sources/1/dbs/test database",
+                    "retentionPolicies":"/chronograf/v1/sources/1/dbs/test database/rps"
+        '''
+
+        self.log.info('rest_lib.RestLib.create_database() START')
+        # http://<chronograf IP>:8888/chronograf/v1/sources/{id}/dbs, where {id} is the id of the source
+        self.log.info('rest_lib.RestLib.create_database() - STEP 1 : '
+                      'CREATING DATABASE WITH PARAMS base_url='
+                      + str(base_url) + ', source db url=' + str(source_db_url)
+                      + ', json=' + str(json))
+        response=self.post(base_url, source_db_url,json)
+        assert response.status_code == 201, \
+            self.log.info('rest_lib.RestLib.create_database() status='
+            + str(response.status_code))
+        return response.json()
+
+    def get_database(self, base_url, source_db_url, db_name):
+        '''
+        :param base_url: chronograf url
+        :param source_db_url: path to a db url for particular source
+        :param db_name: name of the database
+        :return: response schema for a particular database name for a particular data source
+        '''
+        return self.get_databases(base_url, source_db_url)[db_name]
+
+    def get_databases(self, base_url, source_db_url):
+        '''
+        :param base_url:chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888
+        :param source_db_url:/chronograf/v1/sources/{id}/dbs
+        :return: dictionary of databases response data for a specific source
+        '''
+        self.log.info('rest_lib.RestLib:get_databases() START')
         # http://<chronograf IP>:8888/chronograf/v1/sources/{id}/dbs,
-        self.log.info('rest_lib.RestLib:get_databases_for_source() : '
+        self.log.info('rest_lib.RestLib:get_databases() : '
                       'STEP 1 - GET ' + str(base_url) + str(source_db_url) + ' URL')
-        response = self.get(base_url, source_db_url)
+        response=self.get(base_url, source_db_url)
         dbs_result=response.json()['databases']
-        self.log.info('rest_lib.RestLib:get_source() : STEP 2 - GET ALL OF THE RESPONSE DATA')
-        return self.get_databases_for_source_data(dbs_result, 'get_databases_for_source')
+        self.log.info('rest_lib.RestLib:get_databases_data() : STEP 2 - GET ALL OF THE RESPONSE DATA')
+        return self.get_databases_data(dbs_result)
+
+    def delete_database(self, base_url, source_db_url, db_name):
+        '''
+        :param base_url: chronograf url
+        :param source_db_url: path to source's dbs url
+        :param db_name: name of the database to delete
+        :return: does not return, assert status == 204
+        '''
+        self.log.info('rest_lib.RestLib.delete_database() START')
+        #  # http://<chronograf IP>:8888/chronograf/v1/sources/{id}/dbs/{db_name}
+        self.log.info('rest_lib.RestLib.delete_database() - STEP 1 : '
+                      'DELETING DATABASE WITH PARAMS base_url='
+                      + str(base_url) + ', source db url=' + str(source_db_url)
+                      + ', db name=' + str(db_name))
+        path=source_db_url + '/' + db_name
+        respons=self.delete(base_url, path)
+        assert respons.status_code ==204, \
+            self.log.info('rest_lib.RestLib.delete_database() status='
+            + str(respons.status_code) + ', message=' + str(respons.json()))
+
+    def get_retention_policies_for_database(self, chronograf, policy_link):
+        '''
+        Retrieves all retention policies for a databse
+        :param:policy_link (str): link to retention policies for a database
+                    /chronograf/v1/sources/{id}/dbs/{db_id}/rps
+        :param:chronograf (str), url to a chronograf http://<IP>:<PORT>
+        :return:list of retention policies :[{"name":"monitor",
+                                                            "duration":"168h0m0s",
+                                                            "replication":1,
+                                                            "shardDuration":"24h0m0s",
+                                                            "isDefault":true,
+                                                            "links":{
+                                                                "self":"/chronograf/v1/sources/1/dbs/_internal/rps/monitor"
+                                                            }}]
+        '''
+        self.log.info('rest_lib.RestLib.get_retention_policies_for database()'
+                      ' method called with parameters ' + 'chronograf='
+                      + str(chronograf) + ', policy_link=' + str(policy_link))
+        response=self.get(chronograf, policy_link)
+        assert response.status_code == 200, \
+            self.log.info('rest_lib.RestLib.get_retention_policies_for database() '
+                          'status=' + str(response.status_code) + ', message='
+                          + str(response.json()))
+        return response.json()
+
+    def create_retention_policy_for_database(self, chronograf, policy_link, json):
+        '''
+        Creates New retention policy for a database
+        :param chronograf(str):Chronograf URL http://<IP>:<PORT>
+        :param policy_link:(str): link to a retention policy of a database,
+                    e.g./chronograf/v1/sources/{id}/dbs/{db_id}/rps
+        :return:response body dictionary: "name": "weekly",
+                                                               "duration": "7d",
+                                                                "replication": 1,
+                                                                "shardDuration": "7d",
+                                                                "default": true,
+                                                                "links": {
+                                                                            "self": "/chronograf/v1/ousrces/1/dbs/NOAA_water_database/rps/liquid"
+                                                                }
+        '''
+        # request body the same as response body
+        self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
+                      ' method called with parameters chronograf=' + str(chronograf)
+                      + ', policy_link=' + str(policy_link))
+        response=self.post(chronograf, policy_link, json)
+        assert response.status_code == 201, \
+            self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
+                          ' status=' + str(response.status_code) + ', message='
+                          + str(response.json()))
+        return response.json()
+
+    def patch_retention_policy_for_database(self, chronograf, policy_link, policy_name, json):
+        '''
+        Alters retention policy for a database
+        :param chronograf (str):chronograf URL, http://<IP>.<PORT>
+        :param policy_link (str): link to a policy URL for a database,
+                     /chronograf/v1/sources/{id}/dbs/{db_id}/rps
+        :param policy_name(str): name of the policy to ater
+        :param JSON, request body in JSON format
+        :return:response body dictionary: "name": "weekly",
+                                                                "duration": "7d",
+                                                                "replication": 1,
+                                                                "shardDuration": "7d",
+                                                                "default": true,
+                                                                "links": {
+                                                                        "self": "/chronograf/v1/ousrces/1/dbs/NOAA_water_database/rps/liquid"
+                                                                }
+        '''
+        self.log.info('rest_lib.RestLib:patch_retention_policy_for _database() '
+                      'method called with parameters chronograf=' + str(chronograf)
+                      + ', policy_link=' + str(policy_link) + ', policy_name='
+                      + str(policy_name) + ', json=' + str(json))
+        self.log.info('rest_lib.RestLib:patch_retention_policy_for _database() build path')
+        url=chronograf + policy_link + '/' + policy_name
+        #response=self.patch(chronograf, path, json)
+        response=requests.put(url, json=json)
+        assert response.status_code == 201, \
+            self.log.info('rest_lib.RestLib:patch_retention_policy_for _database()'
+                         ' status=' + str(response.status_code) + ', message='
+                        + str(response.text))
+        return response.json()
+
+    def delete_retention_policy_for_database(self, chronograf, policy_link, policy_name):
+        '''
+        Deletes retention policy for a database
+        :param chronograf: chronograf URL: http://<IP>:<PORT>
+        :param policy_link:link to a policiy url for a database.
+                      /chronograf/v1/sources/{id}/dbs/{db_id}/rps
+        :param policy_name: name of the policy to be deleted
+        :return: asserts response status is 204
+        '''
+        self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
+                      ' method called with parameters chronograf=' + str(chronograf)
+                      + ', policy_link=' + str(policy_link) + ', policy_name=' + str(policy_name))
+        self.log.info('rest_lib.RestLib:delete_retention_policy_for_database() Building path' + policy_link + '/' + policy_name)
+        path=policy_link +'/' + policy_name
+        response=self.delete(chronograf, path)
+        assert response.status_code == 204, \
+            self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
+                          ' status=' + str(response.status_code) + ', message='
+                          + str(response.json()))
