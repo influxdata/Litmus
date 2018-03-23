@@ -2,6 +2,7 @@
 import pytest
 from random import choice
 from src.chronograf.lib import rest_lib
+import src.util.database_util as du
 
 @pytest.fixture(scope='class')
 def get_all_paths(request, chronograf):
@@ -84,6 +85,7 @@ def create_source(request, chronograf, data_nodes, meta_nodes):
 @pytest.fixture(scope='class')
 def default_sources(request, chronograf, clustername):
     '''
+    TODO reuse all_sources FIXTURE
     :param request:
     :param chronograf:
     :param clustername:
@@ -102,6 +104,22 @@ def default_sources(request, chronograf, clustername):
     request.cls.mylog.info('default_sources(): DEFAULTS SOURCES : '  +str(default_sources))
     request.cls.default_sources=default_sources
     return request.cls.default_sources
+
+@pytest.fixture(scope='class')
+def all_sources(request, chronograf):
+    '''
+    :param request:
+    :param chronograf:
+    :return:
+    '''
+    rl=rest_lib.RestLib(request.cls.mylog)
+    request.cls.mylog.info('all_sources() FIXTURE IS CALLED')
+    request.cls.mylog.info('all_sources() : GET ALL OF THE SOURCES')
+    source_path=get_source_path(request, chronograf)
+    sources=rl.get_sources(chronograf, source_path)
+    request.cls.mylog.info('all_sources(): ALL SOURCES : '  +str(sources))
+    request.cls.all_sources=sources
+    return request.cls.all_sources
 
 @pytest.fixture(scope='class')
 def delete_sources(request, chronograf):
@@ -126,7 +144,7 @@ def delete_created_sources(request, chronograf, clustername):
     :param request:request object to introspect the rtequesting test function, class or module context
     :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
     :param clustername:Name of the cluster
-    :return: does nto return, make an assertion status code == 204
+    :return: does not return, make an assertion status code == 204
     '''
     rl=rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('delete_created_sources() FIXTURE IS CALLED')
@@ -135,6 +153,26 @@ def delete_created_sources(request, chronograf, clustername):
     sources=rl.get_sources(chronograf, source_path)
     for source in sources.keys():
         if (sources[source].get('NAME')).find(clustername) == -1:
-            request.cls.mylog.info('delete_sources() : DELETING SOURCE ID=' + str(source))
+            request.cls.mylog.info('delete_created_sources() : DELETING SOURCE ID=' + str(source))
             rl.delete_source(chronograf, source_path, source)
-    request.cls.mylog.info('delete_sources() IS DONE')
+    request.cls.mylog.info('delete_created_sources() IS DONE')
+
+@pytest.fixture(scope='class')
+def delete_created_databases(request, chronograf, all_sources):
+    '''
+    :param request:
+    :param chronograf:
+    :return: asserts status == 204
+    '''
+    rl=rest_lib.RestLib(request.cls.mylog)
+    request.cls.mylog.info('delete_created_databases() FIXTURE IS CALLED')
+    dbs_links=du.get_all_databases_links(request.cls, all_sources)
+    request.cls.mylog.info('delete_created_databases() dbs_links ' + str(dbs_links))
+    db_link=choice(dbs_links)
+    response=rl.get_databases(chronograf, db_link)
+    for name in response.keys():
+        if name not in ['_internal', 'telegraf']:
+            request.cls.mylog.info('delete_created_databases() DELETING DATABASE ' + str(name))
+            rl.delete_database(chronograf, db_link, name)
+    request.cls.mylog.info('delete_created_databases() FIXTURE IS DONE')
+
