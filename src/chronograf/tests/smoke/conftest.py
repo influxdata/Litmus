@@ -1,5 +1,8 @@
 
 import pytest
+import re
+from influxdb import InfluxDBClient as influxDbClient
+from influxdb import exceptions as e
 from random import choice
 from src.chronograf.lib import rest_lib
 import src.util.database_util as du
@@ -7,6 +10,7 @@ import src.util.database_util as du
 @pytest.fixture(scope='class')
 def get_all_paths(request, chronograf):
     '''
+    Returns all of the chronograf paths
     :param request:request object to introspect the requesting test function, class or module context
     :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
     :return:all of the paths:
@@ -49,8 +53,9 @@ def get_source_path(request, chronograf):
 @pytest.fixture(scope='class')
 def create_source(request, chronograf, data_nodes, meta_nodes):
     '''
+    Creates source and returns the data for the created source as dictionary
     :param request:request object to introspect the rtequesting test function, class or module context
-    :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
+    :param chronograf: Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
     :param data_nodes: list of data nodes passed or returned by pcl installer
     :param meta_nodes: list of meta nodes passed or returned by pcl installer
     :return: tuple of source_id and source response object
@@ -85,7 +90,8 @@ def create_source(request, chronograf, data_nodes, meta_nodes):
 @pytest.fixture(scope='class')
 def default_sources(request, chronograf, clustername):
     '''
-    TODO reuse all_sources FIXTURE
+    Return the dictionary of all of the default sources. Default source is
+    base on the number of the data nodes
     :param request:
     :param chronograf:
     :param clustername:
@@ -98,6 +104,7 @@ def default_sources(request, chronograf, clustername):
     source_path=get_source_path(request, chronograf)
     sources=rl.get_sources(chronograf, source_path)
     for source in sources.keys():
+        # default source would have a name of the cluster as part of its full name
         if (sources[source].get('NAME')).find(clustername) != -1:
             request.cls.mylog.info('default_sources() : GETTING SOURCE ID=' + str(source))
             default_sources[source]=sources[source]
@@ -108,6 +115,7 @@ def default_sources(request, chronograf, clustername):
 @pytest.fixture(scope='class')
 def all_sources(request, chronograf):
     '''
+    Return the dictionary of all of the data sources
     :param request:
     :param chronograf:
     :return:
@@ -124,9 +132,10 @@ def all_sources(request, chronograf):
 @pytest.fixture(scope='class')
 def delete_sources(request, chronograf):
     '''
+    Deletes all of the exisitng sources, including default ones.
     :param request:request object to introspect the rtequesting test function, class or module context
     :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
-    :return: does not return, make an assertion status code == 204
+    :return: assert status code == 204
     '''
     rl=rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('delete_sources() FIXTURE IS CALLED')
@@ -141,6 +150,7 @@ def delete_sources(request, chronograf):
 @pytest.fixture(scope='class')
 def delete_created_sources(request, chronograf, clustername):
     '''
+    Deletes all of the created by tests sources
     :param request:request object to introspect the rtequesting test function, class or module context
     :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
     :param clustername:Name of the cluster
@@ -160,6 +170,7 @@ def delete_created_sources(request, chronograf, clustername):
 @pytest.fixture(scope='class')
 def delete_created_databases(request, chronograf, all_sources):
     '''
+    Deleted all of the created databases with the exception of default ones.
     :param request:
     :param chronograf:
     :return: asserts status == 204
@@ -176,3 +187,46 @@ def delete_created_databases(request, chronograf, all_sources):
             rl.delete_database(chronograf, db_link, name)
     request.cls.mylog.info('delete_created_databases() FIXTURE IS DONE')
 
+@pytest.fixture(scope='class')
+def delete_created_rp(request, chronograf, data_nodes, default_sources):
+    '''
+    Removes all of the created by the tests retention policies using InfluxDBClient library
+    for the exception of default policies for default databases
+    :param request:
+    :param data_nodes: list of data nodes as returned by the data_nodes fixture (defined in
+                                     root conftest.py in the following format http://<IP>:8086
+    :param default_sources: dictionary of default sources with a source_id as a key
+    :param chronograf: URL to achronograf, ie. http://<IP>:<port>
+    '''
+    rl=rest_lib.RestLib(request.cls.mylog)
+    request.cls.mylog.info('delete_created_rp() FIXURE IS CALLED')
+    # randomly choose a data_node
+    data_node=choice(data_nodes)
+    # strip http:// and :8086 from the chosen data node
+    data_node=re.search(r'http://(\d+.\d+.\d+.\d+):[0-9]+',data_node).group(1) #http://<IP>:<port>
+    # choose database url from a default data source:
+    source_id=choice(default_sources.keys())
+    # get a database url from a chosen default data source
+    dbs_url=default_sources[source_id]['DBS']
+    # get all retention policies for default databases: _internal and telegraf
+    telegraf_rp=rl.get_database(chronograf, dbs_url, 'telegraf')['RETENTION_POLICIES'].keys()
+    request.cls.mylog.info('delete_created_rp() retention policies for telegraf db=' + str(telegraf_rp))
+    internal_rp=rl.get_database(chronograf, dbs_url, '_internal')['RETENTION_POLICIES'].keys()
+    request.cls.mylog.info('delete_created_rp() retention policies for _internal db=' + str(internal_rp))
+    # define parameter - list of retention policies to be removed
+    # for now use hardcoded username and password equals to empty string, i.e. no authentication
+    username=''
+    password=''
+    try:
+        for rp in telegraf_rp:
+            if rp != 'autogen':
+                client=influxDbClient(host=data_node,port=8086, username=username, password=password)
+                client.drop_retention_policy(rp, 'telegraf')
+        for rp in internal_rp:
+            if rp != 'monitor':
+                client=influxDbClient(host=data_node,port=8086, username=username, password=password)
+                client.drop_retention_policy(rp, '_internal')
+    except e.InfluxDBClientError:
+        request.cls.mylog.info('ClientError message=' + e.InfluxDBClientError.message)
+    except e.InfluxDBServerError:
+        request.cls.mylog.info('ServerError message=' + e.InfluxDBServerError.message)
