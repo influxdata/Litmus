@@ -4,17 +4,32 @@ import src.util.login_util as lu
 import src.util.database_util as du
 from src.chronograf.lib import rest_lib
 from random import choice
-from influxdb import InfluxDBClient as db_client
-import re
 
-@pytest.mark.usefixtures('delete_created_sources',
-                         'delete_created_databases', 'default_sources',
-                         'chronograf', 'data_nodes', 'all_sources', 'get_source_path')
-class TestDefaultDatabases():
+
+@pytest.mark.usefixtures( 'delete_created_databases', 'delete_created_rp',
+                          'delete_created_sources','default_sources',
+                          'chronograf', 'data_nodes', 'get_source_path')
+class TestDefaultDatabases(object):
     '''
-    '''
+    delete_created_databases - deletes all of the databases created by tests
+    delete_created_rp - removes all of the created, non-default retention policies
+    delete_created_sources - deletes all of the non-default data sources
+    default_sources - gets all of the default sources
+    chronograf - returns chronograf URL
+    data_nodes - returns the list of data nodes URLS
+    get_source_path - returns path to a 'source' URL
+     '''
     mylog=lu.log(lu.get_log_path(), 'w', __name__)
     rl=rest_lib.RestLib(mylog)
+
+    create_rp_name='test_create_rp'
+    alter_rp_name='test_alter_rp'
+    delete_rp_name='test_delete_rp'
+    database_name_rp='_internal'
+
+    # Cannot use setup_class with fixtures since it si being called before fixtures.
+    # Have to move clean up using InfluxDBClient into conftest with params, where
+    # parameters are created names of the retention policies.
 
     def header(self, test_name):
         self.mylog.info('#######################################################')
@@ -32,8 +47,9 @@ class TestDefaultDatabases():
     def test_default_databases(self):
         '''
         1. Get default databases (_internal and telegraf)
-        2. For every database verify retention policy duration, retention policy shard group duration,
-            if retention policy is default one and default policy replication
+        2. For every default database verify retention policy duration, retention
+            policy shard group duration, if retention policy is default one and
+            default policy replication
         '''
         internal_expected={
             'rp_duration':'168h0m0s',
@@ -52,9 +68,12 @@ class TestDefaultDatabases():
         self.header('test_default_databases')
         self.mylog.info('test_default_databases - STEP 1: GET DBS LINKS')
         # in a 2 data nodes set ups we will end up with 2 default data sources = 2 dbs links
+        # dbs_links = [u'/chronograf/v1/sources/1/dbs', u'/chronograf/v1/sources/2/dbs']
         dbs_links=du.get_default_databases_links(self, default_sources=self.default_sources)
-        for db in dbs_links:
-            dictionary_of_dbs=self.rl.get_databases(self.chronograf, db)
+        for link in dbs_links:
+            self.mylog.info('test_default_databases - STEP 2: GET ALL OF THE DATABASES')
+            # get all of the databases per dbs link
+            dictionary_of_dbs=self.rl.get_databases(self.chronograf, link)
             # iterate over database names for a specific source
             for db_name in dictionary_of_dbs.keys():
                 if db_name == '_internal':
@@ -89,7 +108,7 @@ class TestDefaultDatabases():
 
     def test_create_database_default_values(self):
         '''
-        1. Get All Sources from the all_sources fixture
+        1. Get default Sources from the all_sources fixture
         2. Randomly choose one of the sources to create a database
         '''
         database_name='test create database default values'
@@ -99,17 +118,17 @@ class TestDefaultDatabases():
         self.header('test_create_database_default_values')
         self.mylog.info('test_create_database_default_values() - '
                         'STEP 1: CHOOSE A SOURCE')
-        if (len(self.all_sources) == 0): # we do not have any sources
+        if (len(self.default_sources) == 0): # we do not have any sources
             # create one
             data_node=choice(self.data_nodes)
             (status, body,source_id)=self.rl.create_source(self.chronograf,
                                                            self.get_source_path, {'url':data_node})
             assert source_id is not None
         else:
-            source_id=choice(self.all_sources.keys())
+            source_id=choice(self.default_sources.keys())
         self.mylog.info('test_create_database_default_values() - STEP 2: '
                         'GET DBS URL FOR SOURCE ID=' + str(source_id))
-        dbs_url=self.all_sources[source_id].get('DBS')
+        dbs_url=self.default_sources[source_id].get('DBS')
         self.mylog.info('test_create_database_default_values dbs_url=' + str(dbs_url))
         self.mylog.info('test_create_database_default_values() - '
                         'STEP 3: CREATE DATABASE ' + database_name)
@@ -122,9 +141,13 @@ class TestDefaultDatabases():
         assert response.get('retentionPolicies')[0].get('shardDuration') == '168h0m0s'
         self.footer('test_create_database_default_values')
 
-    def test_delete_databse_default_values(self):
+    def test_delete_database_default_values(self):
         '''
-
+        1. Choose a source from available default sources, otherwise create a
+            new data source
+        2. Get a DB link for a chosen source
+        3. Create a database using just a database name as a param
+        4. Delete created database
         '''
         database_name='test delete database default values'
         # database will be created with all default params
@@ -133,14 +156,14 @@ class TestDefaultDatabases():
         self.header('test_delete_database_default_values')
         self.mylog.info('test_delete_database_default_values() - '
                         'STEP 1: CHOOSE A SOURCE')
-        if (len(self.all_sources) == 0): # we do not have any sources
+        if (len(self.default_sources) == 0): # we do not have any sources
             # create one
             data_node=choice(self.data_nodes)
             (status, body,source_id)=self.rl.create_source(self.chronograf,
                                                            self.get_source_path, {'url':data_node})
             assert source_id is not None
         else:
-            source_id=choice(self.all_sources.keys())
+            source_id=choice(self.default_sources.keys())
         self.mylog.info('test_delete_database_default_values() - STEP 2: '
                         'GET DBS URL FOR SOURCE ID=' + str(source_id))
         dbs_url=self.all_sources[source_id].get('DBS')
@@ -155,22 +178,23 @@ class TestDefaultDatabases():
 
     def test_create_rp(self):
         '''
-        1. Create retention policy for a default database (_internal)
+        1. Choose a source id from available default sources
+        2. Get a Db url for a chosen source
+        3. Get a data for an _internal database
+        4. Get a link to RP URL
+        5. Create a RP and assert the results
         '''
         self.header('test_create_rp')
-        rp_name='test_create_rp'
-        data={'name':rp_name, 'duration':'1d', 'replication':2, 'shardDuration':'2h', 'isDefault':True}
+        data={'name':self.create_rp_name, 'duration':'1d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
         # need to get a source to be able to get a link to a database (allows us to get a rp link to create a rp)
-        data_node=re.search(r'http://(\d+.\d+.\d+.\d+):[0-9]+',choice(self.data_nodes)).group(1) #http://<IP>:<port>
-        client=db_client(data_node)
 
         self.mylog.info('test_create_rp - STEP 1: CHOOSE SOURCE_ID')
-        source_id=choice(self.all_sources.keys())
+        source_id=choice(self.default_sources.keys())
         assert source_id is not None # just a precaution
         self.mylog.info('test_create_rp - STEP 2 : GET THE DATABASE URL FOR A SOURCE_ID ' + str(source_id) )
-        dbs_url=self.all_sources[source_id].get("DBS")
+        dbs_url=self.default_sources[source_id].get("DBS")
         self.mylog.info('test_create_rp - STEP 3: get database info')
-        result=self.rl.get_database(self.chronograf, dbs_url, '_internal')
+        result=self.rl.get_database(self.chronograf, dbs_url, self.database_name_rp)
         self.mylog.info('STEP 3 result = ' + str(result))
         self.mylog.info('test_create_rp - STEP4: GET RETENTION POLICY LINK')
         rp_link=result.get('POLICY_LINKS')
@@ -178,44 +202,70 @@ class TestDefaultDatabases():
         self.mylog.info('test_create_rp - STEP 5: CREATE A RETENTION POLICY')
         response=self.rl.create_retention_policy_for_database(self.chronograf, rp_link, json=data)
         # delete created retention policy
-        client.drop_retention_policy(rp_name, '_internal')
-        assert response['name'] == rp_name
+        assert response['name'] == self.create_rp_name
         assert response['duration'] == '24h0m0s'
         assert response['replication'] == 2
         assert response['shardDuration'] == '2h0m0s'
-        assert response['isDefault'] is True
+        assert response['isDefault'] is False
 
     def test_alter_rp(self):
         '''
-
+        1. Choose a source from available default sources
+        2. Get DB URL for a chosen source
+        3. Get DB info for _internal DB
+        4. Get a link to a RP URL
+        5. Create RP
+        6. Alter created RP
         '''
         self.header('test_alter_rp')
-        rp_name='test_alter_rp'
-        data={'name':rp_name, 'duration':'2d', 'replication':1, 'shardDuration':'1h', 'isDefault':False}
-        updated_data={'name':rp_name, 'duration':'3d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
-        # need to get a source to be able to get a link to a database (allows us to get a rp link to create a rp)
-        data_node=re.search(r'http://(\d+.\d+.\d+.\d+):[0-9]+',choice(self.data_nodes)).group(1) #http://<IP>:<port>
-        client=db_client(data_node)
+        data={'name':self.alter_rp_name, 'duration':'2d', 'replication':1, 'shardDuration':'1h', 'isDefault':False}
+        updated_data={'name':self.alter_rp_name, 'duration':'3d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
 
         self.mylog.info('test_alter_rp - STEP 1: CHOOSE SOURCE_ID')
-        source_id=choice(self.all_sources.keys())
+        source_id=choice(self.default_sources.keys())
         assert source_id is not None # just a precaution
         self.mylog.info('test_alter_rp - STEP 2 : GET THE DATABASE URL FOR A SOURCE_ID ' + str(source_id) )
-        dbs_url=self.all_sources[source_id].get("DBS")
+        dbs_url=self.default_sources[source_id].get("DBS")
         self.mylog.info('test_alter_rp - STEP 3: get database info')
-        result=self.rl.get_database(self.chronograf, dbs_url, '_internal')
+        result=self.rl.get_database(self.chronograf, dbs_url, self.database_name_rp)
         self.mylog.info('STEP 3 result = ' + str(result))
         self.mylog.info('test_alter_rp - STEP4: GET RETENTION POLICY LINK')
         rp_link=result.get('POLICY_LINKS')
         assert rp_link is not None # just a precaution
         self.mylog.info('test_alter_rp - STEP 5: CREATE A RETENTION POLICY')
-        response=self.rl.create_retention_policy_for_database(self.chronograf, rp_link, json=data)
+        self.rl.create_retention_policy_for_database(self.chronograf, rp_link, json=data)
         self.mylog.info('test_alter_rp - STEP 6: ALTER RETENTION POLICY')
-        response=self.rl.patch_retention_policy_for_database(self.chronograf, rp_link, rp_name, json=updated_data )
-        client.drop_retention_policy(rp_name, database='_internal')
-        assert response['name'] == rp_name
-        assert response['duration'] == '72h0m0s'
-        assert response['replication'] == 2
-        assert response['shardDuration'] == '2h0m0s'
-        assert response['isDefault'] is False
+        response_alter=self.rl.patch_retention_policy_for_database(self.chronograf, rp_link, self.alter_rp_name, json=updated_data )
+        assert response_alter['name'] == self.alter_rp_name
+        assert response_alter['duration'] == '72h0m0s'
+        assert response_alter['replication'] == 2
+        assert response_alter['shardDuration'] == '2h0m0s'
+        assert response_alter['isDefault'] is False
 
+    def test_delete_rp(self):
+        '''
+        1. Choose a source from available default sources
+        2. Get a DB URL for a chosen source
+        3. Get info for a _internal DB
+        4. Get a link to a RP
+        5. Create a RP
+        6. Delete created RP
+        '''
+        self.header('test_delete_rp')
+        data={'name':self.delete_rp_name, 'duration':'4d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
+
+        self.mylog.info('test_delete_rp - STEP 1: RANDOMLY CHOOSE SOURCE_ID')
+        source_id=choice(self.default_sources.keys())
+        assert source_id is not None # just a precaution
+        self.mylog.info('test_delete_rp - STEP 2 : GET THE DATABASE URL FOR A SOURCE_ID ' + str(source_id) )
+        dbs_url=self.default_sources[source_id].get("DBS")
+        self.mylog.info('test_delete_rp - STEP 3: get database info')
+        result=self.rl.get_database(self.chronograf, dbs_url, self.database_name_rp)
+        self.mylog.info('STEP 3 result = ' + str(result))
+        self.mylog.info('test_delete_rp - STEP4: GET RETENTION POLICY LINK')
+        rp_link=result.get('POLICY_LINKS')
+        assert rp_link is not None # just a precaution
+        self.mylog.info('test_delete_rp - STEP 5: CREATE A RETENTION POLICY')
+        self.rl.create_retention_policy_for_database(self.chronograf, rp_link, json=data)
+        self.mylog.info('test_delete_rp - STEP 6: DELETE RETENTION POLICY')
+        self.rl.delete_retention_policy_for_database(self.chronograf, rp_link, self.delete_rp_name)
