@@ -30,13 +30,15 @@ parser.add_option('--datanodes', action='store', help='URL OF THE DATA NODE, e.g
 parser.add_option('--metanodes', action='store', help='URL OF THE META NODE, e.g. http://metanode:8091')
 parser.add_option('--kapacitor', action='store', help='KAPACITOR URL, e.g. http://kapacitor:9092:')
 
-parser.add_option('--clustername', action='store', help='NAME OF THE CLUSTER')
-parser.add_option('--clusterenv', action='store', help='ENVIRONMENT VARS TO PASS TO INSTALL SCRIPT')
-parser.add_option('--localpkgdata', action='store', help='LOCAL DATA PACKAGE TO INSTALL')
-parser.add_option('--localpkgmeta', action='store', help='LOCAL META PACKAGE TO INSTALL')
-parser.add_option('--dbversion', action='store', help='INFLUXDB VERSION TO INSTALL')
-parser.add_option('--num_datanodes', action='store', help='NUMBER OF DATA NODES')
-parser.add_option('--num_metanodes', action='store', help='NUMBEROF META NODES')
+# install options
+parser.add_option('--cluster-name', action='store', dest='clustername', help='NAME OF THE CLUSTER')
+parser.add_option('--cluster-env', action='store', dest='clusterenv', help='ENVIRONMENT VARS TO PASS TO INSTALL SCRIPT')
+parser.add_option('--local-pkg-data', action='store', dest='localpkgdata', help='LOCAL DATA PACKAGE TO INSTALL')
+parser.add_option('--local-pkg-meta', action='store', dest='localpkgmeta', help='LOCAL META PACKAGE TO INSTALL')
+parser.add_option('--influxdb-version', action='store', dest='dbversion',help='INFLUXDB VERSION TO INSTALL')
+parser.add_option('--num-data', action='store', dest='num_datanodes', help='NUMBER OF DATA NODES')
+parser.add_option('--num-meta', action='store', dest='num_metanodes', help='NUMBEROF META NODES')
+parser.add_option('--telegraf-version', action='store', dest='telegrafversion', help='INSTALL VERSION OF TELEGRAF')
 
 # tests to run
 parser.add_option('--tests', action='append', dest='tests', help='')
@@ -47,13 +49,19 @@ pytest_parameters=[]
 
 # install options
 cluster_name=options.clustername
+print cluster_name
 cluster_env=options.clusterenv
+print cluster_env
 data_pkg=options.localpkgdata
 meta_pkg=options.localpkgmeta
 db_version=options.dbversion
+print db_version
 data_nodes_number=options.num_datanodes
+print data_nodes_number
 meta_nodes_number=options.num_metanodes
-
+print meta_nodes_number
+telegraf_version=options.telegrafversion
+print telegraf_version
 
 if options.verbose is not None: pytest_parameters.append(options.verbose)
 if options.verbose is None: pytest_parameters.append('-v')
@@ -68,11 +76,16 @@ pytest_parameters.append('--disable-pytest-warnings')
 pytest_parameters.append('-rxfX')
 pytest_parameters.append('--html=report.html')
 
-# Installation of the TICK stack
-print './qa_install_tick.sh --c %s --d %s --m %s --e %s --db-version %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version)
-return_code=subprocess.call('./qa_install_tick.sh --c %s --d %s --m %s --e %s --db-version %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version), shell=True)
+#Installation of the TICK stack
+print 'qa_install_tick.sh --cluster-name %s ---num-data %s --num-meta %s --cluster-env %s --influxdb-version %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version)
+return_code=subprocess.call('sh -x qa_install_tick.sh --cluster-name %s ---num-data %s --num-meta %s --cluster-env %s --influxdb-version %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version), shell=True)
+print "RETURN CODE" + str(return_code)
 exit(0)
 
+if options.clustername is not None:
+    pytest_parameters.append('--clustername=' + options.clustername)
+else:
+    pytest_parameters.append('--clustername=litmus')
 if options.chronograf is not None:
     pytest_parameters.append('--chronograf=' + options.chronograf)
 else:
