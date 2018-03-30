@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 : ' Install and configure Enterprise TICK product.
     The script will:
   1. uninstall exisiting TICK system
@@ -11,6 +11,9 @@
   4. add a kapacitor(s) (need to figure out where to get the latest available
       kapacitor build). For now, pass a latest released kapacitor version.
 '
+
+install_chronograf=true
+install_kapacitor=true
 
 # script variables for InfluxDB cluster setup
 # number of data nodes to deploy
@@ -31,7 +34,24 @@ LOCAL_PKG_META=
 TELEGRAF_VERSION=
 # influxDB released version to install
 INSTALL_DB_VERSION=
+# OS to install cluster on
+CLUSTER_OS=
 
+# script variables for chronograf
+# version of chronograf to install
+CHRONOGRAF_VERSION=
+# number of chronograf instances
+CHRONOGRAF_INSTANCES=
+# OS to install chronograf on
+CHRONOGRAF_OS=
+
+# script variables for kapacitor
+# version of kapacitor to install
+KAPACITOR_VERSION=
+# number of kapacitor instances
+KAPACITOR_INSTANCES=
+# OS to install kapacitor on
+KAPACITOR_OS=
 
 #--------------------------------------
 # catchFail()
@@ -68,9 +88,10 @@ runCmd () {
 uninstall() {
 	echo
 	echo `date` "***************  uninstalling  ***************"
-	if [[ `pcl list -c $CLUSTER_NAME | awk '{ if ($1 != "ID") print $1 }'` != ''  ]]
+	product=`pcl list -c $CLUSTER_NAME | awk '{ if ($1 != "ID") print $1 }'`
+	if [ X"$product" != X"" ]
 	then
-		catchFail "pcl destroy -c $CLUSTER_NAME"
+		catchFail "echo y | pcl destroy -c $CLUSTER_NAME"
 	else
 		echo "Nothing to uninstall"
 	fi
@@ -83,19 +104,40 @@ uninstall() {
 # data nodes added to the cluster. Also released version of telegraf will be installed.
 
 installCluster() {
-    echo
-    echo `date`"**************** installing cluster ********************"
-    catchFail  "pcl create -c $CLUSTER_NAME $DATANODES $METANODES
-                    $CLUSTER_ENV $INFLUX_DB_VERSION $TELEGRAF_VERSION
-                      --license-key $LICENSE_KEY"
+	echo
+    	echo `date`"**************** installing cluster ********************"
+    	catchFail  "pcl create -c $CLUSTER_NAME $DATANODES $METANODES $CLUSTER_ENV $INFLUX_DB_VERSION $TELEGRAF_VERSION --license-key $LICENSE_KEY"
 }
 
+
+#---------------------------------------
+# installChronograf()
+#---------------------------------------
+# adds a Chronograf instance to the given cluster
+
+installChronograf() {
+
+	echo
+	echo `date`"**************** installing chronograf *********************"
+	catchFail "pcl add-chronograf -c $CLUSTER_NAME $CHRONOGRAF_VERSION $CHRONOGRAF_INSTANCES $CHRONOGRAF_OS"
+}
+
+#----------------------------------------
+# installKapacitor()
+#----------------------------------------
+# adds a kapacitor instance to the given cluster
+
+installKapacitor() {
+	echo
+	echo `date`"***************** installing kapacitor **********************"
+	catchFail "pcl add-kapacitor -c $CLUSTER_NAME $KAPACITOR_VERSION $KAPACITOR_INSTANCES $KAPACITOR_OS"
+}
 
 while [ $# -gt 0 ]
 do
 	case $1 in
 		--num-data)
-            shift
+            		shift
 			DATANODES="-d $1";;
 		--num-meta)
 			shift
@@ -103,7 +145,7 @@ do
 		--cluster-env)
 			shift
 			CLUSTER_ENVIRONMENT=$1
-			CLUSTER_ENV=${CLUSTER_ENVIRONMENT//,/ --env }
+			CLUSTER_ENV=$(echo ${CLUSTER_ENVIRONMENT//,/ --env })
 			CLUSTER_ENV="--env $CLUSTER_ENV";;
 		--cluster-name)
 			shift
@@ -115,12 +157,35 @@ do
 			shift
 			LOCAL_PKG_META="--local-pkg-meta $1";;
 		--telegraf-version)
-			shif
+			shift
 			TELEGRAF_VERSION="--telegraf-version $1";;
 		--influxdb-version)
 			shift
-			INFLUX_DB_VERSION="--influxdb-version $1";;
-
+			INFLUX_DB_VERSION="--version $1";;
+		--cluster-os)
+			shift
+			CLUSTER_OS="--aws-os $1";;
+               	--chronograf-version)
+                       shift
+                       CHRONOGRAF_VERSION="--chronograf-version $1";;
+               	--num-chronografs)
+                       shift
+                       CHRONOGRAF_INSTANCES="--num-instances $1";;
+               	--chronograf-os)
+                       shift
+                       CHRONOGRAF_OS="--aws-os $1";;
+               	--no-chronograf)
+                       install_chronograf=false;;
+               	--kapacitor-version)
+                       shift
+                       KAPACITOR_VERSION="--kapacitor-version $1";;
+               	--num-kapacitors)
+                       shift
+                       KAPACITOR_INSTANCES="--num-instances $1";;
+               --kapacitor-os)
+                       KAPACITOR_OS="--aws-os $";;
+               --no-kapacitor)
+                       install_kapacitor=false;;
 	esac
 	shift
 done
@@ -131,8 +196,14 @@ done
 #------------------------------------
 
 main() {
-    uninstall
-    installCluster
+    	uninstall
+    	installCluster
+	if $install_chronograf; then
+		installChronograf
+	fi
+	if $install_kapacitor; then
+		installKapacitor
+	fi
 }
 
 main
