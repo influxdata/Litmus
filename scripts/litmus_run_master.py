@@ -93,7 +93,7 @@ data_pkg=options.localpkgdata
 if data_pkg is not None: data_pkg='--pkg-data ' + options.localpkgdata
 else: data_pkg=''
 meta_pkg=options.localpkgmeta
-if meta_pkg is not None: meta_pkg='--meta-pkg ' + options.localpkgmeta
+if meta_pkg is not None: meta_pkg='--pkg-meta ' + options.localpkgmeta
 else: meta_pkg=''
 db_version=options.dbversion
 if db_version is not None: db_version='--influxdb-version ' + options.dbversion
@@ -120,10 +120,10 @@ chronograf_version=options.chronografversion
 if chronograf_version is not None: chronograf_version='--chronograf-version ' + chronograf_version
 else: chronograf_version=''
 num_chronografs=options.numchronografs
-if num_chronografs is not None: num_chronografs='--num-instances ' + num_chronografs
+if num_chronografs is not None: num_chronografs='--num-chronografs ' + num_chronografs
 else: num_chronografs=''
 chronograf_os=options.chronografos
-if chronograf_os is not None: chronograf_os='--aws-os ' + chronograf_os
+if chronograf_os is not None: chronograf_os='--chronograf-os ' + chronograf_os
 else: chronograf_os=''
 no_chronograf=options.nochronograf
 if no_chronograf is not False: no_chronograf='--no-chronograf '
@@ -135,10 +135,10 @@ kapacitor_version=options.kapacitorversion
 if kapacitor_version is not None: kapacitor_version='--kapacitor-version ' + kapacitor_version
 else: kapacitor_version=''
 num_kapacitor=options.numkapacitors
-if num_kapacitor is not None: num_kapacitor='--num-instances ' + num_kapacitor
+if num_kapacitor is not None: num_kapacitor='--num-kapacitors ' + num_kapacitor
 else: num_kapacitor=''
 kapacitor_os=options.kapacitoros
-if kapacitor_os is not None: kapacitor_os='--aws-os ' + kapacitor_os
+if kapacitor_os is not None: kapacitor_os='--kapacitor-os ' + kapacitor_os
 else: kapacitor_os=''
 no_kapacitor=options.nokapacitor
 if no_kapacitor is not False: no_kapacitor='--no-kapacitor '
@@ -159,11 +159,11 @@ pytest_parameters.append('--html=report.html')
 
 File=None
 try:
-	File = open('qa_install_tick.out','w')
-except	IOError as e:
-	print 'IO ERROR ({0}): {1}'.format(e.errno,e.strerror)
-	print 'IO ERROR ({0}): '.format(e.message)
-        exit(1)
+    File = open('qa_install_tick.out','w')
+except IOError as e:
+    print 'IO ERROR ({0}): {1}'.format(e.errno,e.strerror)
+    print 'IO ERROR ({0}): '.format(e.message)
+    exit(1)
 
 #Installation of the TICK stack
 print 'INSTALLING TICK STACK'
@@ -171,37 +171,37 @@ print '---------------------'
 print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version, cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor)
 return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os, no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor),shell=True, stdout=File)
 if return_code!=0:
-	print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
-	exit(1)
+    print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
+    exit(1)
 
 # get all of the data nodes
 list_of_data_nodes=[]
 if cluster_name == '': cluster_name='litmus'
 for data_node in range(int(num_of_data_nodes)):
-	p=subprocess.Popen('pcl host data-%d -c "%s"' %(data_node,cluster_name) ,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	if p.wait() != 0:
-		print 'FAILED TO GET DATA NODE. EXITING'
-		print p.communicate()
-		exit (1)
-	list_of_data_nodes.append((p.communicate()[0]).strip('\n'))
+    p=subprocess.Popen('pcl host data-%d -c "%s"' %(data_node,cluster_name) ,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    if p.wait() != 0:
+        print 'FAILED TO GET DATA NODE. EXITING'
+        print p.communicate()
+        exit (1)
+    list_of_data_nodes.append((p.communicate()[0]).strip('\n'))
 print '-----------------------------------------------'
 print 'LIST OF DATA NODES : ' + str(list_of_data_nodes)
 list_of_meta_nodes=[]
 for meta_node in range(int(num_of_meta_nodes)):
-	p=subprocess.Popen('pcl host meta-%d -c "%s"' %(meta_node,cluster_name) ,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	if p.wait() != 0:
-		print 'FAILED TO GET META NODE. EXITING'
-		print p.communicate()
-		exit (1)
-	list_of_meta_nodes.append((p.communicate()[0]).strip('\n'))	
+    p=subprocess.Popen('pcl host meta-%d -c "%s"' %(meta_node,cluster_name) ,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    if p.wait() != 0:
+        print 'FAILED TO GET META NODE. EXITING'
+        print p.communicate()
+        exit (1)
+    list_of_meta_nodes.append((p.communicate()[0]).strip('\n'))
 print '-----------------------------------------------'
 print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
 
 p=subprocess.Popen('pcl host chronograf-0 -c %s' %cluster_name, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if p.wait() != 0:
-	print 'FAILED TO GET CHRONOGRAF NODE. EXITING'
-	p.communicate()
-	exit (1)
+    print 'FAILED TO GET CHRONOGRAF NODE. EXITING'
+    p.communicate()
+    exit (1)
 chronograf_name=(p.communicate()[0]).strip('\n')
 print '---------------------------------------'
 print 'CHRONOGRAF IP : ' + str(chronograf_name)
@@ -218,27 +218,27 @@ print 'KAPACITOR IP : ' + str(kapacitor_name)
 if options.clustername is not None:
 	pytest_parameters.append('--clustername=' + options.clustername)
 else:
-    	pytest_parameters.append('--clustername=litmus')
+    pytest_parameters.append('--clustername=litmus')
 if options.chronograf is not None:
-    	pytest_parameters.append('--chronograf=' + options.chronograf)
+    pytest_parameters.append('--chronograf=' + options.chronograf)
 else:
-    	pytest_parameters.append('--chronograf=' + chronograf_name)		    	
+    pytest_parameters.append('--chronograf=' + chronograf_name)
 if options.datanodes is not None:
-    	data_node_str=options.datanodes
+    data_node_str=options.datanodes
 else: 
-	# get data-node URL from pcl list -c <cluster>s
+    # get data-node URL from pcl list -c <cluster>s
 	data_node_str=','.join(list_of_data_nodes)
 pytest_parameters.append('--datanodes=' + data_node_str)
 if options.metanodes is not None:
-    	meta_node_str=options.metanodes
+    meta_node_str=options.metanodes
 else: 
-	# get meta-node URL from pcl list -c <cluster>
-	meta_node_str=','.join(list_of_meta_nodes)
+    # get meta-node URL from pcl list -c <cluster>
+    meta_node_str=','.join(list_of_meta_nodes)
 pytest_parameters.append('--metanodes=' + meta_node_str)
 if options.kapacitor is not None:
-    	pytest_parameters.append('--kapacitor=' + options.kapacitor)
+    pytest_parameters.append('--kapacitor=' + options.kapacitor)
 else:
-	pytest_parameters.append('--kapacitor=' + kapacitor_name)
+    pytest_parameters.append('--kapacitor=' + kapacitor_name)
 
 if options.tests is not None: pytest_parameters.extend(options.tests)
 else: print 'There are no tests to run. Exiting', exit(1)
