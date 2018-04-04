@@ -167,10 +167,9 @@ except	IOError as e:
 
 #Installation of the TICK stack
 print 'INSTALLING TICK STACK'
-print ''
+print '---------------------'
 print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version, cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor)
-#return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os, no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor),shell=True, stdout=File)
-return_code=0
+return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os, no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor),shell=True, stdout=File)
 if return_code!=0:
 	print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
 	exit(1)
@@ -185,9 +184,8 @@ for data_node in range(int(num_of_data_nodes)):
 		print p.communicate()
 		exit (1)
 	list_of_data_nodes.append((p.communicate()[0]).strip('\n'))
-print ''
+print '-----------------------------------------------'
 print 'LIST OF DATA NODES : ' + str(list_of_data_nodes)
-
 list_of_meta_nodes=[]
 for meta_node in range(int(num_of_meta_nodes)):
 	p=subprocess.Popen('pcl host meta-%d -c "%s"' %(meta_node,cluster_name) ,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -196,7 +194,7 @@ for meta_node in range(int(num_of_meta_nodes)):
 		print p.communicate()
 		exit (1)
 	list_of_meta_nodes.append((p.communicate()[0]).strip('\n'))	
-print ''
+print '-----------------------------------------------'
 print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
 
 p=subprocess.Popen('pcl host chronograf-0 -c %s' %cluster_name, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -205,7 +203,7 @@ if p.wait() != 0:
 	p.communicate()
 	exit (1)
 chronograf_name=(p.communicate()[0]).strip('\n')
-print ''
+print '---------------------------------------'
 print 'CHRONOGRAF IP : ' + str(chronograf_name)
 
 p=subprocess.Popen('pcl host kapacitor-0 -c %s' %cluster_name, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -214,8 +212,8 @@ if p.wait() != 0:
 	p.communicate()
 	exit (1)
 kapacitor_name=(p.communicate()[0]).strip('\n')
-print ''
-print 'KAPACITOR NAME : ' + str(kapacitor_name)
+print '-------------------------------------'
+print 'KAPACITOR IP : ' + str(kapacitor_name)
 
 if options.clustername is not None:
 	pytest_parameters.append('--clustername=' + options.clustername)

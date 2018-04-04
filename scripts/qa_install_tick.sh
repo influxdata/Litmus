@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 : ' Install and configure Enterprise TICK product.
     The script will:
   1. uninstall exisiting TICK system
@@ -50,6 +50,7 @@ CHRONOGRAF_OS=
 KAPACITOR_VERSION=
 # number of kapacitor instances
 KAPACITOR_INSTANCES=
+NUMBER_OF_KAPACITORS=
 # OS to install kapacitor on
 KAPACITOR_OS=
 
@@ -126,11 +127,43 @@ installChronograf() {
 # installKapacitor()
 #----------------------------------------
 # adds a kapacitor instance to the given cluster
+# changes the default configuration file to the one provided 
+# by the output of the 'kapacitord config' command
+# changes write-tracing value to true, pprof-enabled value to true [http] table
+# changes log level to DEBUG [logging] section. The influxdb section's key-values
+# would be changed using REST API (runtime)
 
 installKapacitor() {
 	echo
 	echo `date`"***************** installing kapacitor **********************"
 	catchFail "pcl add-kapacitor -c $CLUSTER_NAME $KAPACITOR_VERSION $KAPACITOR_INSTANCES $KAPACITOR_OS"
+	if [ "X"$NUMBER_OF_KAPACITORS == "X" ]; then
+		echo 
+		echo `date`"*********************** stopping kapacitor-0 ****************************"
+		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor stop'"
+		# check if kapacitor was stopped
+		out=`pcl ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
+		if [ "X$out" == "X" ]; then
+			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'kapacitord config > /tmp/test.conf;sudo cp /tmp/test.conf /etc/kapacitor/kapacitor.conf.generated;sudo cp /etc/kapacitor/kapacitor.conf /etc/kapacitor/kapacitor.conf.orig;sudo cp /etc/kapacitor/kapacitor.conf.generated /etc/kapacitor/kapacitor.conf'"
+		else
+			echo "COULD NOT STOP THE KAPACITOR.EXITING"
+			exit 1
+		fi	  
+		echo "****************** updating the config values ********************"		
+		echo " SETTING write-tracing = true, pprof-enabled = true, level = \"DEBUG\""
+		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/write-tracing = false/write-tracing = true/\" /etc/kapacitor/kapacitor.conf'"
+		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/pprof-enabled = false/pprof-enabled = true/\" /etc/kapacitor/kapacitor.conf'"
+		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/level = \\\"INFO\\\"/level = \\\"DEBUG\\\"/\" /etc/kapacitor/kapacitor.conf'"
+		echo "****************** starting kapacitor **************************"
+		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor start'"
+		start=`pcl ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
+		if [ "X$start" == "X" ];then
+			echo "KAPACITOR DID NOT START. EXITING"
+			exit 1
+		fi
+	else
+		echo "WILL BE IMPLEMENTED LATER"
+	fi
 }
 
 while [ $# -gt 0 ]
@@ -181,7 +214,8 @@ do
                        KAPACITOR_VERSION="--kapacitor-version $1";;
                	--num-kapacitors)
                        shift
-                       KAPACITOR_INSTANCES="--num-instances $1";;
+		       KAPACITOR_INSTANCES="--num-instances $1"
+		       NUM_OF_KAPACITORS="$1";;
                --kapacitor-os)
                        KAPACITOR_OS="--aws-os $";;
                --no-kapacitor)
