@@ -136,7 +136,7 @@ class KapacitorRestLib(BaseLib):
         '''
         response=self.rl.post(kapacitor_url, self.KAPACITOR_TASKS, json=json)
         assert response.status_code == 200, \
-            self.mylog.info('ERROR status code is ' + str(response.status_code))
+            self.mylog.info('ERROR message ' + str(response.text))
         return response.json()
 
     def modify_task(self):
@@ -147,17 +147,85 @@ class KapacitorRestLib(BaseLib):
         '''
         pass
 
-    def delete_task(self):
+    def delete_task(self, kapacitor_url, task_id):
         '''
         Delete a specific task
+        :param kapacitor url, e.g. http://IP:PORT
+        :param task_id name of the task
+        :return nothing
         '''
-        pass
+        delete_path=self.KAPACITOR_TASKS + '/' + task_id
+        self.mylog.info('kapacitor_rest_lib.delete_task - delete_path='
+                        + str(delete_path))
+        response=self.rl.delete(kapacitor_url, delete_path)
+        assert response.status_code == 204, \
+            self.mylog.info('Assertion Errr ' + str(response.text))
 
-    def get_tasks(self):
+    def get_tasks_data(self, kapacitor_url):
+        '''
+        :return:
+        '''
+        final_dictionary={}
+        dict_tasks=self._get_tasks(kapacitor_url)
+        #get the list of all of the tasks, each task in the list is a dictionary
+        tasks_list=dict_tasks['tasks']
+        for task in tasks_list:
+            # status = enabled/disabled
+            task_status=task.get('status')
+            assert task_status is not None, \
+                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                                'status is None')
+            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_status='
+                            + str(task_status))
+            # type either stream or batch
+            task_type=task.get('type')
+            assert task_type is not None, \
+                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                                'type is None')
+            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_type='
+                            + str(task_type))
+            # script that defines the task
+            task_script=task.get('script')
+            assert task_script is not None, \
+                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                                'script is None')
+            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_script='
+                            + str(task_script))
+            # name of the task
+            task_id=task.get('id')
+            assert task_id is not None, \
+                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                                'id is None')
+            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_id='
+                            + str(task_id))
+            # list of database/rp for the task
+            dbrps=task.get('dbrps')
+            task_db=dbrps[0].get('db')
+            assert task_db is not None, \
+                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                                'db is None')
+            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_db='
+                            + str(task_db))
+            task_rp=dbrps[0].get('rp')
+            assert task_rp is not None, \
+                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                                'rp is None')
+            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_rp='
+                            + str(task_rp))
+            final_dictionary[task_id]={'task_status':task_status, 'task_type':task_type,
+                                       'task_script':task_script, 'task_db':task_db,
+                                       'task_rp':task_rp}
+        self.mylog.info('kapacitor_rest_lib.get_tasks_data final_dict=' + str(final_dictionary))
+        return final_dictionary
+
+    def _get_tasks(self, kapacitor_url):
         '''
         Return information about all of the tasks
         '''
-        pass
+        response=self.rl.get(kapacitor_url, self.KAPACITOR_TASKS)
+        assert response.status_code == 200, \
+            self.mylog.info('ERROR message ' + str(response.text))
+        return response.json()
 
     def get_task(self):
         '''
