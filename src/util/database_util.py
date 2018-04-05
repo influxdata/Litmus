@@ -1,6 +1,92 @@
 
 import src.util.sources_util as su
+from influxdb.resultset import ResultSet
+from influxdb import exceptions as e
 
+######################## using influxDBClient ####################
+
+def create_database(test_class_instance, client, db_name):
+    '''
+    create database using InfluxDBClient
+    :param test_class_instance:
+    :param host:
+    :param port:
+    :param user:
+    :param password:
+    :return:
+    '''
+    try:
+        test_class_instance.mylog.info('database_util.create_database() '
+                                       '- Creating database %s ' + db_name)
+        #client=influxDbClient(host, port, user, password)
+        client.create_database(db_name)
+    except e.InfluxDBServerError:
+        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+    except e.InfluxDBClientError:
+        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+
+def run_query(test_class_instance, client, query, params=None, epoch=None,
+              expected_response_code=200, database=None):
+    """
+    :param test_class_instance: instance of the test class
+    :param client: instance of influxDBClient
+    :param query: query string
+    :param params(dict):additional parameters for the request, defaults to empty dict
+    :param epoch(str): response timestamps ,defaults to None which is RFC3339
+                UTC format with nanosecond precision
+    :param expected_response_code(int):the expected status code of response,
+                defaults to 200
+    :param database (str):database to query, defaults to None
+    :return: ResultSet of queried data
+    """
+    result=ResultSet
+    try:
+        test_class_instance.mylog.info('database_util.run_query() is called '
+                                       'with query=%s, params=%s, epoch=%s, '
+                                       'expected_response_code=%d, database=%s'
+                                       % (query, params, epoch, expected_response_code,
+                                          database))
+        result=client.query(query=query, params=params, epoch=epoch,
+                            expected_response_code=expected_response_code,
+                            database=database)
+    except e.InfluxDBServerError:
+        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+    except e.InfluxDBClientError:
+        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+    return result
+
+def write_points(test_class_instance, client, points, time_precision=None,
+                 database=None, retention_policy=None, tags=None):
+    """
+    Write to multiple time series names.
+    It is wrapper to InfluxDBClient.write_points method
+    http://influxdb-python.readthedocs.io/en/latest/api-documentation.html
+    :param test_class_instance:instance of the test class
+    :param client:instance of InfluxDBClient
+    :param points: the list of points to be written in the database
+                (list of dictionaries, each dictionary represents a point)
+    :param time_precision:(str) defaults to None
+    :param database:(str) The database to write point to.
+    :param retention_policy:retention policy for the points
+    :param tags:set of key-value pairs associated with each point
+    :return: True - success, False -failure
+    """
+    return_value=False
+    try:
+        test_class_instance.mylog.info('database_util.write_points() is called '
+                                    'with json=%s, time_precision=%s, database=%s, '
+                                    'retention_policy=%s, tags=%s'
+                                    % (points, time_precision, database,retention_policy,tags))
+        return_value=client.write_points(points=points, time_precision=time_precision,
+                                         database=database, retention_policy=retention_policy,
+                                         tags=tags)
+    except e.InfluxDBServerError:
+        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+    except e.InfluxDBClientError:
+        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+    return return_value
+
+############################################################
 def get_default_databases_links(test_class_instance, default_sources):
     '''
     :param test_class_instance: instance of test class
@@ -150,3 +236,4 @@ def get_rp_policy_link(test_class_instance, retention_policies, retention_policy
                                    + str(rp_link) + ' for policy name='
                                    + str(retention_policy_name))
     return rp_link
+
