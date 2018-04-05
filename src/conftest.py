@@ -63,6 +63,18 @@ def data_nodes(request):
     return request.cls.data_nodes
 
 @pytest.fixture(scope='class')
+def data_nodes_ips(request):
+    try:
+        request.cls.mylog.info('FIXTURE data_nodes_ips(): GETTING DATA NODES')
+        data_nodes=get_data_nodes(request)
+        request.cls.mylog.info('FIXTURE data_nodes_ips(): data_nodes=' + str(data_nodes))
+    except:
+        data_nodes=None
+    assert data_nodes is not None, request.cls.mylog.info('FIXTURE data_nodes_ips() returned None')
+    request.cls.data_nodes=data_nodes
+    return request.cls.data_nodes
+
+@pytest.fixture(scope='class')
 def meta_nodes(request):
     http='http://'
     port=':8091'

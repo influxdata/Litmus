@@ -218,14 +218,14 @@ def delete_created_rp(request, chronograf, data_nodes, default_sources):
     username=''
     password=''
     try:
+        client=influxDbClient(host=data_node,port=8086, username=username, password=password)
         for rp in telegraf_rp:
             if rp != 'autogen':
-                client=influxDbClient(host=data_node,port=8086, username=username, password=password)
                 client.drop_retention_policy(rp, 'telegraf')
         for rp in internal_rp:
             if rp != 'monitor':
-                client=influxDbClient(host=data_node,port=8086, username=username, password=password)
                 client.drop_retention_policy(rp, '_internal')
+        client.close()
     except e.InfluxDBClientError:
         request.cls.mylog.info('ClientError message=' + e.InfluxDBClientError.message)
     except e.InfluxDBServerError:
