@@ -1,7 +1,4 @@
 import pytest
-import src.util.login_util as lu
-
-mylog=lu.log(lu.get_log_path(), 'w', __name__)
 
 def pytest_addoption(parser):
     parser.addoption('--clustername', action='store')
@@ -71,8 +68,8 @@ def data_nodes_ips(request):
     except:
         data_nodes=None
     assert data_nodes is not None, request.cls.mylog.info('FIXTURE data_nodes_ips() returned None')
-    request.cls.data_nodes=data_nodes
-    return request.cls.data_nodes
+    request.cls.data_nodes_ips=data_nodes
+    return request.cls.data_nodes_ips
 
 @pytest.fixture(scope='class')
 def meta_nodes(request):
