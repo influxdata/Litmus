@@ -49,6 +49,7 @@ def delete_created_db(request, data_nodes_ips):
             client.close()
     request.cls.mylog.info('FIXTURE delete_created_db IS DONE')
 
+@pytest.fixture(scope='class')
 def delete_kapacitors_tasks(request, kapacitor):
     """
     :param request:

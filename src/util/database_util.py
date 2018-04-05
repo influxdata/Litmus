@@ -17,7 +17,7 @@ def create_database(test_class_instance, client, db_name):
     '''
     try:
         test_class_instance.mylog.info('database_util.create_database() '
-                                       '- Creating database %s ' + db_name)
+                                       '- Creating database ' + db_name)
         #client=influxDbClient(host, port, user, password)
         client.create_database(db_name)
     except e.InfluxDBServerError:
