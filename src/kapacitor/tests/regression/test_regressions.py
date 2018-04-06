@@ -24,6 +24,7 @@ class TestKapacitorRegressions(object):
     rl=rest_lib.RestLib(mylog)
     krl=kapacitor_rest_lib.KapacitorRestLib(mylog)
 
+    # need to move this method into library
     def show_subscripitons(self, client, db_name):
         subscriptions=None
         time_end = time.time() + 10
@@ -99,26 +100,6 @@ class TestKapacitorRegressions(object):
         self.mylog.info('test_del_db_sending_data_to_kapacitor : STEP 4'
                         'Verifying Kapacitor created a subscription to a DB')
         subscriptions=self.show_subscripitons(client, db_name)
-        '''
-        subscriptions=None
-        time_end = time.time() + 10
-        while time.time() < time_end:
-            result=du.run_query(self, client, query='SHOW SUBSCRIPTIONS')
-            self.mylog.info('test_del_db_sending_data_to_kapacitor :'
-                            'Subscripitons=' + str(result.raw['series']) )
-            for subscription in result.raw['series']:
-                if db_name in subscription['name']:
-                    subscriptions=True
-                    self.mylog.info('test_del_db_sending_data_to_kapacitor :'
-                        ' FOUND SUBSCRIPITON')
-                    break
-            else:
-                self.mylog.info('test_del_db_sending_data_to_kapacitor :'
-                        ' SLEEPING FOR 1 SEC')
-                time.sleep(1)
-                continue
-            break
-        '''
         assert subscriptions, \
             self.mylog.info('test_del_db_sending_data_to_kapacitor '
                             'Did not find any subscriptions')
