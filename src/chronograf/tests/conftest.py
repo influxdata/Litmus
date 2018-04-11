@@ -111,13 +111,13 @@ def default_sources(request, clustername, all_sources):
     return request.cls.default_sources
 
 @pytest.fixture(scope='class')
-def all_sources(request, chronograf, httpauth, admin_user, admin_pass,
+def all_sources(request, chronograf, http_auth, admin_user, admin_pass,
                 meta_nodes):
     '''
     Return the dictionary of all of the data sources
     :param request: request object to introspect the requesting test class
     :param chronograf: chronograf URL
-    :param httpauth: whether authentication available of not
+    :param http_auth: whether authentication available of not
     :param admin_user : name of the admin user
     :param admin_pass : password of the admin user
     :param meta_nodes: list of meta nodes
@@ -128,7 +128,7 @@ def all_sources(request, chronograf, httpauth, admin_user, admin_pass,
     request.cls.mylog.info('all_sources() : GET ALL OF THE SOURCES')
     source_path=get_source_path(request, chronograf)
     sources=rl.get_sources(chronograf, source_path)
-    if httpauth: # authentication is enabled
+    if http_auth: # authentication is enabled
         new_sources={}
         for source_id in sources.keys():
             # need to update data sources with admin user and password
@@ -219,7 +219,7 @@ def delete_created_databases(request, chronograf, all_sources):
 
 @pytest.fixture(scope='class')
 def delete_created_rp(request, chronograf, data_nodes_ips, default_sources,
-                      httpauth, admin_user, admin_pass):
+                      http_auth, admin_user, admin_pass):
     '''
     Removes all of the created by the tests retention policies using InfluxDBClient library
     for the exception of default policies for default databases
@@ -242,7 +242,7 @@ def delete_created_rp(request, chronograf, data_nodes_ips, default_sources,
     internal_rp=rl.get_database(chronograf, dbs_url, '_internal')['RETENTION_POLICIES'].keys()
     request.cls.mylog.info('delete_created_rp() retention policies for _internal db=' + str(internal_rp))
     # define parameter - list of retention policies to be removed
-    if httpauth:
+    if http_auth:
         username=admin_user
         password=admin_pass
     else:
