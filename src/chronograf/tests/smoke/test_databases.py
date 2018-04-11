@@ -6,9 +6,10 @@ from src.chronograf.lib import rest_lib
 from random import choice
 
 
-@pytest.mark.usefixtures( 'delete_created_databases', 'delete_created_rp',
-                          'delete_created_sources','default_sources',
-                          'chronograf', 'data_nodes', 'get_source_path')
+@pytest.mark.usefixtures('chronograf', 'data_nodes', 'get_source_path',
+                         'delete_created_databases', 'delete_created_rp',
+                         'delete_created_sources', 'default_sources',
+                         'http_auth', 'admin_user', 'admin_pass')
 class TestDefaultDatabases(object):
     '''
     delete_created_databases - deletes all of the databases created by tests
@@ -51,6 +52,7 @@ class TestDefaultDatabases(object):
             policy shard group duration, if retention policy is default one and
             default policy replication
         '''
+        # Default sources cannot be used to get databases
         internal_expected={
             'rp_duration':'168h0m0s',
             'rp_replication':1,

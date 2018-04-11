@@ -7,13 +7,12 @@ from src.chronograf.lib import rest_lib
 from random import choice
 
 # before running test suite make sure there are no sources.
-@pytest.mark.usefixtures('chronograf', 'kapacitor',  'data_nodes', 'meta_nodes',
+@pytest.mark.usefixtures('chronograf', 'data_nodes', 'meta_nodes',
                                         'delete_created_sources', 'get_source_path',
                                         'http_auth', 'admin_user', 'admin_pass')
 class TestSources():
     '''
     chronograf fixture - to get the chronograf URL
-    kapacitor fixture  - to get kapacitor URL
     data_nodes - to get the list of data nodes URLs
     meta_nodes - to get the list of meta nodes URLs
     delete_created_source - to delete sources that were created by test(s) suites
