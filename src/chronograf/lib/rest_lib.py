@@ -200,11 +200,6 @@ class RestLib(BaseLib):
         if username is None:
             username=''
         self.log.info('RestLib.%s() USERNAME=' % function + str(username))
-        # Password
-        password=source.get('password')
-        if password is None:
-            password=''
-        self.log.info('RestLib.%s() PASSWORD=' % function + str(password))
         # JWT signing secret for optional Authorization: Bearer to InfluxDB
         shared_secret=source.get('sharedSecret')
         if shared_secret is None:
@@ -308,6 +303,11 @@ class RestLib(BaseLib):
         # http://<Chronograf IP>:8888/chronograf/v1/sources
         self.log.info('rest_lib.RestLib:get_sources() : STEP 1 - GET ' + str(base_url) + str(source_url) + ' URL')
         response=self.get(base_url, source_url)
+        # {u'sources': [{u'username': u'nothing', u'telegraf': u'telegraf', u'name': u'gershon-litmus-data-0', u'links':
+        #       {u'users': u'/chronograf/v1/sources/2/users', u'roles': u'/chronograf/v1/sources/2/roles', u'self': u'/chronograf/v1/sources/2', u'databases': u'/chronograf/v1/sources/2/dbs',
+        #        u'write': u'/chronograf/v1/sources/2/write', u'proxy': u'/chronograf/v1/sources/2/proxy', u'kapacitors': u'/chronograf/v1/sources/2/kapacitors', u'queries': u'/chronograf/v1/sources/2/queries',
+        #        u'annotations': u'/chronograf/v1/sources/2/annotations', u'permissions': u'/chronograf/v1/sources/2/permissions'},
+        #   u'url': u'http://35.162.78.219:8086', u'metaUrl': u'http://54.213.37.49:8091', u'default': False, u'organization': u'default', u'type': u'influx-enterprise', u'id': u'2'},{another source}]
         # get the list of all existing sources
         result=response.json()['sources']
         if len(result) == 0:

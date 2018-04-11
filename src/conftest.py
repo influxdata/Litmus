@@ -147,4 +147,4 @@ def http_auth(request):
         httpauth=None
     assert http_auth is not None, request.cls.mylog.info('FIXTURE http_auth() returned None')
     request.cls.http_auth=httpauth
-    return request.cls.http-auth
+    return request.cls.http_auth

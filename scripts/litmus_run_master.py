@@ -55,7 +55,7 @@ parser.add_option('--cluster-env', action='store', dest='clusterenv', help='ENVI
 parser.add_option('--pkg-data', action='store', dest='localpkgdata', help='LOCAL DATA PACKAGE TO INSTALL')
 parser.add_option('--index-version', action='store', dest='indexversion', help='tsi1 OR inmem INDEX')
 parser.add_option('--pkg-meta', action='store', dest='localpkgmeta', help='LOCAL META PACKAGE TO INSTALL')
-parser.add_option('http-auth', action='store_true', dest='httpauth', help='ENABLE AUTHENTICATION')
+parser.add_option('--http-auth', action='store_true', dest='httpauth', help='ENABLE AUTHENTICATION')
 parser.add_option('--admin-user', action='store', dest='adminuser', help='NAME OF THE ADMIN USER')
 parser.add_option('--admin-pass', action='store', dest='adminpass', help='PASSWORD OF THE ADMIN USER')
 parser.add_option('--influxdb-version', action='store', dest='dbversion',help='INFLUXDB VERSION TO INSTALL')
@@ -110,10 +110,10 @@ if options.indexversion is not None: index_version='--index-version ' + options.
 else: index_version=''
 if options.httpauth is not False:
     http_auth='--http-auth'
-    pytest_parameters.append('--httpauth=1')
+    pytest_parameters.append('--httpauth=' + 'AUTH')
 else:
     http_auth=''
-    pytest_parameters.append('--httpauth=0')
+    pytest_parameters.append('--httpauth=' + '')
 if options.adminuser is not None:
     admin_user='--admin-user ' + options.adminuser
     pytest_parameters.append('--adminuser=' + admin_user)

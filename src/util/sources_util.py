@@ -73,17 +73,6 @@ def get_source_username(test_class_instance, source_id, sources_dictionary):
                                    'Getting TYPE of the source for ID ' + str(source_id))
     return get_key(test_class_instance, source_id, sources_dictionary, 'USERNAME')
 
-def get_source_password(test_class_instance, source_id, sources_dictionary):
-    '''
-    :param test_class_instance:
-    :param source_id:
-    :param sources_dictionary:
-    :return:
-    '''
-    test_class_instance.mylog.info('sources_util.get_source_password() - '
-                                   'Getting PASSWORD of the source for ID ' + str(source_id))
-    return get_key(test_class_instance, source_id, sources_dictionary, 'PASSWORD')
-
 def get_source_sharedsecret(test_class_instance, source_id, sources_dictionary):
     '''
     :param test_class_instance:

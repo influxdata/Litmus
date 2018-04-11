@@ -1,11 +1,12 @@
 
 import pytest
 import re
+import src.util.database_util as du
 from influxdb import InfluxDBClient as influxDbClient
 from influxdb import exceptions as e
 from random import choice
 from src.chronograf.lib import rest_lib
-import src.util.database_util as du
+
 
 @pytest.fixture(scope='class')
 def get_all_paths(request, chronograf):
@@ -88,13 +89,14 @@ def create_source(request, chronograf, data_nodes, meta_nodes):
     return request.cls.create_source
 
 @pytest.fixture(scope='class')
-def default_sources(request, chronograf, clustername):
+def default_sources(request, chronograf, clustername,httpauth):
     '''
     Return the dictionary of all of the default sources. Default source is
     base on the number of the data nodes
     :param request:
     :param chronograf:
     :param clustername:
+    :param httpauth whether basic authentication is supported or not
     :return:
     '''
     default_sources={}

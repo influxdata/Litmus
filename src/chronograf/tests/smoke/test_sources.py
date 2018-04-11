@@ -7,11 +7,20 @@ from src.chronograf.lib import rest_lib
 from random import choice
 
 # before running test suite make sure there are no sources.
-@pytest.mark.usefixtures('delete_created_sources', 'chronograf',
-                         'data_nodes', 'meta_nodes', 'kapacitor', 'get_source_path')
+@pytest.mark.usefixtures('chronograf', 'kapacitor',  'data_nodes', 'meta_nodes',
+                                        'delete_created_sources', 'get_source_path',
+                                        'http_auth', 'admin_user', 'admin_pass')
 class TestSources():
     '''
-    TODO
+    chronograf fixture - to get the chronograf URL
+    kapacitor fixture  - to get kapacitor URL
+    data_nodes - to get the list of data nodes URLs
+    meta_nodes - to get the list of meta nodes URLs
+    delete_created_source - to delete sources that were created by test(s) suites
+    get_source_path - to get chronograf's source path, e.g./chronograf/v1/sources
+    http_auth - where basic password authentication is available or not
+    admin_user - admin user username
+    admin_pass - admin user password
     '''
 
     mylog=lu.log(lu.get_log_path(), 'w', __name__)
@@ -22,7 +31,7 @@ class TestSources():
     UPDATED_NAME='Updated Name Of The Source'
     DELETE_NAME='Delete source name'
 
-    ####################################################################################################################
+    ##########################################################
     def verify_source(self, expected, source_id, source):
         '''
         :param expected_data: dictionary of expected values
@@ -86,10 +95,6 @@ class TestSources():
         self.mylog.info('ASSERT ACTUAL query=' + str(query) + ' EQUALS '\
                         'EXPECTED query=' + str(expected['QUERY']))
         su.verify_data(self, expected['QUERY'], query)
-        password = su.get_source_password(self, source_id, source)
-        self.mylog.info('ASSERT ACTUAL password=' + str(password) + ' EQUALS '\
-                        'EXPECTED password=' +expected['PASSWORD'])
-        su.verify_data(self, expected['PASSWORD'], password)
         type = su.get_source_type(self, source_id, source)
         self.mylog.info('ASSERT ACTUAL type=' + str(type) + ' EQUALS '\
                         'EXPECTED type=' + str(expected['TYPE']))
@@ -99,7 +104,7 @@ class TestSources():
                         'users=' + str(expected['USERS']))
         su.verify_data(self, expected['USERS'], users)
 
-    ####################################################################################################################
+    ##########################################################
 
     def header(self, test_name):
         self.mylog.info('#######################################################')
@@ -112,12 +117,17 @@ class TestSources():
         self.mylog.info('#######################################################')
         self.mylog.info('')
 
+    ##########################################################
+
     def test_get_default_sources_count(self):
         '''
+        1. Get all of the default data sources
+        2. Verify the number of data sources equals the number of data nodes.
         '''
         self.header('test_get_default_sources_count')
         self.mylog.info('test_get_default_sources_count - STEP 1: Get all default sources')
         sources=self.rl.get_sources(self.chronograf, self.get_source_path)
+        # by default pcl will create data sources one per data node
         assert len(sources) == len(self.data_nodes), \
             self.mylog.info('test_get_default_sources_count() ASSERTION '
                             'FAILURE expected ' + str(len(sources)) + ', actual ' +
@@ -134,21 +144,28 @@ class TestSources():
         # choose a data node from a list of existing data nodes. For now use the first one
         source_url=self.get_source_path
         DATA_URL=choice(self.data_nodes)
-        JSON_URL_ONLY = {'url': DATA_URL}
+        if self.http_auth:
+            JSON_URL_ONLY = {'url': DATA_URL,'username':self.admin_user, 'password':self.admin_pass}
+            USERNAME=self.admin_user
+        else:
+            JSON_URL_ONLY = {'url': DATA_URL}
+            USERNAME=''
+
         self.header('test_create_source_url_only')
         self.mylog.info('test_create_source_url_only - STEP 1: CALL RestLib.create_source()')
         (status,message,source_id)=self.rl.create_source(self.chronograf, source_url, JSON_URL_ONLY)
         assert source_id is not None, self.mylog.info('test_create_source_url_only : ASSERTION FAILED, source_id is None')
         self.mylog.info('test_create_source_url_only - STEP 1: DONE SOURCE_ID=' + str(source_id))
         # Expected dictionary
-        expected = {'USERNAME':'', 'INSECURE_SKIP_VERIFY':False, 'DATA_URL':DATA_URL, 'NAME': '',
-                    'ROLES':'/chronograf/v1/sources/%s/roles' % source_id, 'DEFAULT':0, 'TELEGRAF_DB':'telegraf',
+        expected = {'NAME':'', 'INSECURE_SKIP_VERIFY':False, 'DATA_URL':DATA_URL,
+                    'USERNAME': USERNAME,
+                    'ROLES':'', 'DEFAULT':0, 'TELEGRAF_DB':'telegraf',
                     'SHARED_SECRET':'', 'META_URL':'',
                     'KAPACITOR':'/chronograf/v1/sources/%s/kapacitors' % source_id,
                     'WRITE':'/chronograf/v1/sources/%s/write' % source_id,
                     'PROXY':'/chronograf/v1/sources/%s/proxy' % source_id,
                     'PERMISSIONS':'/chronograf/v1/sources/%s/permissions' % source_id,
-                    'QUERY':'/chronograf/v1/sources/%s/queries' % source_id, 'PASSWORD':'',
+                    'QUERY':'/chronograf/v1/sources/%s/queries' % source_id,
                     'TYPE':'influx-enterprise', 'USERS':'/chronograf/v1/sources/%s/users' % source_id}
 
         self.mylog.info('test_create_source_url_only - STEP 2: CALL RestLib.get_source()')
@@ -191,8 +208,14 @@ class TestSources():
         source_url = self.get_source_path
         DATA_URL=choice(self.data_nodes)
         META_URL=choice(self.meta_nodes)
-        JSON_USER_OPTIONS={'url':DATA_URL, 'metaUrl':META_URL, 'name':self.CUSTOM_NAME, 'telegraf':'telegraf',
+        if self.http_auth:
+            JSON_USER_OPTIONS={'url':DATA_URL, 'metaUrl':META_URL, 'name':self.CUSTOM_NAME, 'telegraf':'telegraf',
+                           'default':True, 'username':self.admin_user, 'password':self.admin_pass}
+            USERNAME=self.admin_user
+        else:
+            JSON_USER_OPTIONS={'url':DATA_URL, 'metaUrl':META_URL, 'name':self.CUSTOM_NAME, 'telegraf':'telegraf',
                            'default':True}
+            USERNAME=''
 
         self.header('test_create_source_user_options')
         self.mylog.info('test_create_user_options - STEP 1: CALL RestLib.create_source()')
@@ -201,14 +224,14 @@ class TestSources():
             'test_create_source_user_options : ASSERTION FAILED, source_id is None')
         self.mylog.info('test_create_user_options - STEP 1: DONE SOURCE_ID=' + str(source_id))
         # Expected dictionary
-        expected = {'USERNAME':'', 'INSECURE_SKIP_VERIFY':False, 'DATA_URL':DATA_URL, 'NAME':self.CUSTOM_NAME,
+        expected = {'USERNAME':USERNAME, 'INSECURE_SKIP_VERIFY':False, 'DATA_URL':DATA_URL, 'NAME':self.CUSTOM_NAME,
                     'ROLES':'/chronograf/v1/sources/%s/roles' % source_id, 'DEFAULT':True, 'TELEGRAF_DB':'telegraf',
                     'SHARED_SECRET':'', 'META_URL':META_URL,
                     'KAPACITOR':'/chronograf/v1/sources/%s/kapacitors' % source_id,
                     'WRITE':'/chronograf/v1/sources/%s/write' % source_id,
                     'PROXY':'/chronograf/v1/sources/%s/proxy' % source_id,
                     'PERMISSIONS':'/chronograf/v1/sources/%s/permissions' % source_id,
-                    'QUERY': '/chronograf/v1/sources/%s/queries' % source_id, 'PASSWORD':'',
+                    'QUERY': '/chronograf/v1/sources/%s/queries' % source_id,
                     'TYPE':'influx-enterprise', 'USERS':'/chronograf/v1/sources/%s/users' % source_id}
 
         self.mylog.info('test_create_source_user_options - STEP 2: CALL RestLib.get_source()')
@@ -227,12 +250,20 @@ class TestSources():
 
         '''
         source_url = self.get_source_path
-        DATA_URL=self.data_nodes[0]
-        META_URL=self.meta_nodes[0]
-        JSON_UPDATE_NAME = {'url': DATA_URL, 'metaUrl': META_URL, 'name': self.UPDATE_NAME, 'telegraf': 'telegraf',
+        DATA_URL=choice(self.data_nodes)
+        META_URL=choice(self.meta_nodes)
+        if self.http_auth:
+            JSON_UPDATE_NAME = {'url': DATA_URL, 'metaUrl': META_URL, 'name': self.UPDATE_NAME, 'telegraf': 'telegraf',
+                            'default': True, 'username':self.admin_user, 'password':self.admin_pass}
+            JSON_UPDATED_NAME = {'url': DATA_URL, 'metaUrl': META_URL, 'name': self.UPDATED_NAME, 'telegraf': 'telegraf',
+                             'default': True, 'username':self.admin_user, 'password':self.admin_pass}
+            USERNAME=self.admin_user
+        else:
+            JSON_UPDATE_NAME = {'url': DATA_URL, 'metaUrl': META_URL, 'name': self.UPDATE_NAME, 'telegraf': 'telegraf',
                             'default': True}
-        JSON_UPDATED_NAME = {'url': DATA_URL, 'metaUrl': META_URL, 'name': self.UPDATED_NAME, 'telegraf': 'telegraf',
+            JSON_UPDATED_NAME = {'url': DATA_URL, 'metaUrl': META_URL, 'name': self.UPDATED_NAME, 'telegraf': 'telegraf',
                              'default': True}
+            USERNAME=''
 
         self.header('test_update_source_name_field')
         self.mylog.info('test_update_source_name_field - STEP 1: CALL RestLib.create_source()')
@@ -241,23 +272,24 @@ class TestSources():
             'test_update_source_name_field : ASSERTION FAILED, source_id is None')
         self.mylog.info('test_update_source_name_field - STEP 1: DONE SOURCE_ID=' + str(source_id))
         # Expected dictionary
-        expected={'USERNAME':'', 'INSECURE_SKIP_VERIFY':False, 'DATA_URL':DATA_URL, 'NAME':self.UPDATE_NAME,
+        expected={'USERNAME':USERNAME, 'INSECURE_SKIP_VERIFY':False, 'DATA_URL':DATA_URL, 'NAME':self.UPDATE_NAME,
                     'ROLES':'/chronograf/v1/sources/%s/roles' % source_id, 'DEFAULT':1, 'TELEGRAF_DB':'telegraf',
                     'SHARED_SECRET':'', 'META_URL':META_URL,
                     'KAPACITOR':'/chronograf/v1/sources/%s/kapacitors' % source_id,
                     'WRITE':'/chronograf/v1/sources/%s/write' % source_id,
                     'PROXY':'/chronograf/v1/sources/%s/proxy' % source_id,
                     'PERMISSIONS':'/chronograf/v1/sources/%s/permissions' % source_id,
-                    'QUERY':'/chronograf/v1/sources/%s/queries' % source_id, 'PASSWORD':'',
+                    'QUERY':'/chronograf/v1/sources/%s/queries' % source_id,
                     'TYPE':'influx-enterprise','USERS':'/chronograf/v1/sources/%s/users' % source_id}
-        expected_updated={'USERNAME':'', 'INSECURE_SKIP_VERIFY':False, 'DATA_URL':DATA_URL, 'NAME':self.UPDATED_NAME,
-                    'ROLES':'/chronograf/v1/sources/%s/roles' % source_id, 'DEFAULT': 1, 'TELEGRAF_DB': 'telegraf',
-                    'SHARED_SECRET': '', 'META_URL': META_URL,
+        expected_updated={'USERNAME':USERNAME, 'INSECURE_SKIP_VERIFY':False,
+                    'DATA_URL':DATA_URL, 'NAME':self.UPDATED_NAME,
+                    'ROLES':'/chronograf/v1/sources/%s/roles' % source_id, 'DEFAULT': 1,
+                    'TELEGRAF_DB': 'telegraf', 'SHARED_SECRET': '', 'META_URL': META_URL,
                     'KAPACITOR':'/chronograf/v1/sources/%s/kapacitors' % source_id,
                     'WRITE':'/chronograf/v1/sources/%s/write' % source_id,
                     'PROXY':'/chronograf/v1/sources/%s/proxy' % source_id,
                     'PERMISSIONS':'/chronograf/v1/sources/%s/permissions' % source_id,
-                    'QUERY':'/chronograf/v1/sources/%s/queries' % source_id, 'PASSWORD':'',
+                    'QUERY':'/chronograf/v1/sources/%s/queries' % source_id,
                     'TYPE':'influx-enterprise', 'USERS':'/chronograf/v1/sources/%s/users' % source_id}
         self.mylog.info('test_update_source_name_field - STEP 2: CALL RestLib.get_source()')
         source=self.rl.get_source(self.chronograf, source_url, source_id)
@@ -283,9 +315,12 @@ class TestSources():
         source_url = self.get_source_path
         DATA_URL=choice(self.data_nodes)
         META_URL=choice(self.meta_nodes)
-        JSON_USER_OPTIONS={'url':DATA_URL, 'metaUrl':META_URL, 'name':self.DELETE_NAME, 'telegraf':'telegraf',
+        if self.http_auth:
+            JSON_USER_OPTIONS={'url':DATA_URL, 'metaUrl':META_URL, 'name':self.DELETE_NAME, 'telegraf':'telegraf',
+                           'default':True, 'username':self.admin_user, 'password':self.admin_pass}
+        else:
+            JSON_USER_OPTIONS={'url':DATA_URL, 'metaUrl':META_URL, 'name':self.DELETE_NAME, 'telegraf':'telegraf',
                            'default':True}
-
         self.header('test_delete_source')
         self.mylog.info('test_delete_source - STEP 1: CALL RestLib.create_source()')
         (status, message, source_id) = self.rl.create_source(self.chronograf, source_url, JSON_USER_OPTIONS)
@@ -294,137 +329,6 @@ class TestSources():
         self.mylog.info('test_create_user_options - STEP 1: DONE SOURCE_ID=' + str(source_id))
         self.mylog.info('test_delete_source - STEP 2 : DELETING SOURCE FOR source_id=' + str(source_id))
         self.rl.delete_source(self.chronograf, source_url, source_id)
-
-    def test_create_kapacitor(self):
-        '''
-        1. Create source and verify source_id is not None
-        2. Get Kapacitor URL - /chronograf/v1/sources/<source_id>/kapacitors
-        3. Create Kapacitor and verify kapacitor_id is not None
-        4. Get kapacitor data for the above created kapacitor instance
-        5. Assert Kapacitor is ping-able
-        '''
-        self.header('test_ create_kapacitor')
-        source_url=self.get_source_path
-        DATA_URL=self.data_nodes[0]
-        META_URL=self.meta_nodes[0]
-        SOURCE_NAME='CREATE KAPACITOR'
-        KAPACITOR_NAME='KAPACITOR 1'
-        JSON_SOURCE={'url':DATA_URL, 'metaUrl':META_URL, 'name':SOURCE_NAME, 'telegraf': 'telegraf', 'default': True}
-        JSON_KAPACITOR={'url':self.kapacitor, 'name':KAPACITOR_NAME}
-
-        self.mylog.info('test_create_kapacitor - STEP 1: CREATE SOURCE (RestLib.create_source())')
-        (status, message, source_id)=self.rl.create_source(self.chronograf, source_url, JSON_SOURCE)
-        assert source_id is not None, self.mylog.info('test_create_kapacitor : ASSERTION FAILED, source_id is None')
-        self.mylog.info('test_create_kapacitor - STEP 2: GET KAPACITOR URL')
-        source=self.rl.get_source(self.chronograf, source_url, source_id)
-        kapacitor_url=su.get_source_kapacitors_link(self, source_id, source)
-        self.mylog.info('test_create_kapacitor - STEP 3: CREATE KAPACITOR (RestLib.create_kapacitor)')
-        (status, message, kapacitor_id)=self.rl.create_kapacitor(self.chronograf, kapacitor_url, JSON_KAPACITOR)
-        assert kapacitor_id is not None, self.mylog.info('test_create_kapacitor : ASSERTION FAILED, kapacitor_id is None')
-        self.mylog.info('test_create_kapacitor - STEP 4: GET KAPACITOR DATA(RestLib.get_kapacitor)')
-        kapacitor_dictionary=self.rl.get_kapacitor(self.chronograf, kapacitor_url, kapacitor_id)
-        self.mylog.info('test_create_kapacitor - STEP 4: GET KAPACITOR PING LINK(util.kpacitor_util.get_kapacitor_ping)')
-        ping_link=ku.get_kapacitor_ping(self, kapacitor_id, kapacitor_dictionary)
-        self.mylog.info('test_create_kapacitor ping url =' + str(ping_link))
-        self.mylog.info('test_create_kapacitor - STEP 5: PING KAPACITOR URL USING=' + str(ping_link))
-        response=self.rl.get(self.chronograf, ping_link)
-        assert response.status_code == 204, self.mylog.info('test_create_kapacitor ASSERTION ERROR status_code=' +
-                                                            str(response.status_code))
-        self.footer('test_ create_kapacitor')
-
-    def test_update_kapacitor_name(self):
-        '''
-        1. Create source and verify source_id is not None
-        2. Get Kapacitor URL - /chronograf/v1/sources/<source_id>/kapacitors
-        3. Create Kapacitor and verify kapacitor_id is not None
-        4. Get kapacitor data for the above created kapacitor instance
-        5. Assert Kapacitor is ping-able
-        6. Update Kapacitor's name
-        7. Get updated Kapacitor's name and assert it has been changed
-        '''
-        self.header('test_update_kapacitor_name')
-        source_url=self.get_source_path
-        DATA_URL=self.data_nodes[0]
-        META_URL=self.meta_nodes[0]
-        SOURCE_NAME='CREATE KAPACITOR 2'
-        KAPACITOR_NAME='KAPACITOR 2'
-        KAPACITOR_UPDATED_NAME='KAPACITOR NEW NAME'
-        JSON_SOURCE={'url':DATA_URL, 'metaUrl':META_URL, 'name':SOURCE_NAME, 'telegraf':'telegraf', 'default':True}
-        JSON_KAPACITOR={'url': self.kapacitor, 'name':KAPACITOR_NAME}
-        JSON_UPDATE_KAPACITOR={'url':self.kapacitor, 'name':KAPACITOR_UPDATED_NAME}
-
-        self.mylog.info('test_update_kapacitor_name - STEP 1: CREATE SOURCE (RestLib.create_source())')
-        (status, message, source_id)=self.rl.create_source(self.chronograf, source_url, JSON_SOURCE)
-        assert source_id is not None, self.mylog.info('test_create_kapacitor_name : ASSERTION FAILED, source_id is None')
-        self.mylog.info('test_update_kapacitor_name - STEP 2: GET KAPACITOR URL')
-        source=self.rl.get_source(self.chronograf, source_url, source_id)
-        kapacitor_url=su.get_source_kapacitors_link(self, source_id, source)
-        self.mylog.info('test_update_kapacitor_name - STEP 3: CREATE KAPACITOR (RestLib.create_kapacitor)')
-        (status, message, kapacitor_id)=self.rl.create_kapacitor(self.chronograf, kapacitor_url, JSON_KAPACITOR)
-        assert kapacitor_id is not None, self.mylog.info(
-            'test_update_kapacitor : ASSERTION FAILED, kapacitor_id is None')
-        self.mylog.info('test_update_kapacitor_name - STEP 4: GET KAPACITOR DATA(RestLib.get_kapacitor)')
-        kapacitor_dictionary=self.rl.get_kapacitor(self.chronograf, kapacitor_url, kapacitor_id)
-        self.mylog.info(
-            'test_update_kapacitor_name - STEP 4: GET KAPACITOR PING LINK(util.kpacitor_util.get_kapacitor_ping)')
-        ping_link = ku.get_kapacitor_ping(self, kapacitor_id, kapacitor_dictionary)
-        self.mylog.info('test_update_kapacitor_name ping url =' + str(ping_link))
-        self.mylog.info('test_update_kapacitor_name - STEP 5: PING KAPACITOR URL USING=' + str(ping_link))
-        response=self.rl.get(self.chronograf, ping_link)
-        assert response.status_code == 204, self.mylog.info('test_update_kapacitor_name ASSERTION ERROR status_code=' +
-                                                            str(response.status_code))
-        self.mylog.info('test_update_kapacitor_name - STEP 6: UPDATE KAPACITOR NAME RestLib.patch_kapacitor)')
-        self.rl.patch_kapacitor(self.chronograf, kapacitor_url, kapacitor_id, JSON_UPDATE_KAPACITOR)
-        kapacitor_dictionary=self.rl.get_kapacitor(self.chronograf, kapacitor_url, kapacitor_id)
-        self.mylog.info('test_update_kapacitor_name - STEP 7: GET UPDATED KAPACITOR NAME')
-        new_name=ku.get_kapacitor_name(self, kapacitor_id, kapacitor_dictionary)
-        assert new_name == KAPACITOR_UPDATED_NAME, self.mylog.info('test_update_kapacitor_name updated name='
-                                                                   + str(new_name) + ', but expected ' + KAPACITOR_UPDATED_NAME)
-        self.footer('test_update_kapacitor_name')
-
-    def test_delete_kapacitor(self):
-        '''
-        1. Create source and verify source_id is not None
-        2. Get Kapacitor URL - /chronograf/v1/sources/<source_id>/kapacitors
-        3. Create Kapacitor and verify kapacitor_id is not None
-        4. Get kapacitor data for the above created kapacitor instance
-        5. Assert Kapacitor is ping-able
-        6. Delete created kapacitor
-        '''
-        self.header('test_delete_kapacitor')
-        source_url = self.get_source_path
-        DATA_URL = self.data_nodes[0]
-        META_URL = self.meta_nodes[0]
-        SOURCE_NAME = 'CREATE KAPACITOR 3'
-        KAPACITOR_NAME = 'KAPACITOR 3'
-        JSON_SOURCE = {'url': DATA_URL, 'metaUrl': META_URL, 'name': SOURCE_NAME, 'telegraf': 'telegraf',
-                       'default': True}
-        JSON_KAPACITOR = {'url': self.kapacitor, 'name': KAPACITOR_NAME}
-
-        self.mylog.info('test_delete_kapacitor - STEP 1: CREATE SOURCE (RestLib.create_source())')
-        (status, source_body, source_id) = self.rl.create_source(self.chronograf, source_url, JSON_SOURCE)
-        assert source_id is not None, self.mylog.info('test_delete_kapacitor : ASSERTION FAILED, source_id is None')
-        self.mylog.info('test_delete_kapacitor - STEP 2: GET KAPACITOR URL')
-        source = self.rl.get_source(self.chronograf, source_url, source_id)
-        kapacitor_url = su.get_source_kapacitors_link(self, source_id, source)
-        self.mylog.info('test_delete_kapacitor - STEP 3: CREATE KAPACITOR (RestLib.create_kapacitor)')
-        (status, kap_body, kapacitor_id) = self.rl.create_kapacitor(self.chronograf, kapacitor_url, JSON_KAPACITOR)
-        assert kapacitor_id is not None, self.mylog.info(
-            'test_delete_kapacitor : ASSERTION FAILED, kapacitor_id is None')
-        self.mylog.info('test_delete_kapacitor - STEP 4: GET KAPACITOR DATA(RestLib.get_kapacitor)')
-        kapacitor_dictionary = self.rl.get_kapacitor(self.chronograf, kapacitor_url, kapacitor_id)
-        self.mylog.info(
-            'test_delete_kapacitor - STEP 4: GET KAPACITOR PING LINK(util.kpacitor_util.get_kapacitor_ping)')
-        ping_link = ku.get_kapacitor_ping(self, kapacitor_id, kapacitor_dictionary)
-        self.mylog.info('test_delete_kapacitor ping url =' + str(ping_link))
-        self.mylog.info('test_delete_kapacitor - STEP 5: PING KAPACITOR URL USING=' + str(ping_link))
-        response = self.rl.get(self.chronograf, ping_link)
-        assert response.status_code == 204, self.mylog.info('test_delete_kapacitor ASSERTION ERROR status_code=' +
-                                                            str(response.status_code))
-        self.mylog.info('test_delete_kapacitor - STEP 7: DELETE KAPACITOR ID=' + str(kapacitor_id))
-        self.rl.delete_kapacitor(self.chronograf, kapacitor_url, kapacitor_id)
-        self.footer('test_delete_kapacitor')
-
 
 
 
