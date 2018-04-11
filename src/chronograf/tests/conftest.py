@@ -141,9 +141,9 @@ def all_sources(request, chronograf, http_auth, admin_user, admin_pass,
             type=sources[source_id].get('TYPE')
             default_source=sources[source_id].get('DEFAULT')
             telegraf_db=sources[source_id].get('TELEGRAF_DB')
-            data_for_update={'NAME': source_name, 'DATA_URL': data_url,
-                             'META_URL': meta_url, 'TYPE': type, 'DEFAULT': default_source,
-                             'TELEGRAF_DB': telegraf_db, 'username':admin_user,
+            data_for_update={'name': source_name, 'url': data_url,
+                             'metaUrl': meta_url, 'type': type, 'default': default_source,
+                             'telegraf': telegraf_db, 'username':admin_user,
                              'password':admin_pass}
             rl.patch_source(chronograf, source_path, data_for_update, source_id)
             # need to get the updated source data
