@@ -234,9 +234,9 @@ def delete_created_rp(request, chronograf, data_nodes_ips, default_sources,
     # get a database url from a chosen default data source
     dbs_url=default_sources[source_id]['DBS']
     # get all retention policies for default databases: _internal and telegraf
-    telegraf_rp=rl.get_database(chronograf, dbs_url, 'telegraf')['RETENTION_POLICIES'].keys()
+    telegraf_rp=rl.get_database(chronograf, dbs_url, 'telegraf').get('RETENTION_POLICIES').keys()
     request.cls.mylog.info('delete_created_rp() retention policies for telegraf db=' + str(telegraf_rp))
-    internal_rp=rl.get_database(chronograf, dbs_url, '_internal')['RETENTION_POLICIES'].keys()
+    internal_rp=rl.get_database(chronograf, dbs_url, '_internal').get('RETENTION_POLICIES').keys()
     request.cls.mylog.info('delete_created_rp() retention policies for _internal db=' + str(internal_rp))
     # define parameter - list of retention policies to be removed
     if http_auth:
