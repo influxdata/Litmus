@@ -21,7 +21,7 @@ DATANODES=
 # number of meta nodes to deploy
 METANODES=
 # cluster configuration
-CLUSTER_ENVIRONMENT=
+CLUSTER_ENV=
 # name of the cluster, default name is 'litmus'
 CLUSTER_NAME="litmus"
 # license key for an enterprise deployments
@@ -53,6 +53,29 @@ KAPACITOR_INSTANCES=
 NUMBER_OF_KAPACITORS=
 # OS to install kapacitor on
 KAPACITOR_OS=
+
+# script variables for data nodes authentication
+# use ENVIRONMENT VAR INFLUXDB_HTTP_AUTH_ENABLED=true
+# set it as adifferent env in order to be able to 
+# switch between auth and no auth for data nodes???
+# *** do the same for INDEX tsi1 vs inmem???? *** #
+HTTP_AUTH_ENABLED=
+ADMIN_USER=
+ADMIN_PASSWORD=
+
+# Cluster LOG environment Vars to be always used (data node)
+# Meta logging toggles the logging of messages from the meta service
+DATA_META_LOG=",INFLUXDB_META_LOGGING_ENABLED=true,"
+DATA_TRACE_LOG="INFLUXDB_DATA_TRACE_LOGGING_ENABLED=true,"
+DATA_QUERY_LOG="INFLUXDB_DATA_QUERY_LOG_ENABLED=true,"
+HTTP_LOG="INFLUXDB_HTTP_LOG_ENABLED=true,"
+HTTP_WRITE="INFLUXDB_HTTP_WRITE_TRACING=true,"
+CLUSTER_TRACING="INFLUXDB_CLUSTER_CLUSTER_TRACING=true"
+
+CLUSTER_LOG_ENV=$DATA_META_LOG$DATA_TRACE_LOG$DATA_QUERY_LOG$HTTP_LOG$CLUSTER_TRACING
+
+# index version either inmem or tsi1 (by default tsi1)
+INDEX_VERSION=
 
 #--------------------------------------
 # catchFail()
@@ -107,7 +130,28 @@ uninstall() {
 installCluster() {
 	echo
     	echo `date`"**************** installing cluster ********************"
-    	catchFail  "pcl create -c $CLUSTER_NAME $DATANODES $METANODES $CLUSTER_ENV $INFLUX_DB_VERSION $TELEGRAF_VERSION --license-key $LICENSE_KEY"
+	if [ "X"$INDEX_VERSION == "X" ]; then
+		INDEX_VERSION="INFLUXDB_DATA_INDEX_VERSION=tsi1"
+	fi
+	if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then # data nodes auth enabled
+		# check if admin user and password are provided
+		if [ "X"$ADMIN_USER == "X" -a "X"$ADMIN_PASSWORD == "X" ]; then
+			echo "ADMIN USER OR/AND PASSWORD IS NOT PROVIDED. EXIT"
+			exit 1
+		fi
+	fi 
+	if [ "X"$CLUSTER_ENV == "X" ]; then
+		CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$CLUSTER_LOG_ENV
+	else
+		CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$CLUSTER_LOG_ENV","$CLUSTER_ENV
+	fi			
+    	CLUSTER_ENV=$(echo ${CLUSTER_ENV//,/ --env })
+	CLUSTER_ENV="--env $CLUSTER_ENV"
+	catchFail  "pcl create -c $CLUSTER_NAME $DATANODES $METANODES $CLUSTER_ENV $INFLUX_DB_VERSION $TELEGRAF_VERSION --license-key $LICENSE_KEY"
+	# create admin user and password
+	if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
+		catchFail "curl --fail -XPOST \"http://`pcl host data-0 -c $CLUSTER_NAME`:8086/query\" --data-urlencode \"q=CREATE USER $ADMIN_USER WITH PASSWORD '$ADMIN_PASSWORD' WITH ALL PRIVILEGES\""
+	fi
 }
 
 
@@ -177,19 +221,28 @@ do
 			METANODES="-m $1";;
 		--cluster-env)
 			shift
-			CLUSTER_ENVIRONMENT=$1
-			CLUSTER_ENV=$(echo ${CLUSTER_ENVIRONMENT//,/ --env })
-			CLUSTER_ENV="--env $CLUSTER_ENV";;
+			CLUSTER_ENV=$1;;
 		--cluster-name)
 			shift
 			CLUSTER_NAME=$1;;
+		--index-version)
+			shift
+			INDEX_VERSION="INFLUXDB_DATA_INDEX_VERSION=$1";;
+		--http-auth)
+			HTTP_AUTH_ENABLED=",INFLUXDB_HTTP_AUTH_ENABLED=true";;
+		--admin-user)
+			shift
+			ADMIN_USER=$1;;
+		--admin-pass)
+			shift
+			ADMIN_PASSWORD=$1;;			
 		--pkg-data)
 			shift
 			LOCAL_PKG_DATA="--local-pkg-data $1";;
 		--pkg-meta)
 			shift
 			LOCAL_PKG_META="--local-pkg-meta $1";;
-		--telegraf-version)
+		--telegraf-version)	
 			shift
 			TELEGRAF_VERSION="--telegraf-version $1";;
 		--influxdb-version)
