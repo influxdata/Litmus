@@ -6,6 +6,9 @@ def pytest_addoption(parser):
     parser.addoption('--datanodes', action='store')
     parser.addoption('--metanodes', action='store')
     parser.addoption('--kapacitor', action='store')
+    parser.addoption('--adminuser', action='store')
+    parser.addoption('--adminpass', action='store')
+    parser.addoption('--httpauth',action='store')
 
 def get_clustername(request):
     return request.config.getoption('--clustername')
@@ -21,6 +24,15 @@ def get_meta_nodes(request):
 
 def get_kapacitor(request):
     return request.config.getoption('--kapacitor')
+
+def get_admin_user(request):
+    return request.config.getoption('--adminuser')
+
+def get_admin_pass(request):
+    return request.config.getoption('--adminpass')
+
+def http_auth(request):
+    return request.config.getoption('--httpauth')
 
 @pytest.fixture(scope='class')
 def clustername(request):
@@ -92,7 +104,7 @@ def kapacitor(request):
     try:
         request.cls.mylog.info('FIXTURE kapacitor(): GETTING KAPACITOR URL ')
         kapacitor=get_kapacitor(request)
-        request.cls.mylog.info('FIXTURE data_nodes(): kapacitor=' + str(kapacitor))
+        request.cls.mylog.info('FIXTURE kapacitor(): kapacitor=' + str(kapacitor))
     except:
         kapacitor=None
     assert kapacitor is not None, request.cls.mylog.info('FIXTURE kapacitor() returned None')
@@ -100,3 +112,39 @@ def kapacitor(request):
     request.cls.mylog.info('FIXTURE kapacitor() kapacitor url=' + str(kapacitor))
     request.cls.kapacitor=kapacitor
     return request.cls.kapacitor
+
+@pytest.fixture(scope='class')
+def admin_user(request):
+    try:
+        request.cls.mylog.info('FIXTURE admin_user(): GETTING ADMIN_USER ')
+        admin_user=get_admin_pass(request)
+        request.cls.mylog.info('FIXTURE admin_user() admin_user=' + str(admin_user))
+    except:
+        admin_user=None
+    #assert admin_user is not None, request.cls.mylog.info('FIXTURE admin_user() returned None')
+    request.cls.admin_user=admin_user
+    return request.cls.admin_user
+
+@pytest.fixture(scope='class')
+def admin_pass(request):
+    try:
+        request.cls.mylog.info('FIXTURE admin_pass(): GETTING ADMIN_PASS')
+        admin_pass=get_admin_pass(request)
+        request.cls.mylog.info('FIXTURE admin_pass() admin_pass=' + str(admin_pass))
+    except:
+        admin_pass=None
+    #assert admin_pass is not None, request.cls.mylog.info('FIXTURE admin_user() returned None')
+    request.cls.admin_pass=admin_pass
+    return request.cls.admin_pass
+
+@pytest.fixture(scope='class')
+def http_auth(request):
+    try:
+        request.cls.mylog.info('FIXTURE http_auth(): GETTING HTTPAUTH')
+        httpauth=http_auth(request)
+        request.cls.mylog.info('FIXTURE http_auth() httpauth=' + str(httpauth))
+    except:
+        httpauth=None
+    assert http_auth is not None, request.cls.mylog.info('FIXTURE http_auth() returned None')
+    request.cls.http_auth=httpauth
+    return request.cls.http-auth
