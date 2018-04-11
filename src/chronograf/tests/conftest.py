@@ -145,10 +145,7 @@ def all_sources(request, chronograf, http_auth, admin_user, admin_pass,
                              'META_URL': meta_url, 'TYPE': type, 'DEFAULT': default_source,
                              'TELEGRAF_DB': telegraf_db, 'username':admin_user,
                              'password':admin_pass}
-            update_response=rl.patch_source(chronograf, source_path, data_for_update, source_id)
-            assert update_response.status_code == 200, \
-                request.cls.mylog.info('Updating Data Source failed' +
-                                       str(update_response.text) )
+            rl.patch_source(chronograf, source_path, data_for_update, source_id)
             # need to get the updated source data
             source_data=rl.get_source(chronograf, source_path, source_id)
             new_sources[source_id]=source_data[source_id]
