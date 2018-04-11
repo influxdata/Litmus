@@ -63,6 +63,7 @@ parser.add_option('--num-data', action='store', dest='num_datanodes', help='NUMB
 parser.add_option('--num-meta', action='store', dest='num_metanodes', help='NUMBEROF META NODES')
 parser.add_option('--telegraf-version', action='store', dest='telegrafversion', help='INSTALL VERSION OF TELEGRAF')
 parser.add_option('--cluster-os', action='store', dest='clusteros', help='OS TO INSTALL THE CLUSTER ON')
+parser.add_option('--no-install', action='store_true', dest='noinstall', help='DO NOT INSTALL TH ETICK STACK')
 
 # install optins for chronograf
 parser.add_option('--chronograf-version', action='store', dest='chronografversion', help='VERSION OF CHRONOGRAF TO INSTALL')
@@ -116,12 +117,14 @@ else:
     pytest_parameters.append('--httpauth=' + '')
 if options.adminuser is not None:
     admin_user='--admin-user ' + options.adminuser
-    pytest_parameters.append('--adminuser=' + admin_user)
+    pytest_parameters.append('--adminuser=' +  options.adminuser)
 else: admin_user=''
 if options.adminpass is not None:
     admin_pass='--admin-pass ' + options.adminpass
-    pytest_parameters.append('--adminpass=' + admin_pass)
+    pytest_parameters.append('--adminpass=' +  options.adminuser)
 else: admin_pass=''
+if options.noinstall is not False: no_install='--no-install'
+else: no_install=''
 
 # chronograf install options
 if options.chronografversion is not None: chronograf_version='--chronograf-version ' + options.chronografversion
@@ -163,15 +166,15 @@ except IOError as e:
 #Installation of the TICK stack
 print 'INSTALLING TICK STACK'
 print '---------------------'
-print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
+print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
                                                     meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version,
                                                     cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf,
-                                                    kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth, admin_user, admin_pass)
-return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
+                                                    kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth, admin_user, admin_pass, no_install)
+return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
                                                     data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg,
                                                     telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os,
                                                     no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth,
-                                                    admin_user, admin_pass),shell=True, stdout=File)
+                                                    admin_user, admin_pass, no_install),shell=True, stdout=File)
 if return_code!=0:
     print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
     exit(1)

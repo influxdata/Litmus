@@ -240,7 +240,7 @@ class RestLib(BaseLib):
         self.log.info('RestLib.%s() DATABASE LINK=' % function + str(db_link))
         assert db_link is not None
         sources[source_id]={'NAME': source_name, 'DATA_URL': data_url, 'META_URL': meta_url, 'TYPE': type,
-                              'DEFAULT': default_source, 'USERNAME': username, 'PASSWORD': password,
+                              'DEFAULT': default_source, 'USERNAME': username,
                               'TELEGRAF_DB': telegraf_db, 'KAPACITOR': kapacitors_link, 'PROXY': proxy_link,
                               "WRITE": write_link, 'QUERY': queries_link, 'USERS': users_link,
                               'PERMISSIONS': permissions_link, 'ROLES': roles_link, 'SHARED_SECRET': shared_secret,

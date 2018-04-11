@@ -31,7 +31,7 @@ def get_admin_user(request):
 def get_admin_pass(request):
     return request.config.getoption('--adminpass')
 
-def http_auth(request):
+def get_http_auth(request):
     return request.config.getoption('--httpauth')
 
 @pytest.fixture(scope='class')
@@ -141,10 +141,10 @@ def admin_pass(request):
 def http_auth(request):
     try:
         request.cls.mylog.info('FIXTURE http_auth(): GETTING HTTPAUTH')
-        httpauth=http_auth(request)
-        request.cls.mylog.info('FIXTURE http_auth() httpauth=' + str(httpauth))
+        http_auth=get_http_auth(request)
+        request.cls.mylog.info('FIXTURE http_auth() http_auth=' + str(http_auth))
     except:
-        httpauth=None
+        http_auth=None
     assert http_auth is not None, request.cls.mylog.info('FIXTURE http_auth() returned None')
-    request.cls.http_auth=httpauth
+    request.cls.http_auth=http_auth
     return request.cls.http_auth
