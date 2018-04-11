@@ -239,7 +239,7 @@ class RestLib(BaseLib):
         self.log.info('RestLib.%s() PERMISSIONS LINK=' % function + str(permissions_link))
         roles_link=source.get('links').get('roles')
         if roles_link is None:
-            roles_link=None
+            roles_link=''
         self.log.info('RestLib.%s() ROLES LINK=' % function + str(roles_link))
         db_link=source.get('links').get('databases')
         self.log.info('RestLib.%s() DATABASE LINK=' % function + str(db_link))

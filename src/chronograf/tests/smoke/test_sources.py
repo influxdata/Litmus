@@ -31,71 +31,71 @@ class TestSources():
         :return: does not return anything
         '''
         username = su.get_source_username(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL username=' + str(username) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL username=' + str(username) + ' EQUALS '\
                         'EXPECTED username=' + str(expected['USERNAME']))
         su.verify_data(self, expected['USERNAME'], username)
         insecure = su.get_source_insecureskipverify(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL insecure=' + str(insecure) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL insecure=' + str(insecure) + ' EQUALS '\
                         'EXPECTED insecure=' + str(expected['INSECURE_SKIP_VERIFY']))
         su.verify_data(self, expected['INSECURE_SKIP_VERIFY'], insecure)
         url = su.get_source_url(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL url=' + str(url) + ' EQUALS EXPECTED '\
+        self.mylog.info('ASSERT ACTUAL url=' + str(url) + ' EQUALS EXPECTED '\
                         'url=' + str(expected['DATA_URL']))
         su.verify_data(self, expected['DATA_URL'], url)
         name = su.get_source_name(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL name=' + str(name) + ' EQUALS EXPECTED '\
+        self.mylog.info('ASSERT ACTUAL name=' + str(name) + ' EQUALS EXPECTED '\
                         'name' + str(expected['NAME']))
         su.verify_data(self, expected['NAME'], name)
         roles = su.get_source_roles_link(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL roles=' + str(roles) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL roles=' + str(roles) + ' EQUALS '\
                         'EXPECTED roles=' + str(expected['ROLES']))
         su.verify_data(self, expected['ROLES'], roles)
         default = su.get_source_default(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL default=' + str(default) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL default=' + str(default) + ' EQUALS '\
                         'EXPECTED default=' + str(expected['DEFAULT']))
         su.verify_data(self, expected['DEFAULT'], default)
         telegrafdb = su.get_source_telegraf(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL telegrafdb=' + str(telegrafdb) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL telegrafdb=' + str(telegrafdb) + ' EQUALS '\
                         'EXPECTED telegrafdb=' + str(expected['TELEGRAF_DB']))
         su.verify_data(self, expected['TELEGRAF_DB'], telegrafdb)
         shared_secret = su.get_source_sharedsecret(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL shared_secret=' + str(shared_secret) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL shared_secret=' + str(shared_secret) + ' EQUALS '\
                         'EXPECTED shared_secret=' + str(expected['SHARED_SECRET']))
         su.verify_data(self, expected['SHARED_SECRET'], shared_secret)
         meta_url = su.get_source_metaurl(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL meta_url=' + str(meta_url) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL meta_url=' + str(meta_url) + ' EQUALS '\
                         'EXPECTED meta_url=' + str(expected['META_URL']))
         su.verify_data(self, expected['META_URL'], meta_url)
         kapacitor = su.get_source_kapacitors_link(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL kapacitor=' + str(kapacitor) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL kapacitor=' + str(kapacitor) + ' EQUALS '\
                         'EXPECTED kapacitor=' + str(expected['KAPACITOR']))
         su.verify_data(self, expected['KAPACITOR'], kapacitor)
         write = su.get_source_write_link(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL write=' + str(write) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL write=' + str(write) + ' EQUALS '\
                         'EXPECTED write=' + str(expected['WRITE']))
         su.verify_data(self, expected['WRITE'], write)
         proxy = su.get_source_proxy_link(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL proxy=' + str(proxy) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL proxy=' + str(proxy) + ' EQUALS '\
                         'EXPECTED proxy=' + str(expected['PROXY']))
         su.verify_data(self, expected['PROXY'], proxy)
         permissions = su.get_source_permissions_link(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL permissions=' + str(permissions) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL permissions=' + str(permissions) + ' EQUALS '\
                         'EXPECTED permissions=' + str(expected['PERMISSIONS']))
         su.verify_data(self, expected['PERMISSIONS'], permissions)
         query = su.get_source_queries_link(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL query=' + str(query) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL query=' + str(query) + ' EQUALS '\
                         'EXPECTED query=' + str(expected['QUERY']))
         su.verify_data(self, expected['QUERY'], query)
         password = su.get_source_password(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL password=' + str(password) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL password=' + str(password) + ' EQUALS '\
                         'EXPECTED password=' +expected['PASSWORD'])
         su.verify_data(self, expected['PASSWORD'], password)
         type = su.get_source_type(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL type=' + str(type) + ' EQUALS '\
+        self.mylog.info('ASSERT ACTUAL type=' + str(type) + ' EQUALS '\
                         'EXPECTED type=' + str(expected['TYPE']))
         su.verify_data(self, expected['TYPE'], type)
         users = su.get_source_users_link(self, source_id, source)
-        self.mylog.info('test_create_source_url_only : ASSERT ACTUAL users=' + str(users) + ' EQUALS EXPECTED '\
+        self.mylog.info('ASSERT ACTUAL users=' + str(users) + ' EQUALS EXPECTED '\
                         'users=' + str(expected['USERS']))
         su.verify_data(self, expected['USERS'], users)
 

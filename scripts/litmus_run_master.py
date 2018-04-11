@@ -41,11 +41,7 @@ usage='%prog[options]'
 parser=optparse.OptionParser(usage=usage)
 
 # pytest options
-parser.add_option('--verbose', action='store', dest='verbose', help='INCREASE VERBOSITY OF PYTEST')
-parser.add_option('--resultxml', action='store', dest='junitXml', help='CREATE junit-xml STYLE REPORT FILE AT A GIVEN PATH')
-parser.add_option('--nocapture', action='store', dest='nocapture', help='')
-parser.add_option('--traceback', action='store', dest='traceback', help='')
-parser.add_option('--testsubset', action='store', dest='testsubset', help='')
+parser.add_option('--testsubset', action='store', dest='testsubset', help='LET\'S YOU ONLY RU NTHE TESTS MARKED WITH MARKER')
 
 # options for running REST tests (By default these options will be derived from the output o the pcl list command
 parser.add_option('--chronograf', action='store', help='CHRONOGRAF BASE URL, e.g. http://localhost:8888')
@@ -57,7 +53,11 @@ parser.add_option('--kapacitor', action='store', help='KAPACITOR URL, e.g. http:
 parser.add_option('--cluster-name', action='store', dest='clustername', help='NAME OF THE CLUSTER')
 parser.add_option('--cluster-env', action='store', dest='clusterenv', help='ENVIRONMENT VARS TO PASS TO INSTALL SCRIPT')
 parser.add_option('--pkg-data', action='store', dest='localpkgdata', help='LOCAL DATA PACKAGE TO INSTALL')
+parser.add_option('--index-version', action='store', dest='indexversion', help='tsi1 OR inmem INDEX')
 parser.add_option('--pkg-meta', action='store', dest='localpkgmeta', help='LOCAL META PACKAGE TO INSTALL')
+parser.add_option('http-auth', action='store_true', dest='httpauth', help='ENABLE AUTHENTICATION')
+parser.add_option('--admin-user', action='store', dest='adminuser', help='NAME OF THE ADMIN USER')
+parser.add_option('--admin-pass', action='store', dest='adminpass', help='PASSWORD OF THE ADMIN USER')
 parser.add_option('--influxdb-version', action='store', dest='dbversion',help='INFLUXDB VERSION TO INSTALL')
 parser.add_option('--num-data', action='store', dest='num_datanodes', help='NUMBER OF DATA NODES')
 parser.add_option('--num-meta', action='store', dest='num_metanodes', help='NUMBEROF META NODES')
@@ -86,73 +86,68 @@ pytest_parameters=[]
 # cluster install options
 cluster_name=options.clustername
 if cluster_name is None: cluster_name=''
-cluster_env=options.clusterenv
-if cluster_env is not None: cluster_env='--cluster-env ' + options.clusterenv
+if options.clusterenv is not None: cluster_env='--cluster-env ' + options.clusterenv
 else: cluster_env=''
-data_pkg=options.localpkgdata
-if data_pkg is not None: data_pkg='--pkg-data ' + options.localpkgdata
+if options.localpkgdata is not None: data_pkg='--pkg-data ' + options.localpkgdata
 else: data_pkg=''
-meta_pkg=options.localpkgmeta
-if meta_pkg is not None: meta_pkg='--pkg-meta ' + options.localpkgmeta
+if options.localpkgmeta is not None: meta_pkg='--pkg-meta ' + options.localpkgmeta
 else: meta_pkg=''
-db_version=options.dbversion
-if db_version is not None: db_version='--influxdb-version ' + options.dbversion
+if options.dbversion is not None: db_version='--influxdb-version ' + options.dbversion
 else: db_version=''
-data_nodes_number=options.num_datanodes
 # need to get list of all data nodes
-num_of_data_nodes=data_nodes_number
-if data_nodes_number is not None: data_nodes_number='--num-data ' + options.num_datanodes
+num_of_data_nodes=options.num_datanodes
+if options.num_datanodes is not None: data_nodes_number='--num-data ' + options.num_datanodes
 else: data_nodes_number=''
-meta_nodes_number=options.num_metanodes
 # need to get a list of meta nodes
-num_of_meta_nodes=meta_nodes_number
-if meta_nodes_number is not None: meta_nodes_number='--num-meta ' + options.num_metanodes
+num_of_meta_nodes=options.num_metanodes
+if options.num_metanodes is not None: meta_nodes_number='--num-meta ' + options.num_metanodes
 else: meta_nodes_number=''
-telegraf_version=options.telegrafversion
-if telegraf_version is not None: telegraf_version='--telegraf-version ' + options.telegrafversion
+if options.telegrafversion is not None: telegraf_version='--telegraf-version ' + options.telegrafversion
 else: telegraf_version=''
-cluster_os=options.clusteros
-if cluster_os is not None: cluster_os='--cluster-os ' + cluster_os
+if options.clusteros is not None: cluster_os='--cluster-os ' + options.clusteros
 else: cluster_os=''
+if options.indexversion is not None: index_version='--index-version ' + options.indexversion
+else: index_version=''
+if options.httpauth is not False:
+    http_auth='--http-auth'
+    pytest_parameters.append('--httpauth=1')
+else:
+    http_auth=''
+    pytest_parameters.append('--httpauth=0')
+if options.adminuser is not None:
+    admin_user='--admin-user ' + options.adminuser
+    pytest_parameters.append('--adminuser=' + admin_user)
+else: admin_user=''
+if options.adminpass is not None:
+    admin_pass='--admin-pass ' + options.adminpass
+    pytest_parameters.append('--adminpass=' + admin_pass)
+else: admin_pass=''
 
 # chronograf install options
-chronograf_version=options.chronografversion
-if chronograf_version is not None: chronograf_version='--chronograf-version ' + chronograf_version
+if options.chronografversion is not None: chronograf_version='--chronograf-version ' + options.chronografversion
 else: chronograf_version=''
-num_chronografs=options.numchronografs
-if num_chronografs is not None: num_chronografs='--num-chronografs ' + num_chronografs
+if options.numchronografs is not None: num_chronografs='--num-chronografs ' + options.numchronografs
 else: num_chronografs=''
-chronograf_os=options.chronografos
-if chronograf_os is not None: chronograf_os='--chronograf-os ' + chronograf_os
+if options.chronografos is not None: chronograf_os='--chronograf-os ' + options.chronografos
 else: chronograf_os=''
-no_chronograf=options.nochronograf
-if no_chronograf is not False: no_chronograf='--no-chronograf '
+if options.nochronograf is not False: no_chronograf='--no-chronograf '
 else: no_chronograf=''
 
-
 # kapacitor install options
-kapacitor_version=options.kapacitorversion
-if kapacitor_version is not None: kapacitor_version='--kapacitor-version ' + kapacitor_version
+if options.kapacitorversion is not None: kapacitor_version='--kapacitor-version ' + options.kapacitorversion
 else: kapacitor_version=''
-num_kapacitor=options.numkapacitors
-if num_kapacitor is not None: num_kapacitor='--num-kapacitors ' + num_kapacitor
+if options.numkapacitors is not None: num_kapacitor='--num-kapacitors ' + options.numkapacitors
 else: num_kapacitor=''
-kapacitor_os=options.kapacitoros
-if kapacitor_os is not None: kapacitor_os='--kapacitor-os ' + kapacitor_os
+if options.kapacitoros is not None: kapacitor_os='--kapacitor-os ' + options.kapacitoros
 else: kapacitor_os=''
-no_kapacitor=options.nokapacitor
-if no_kapacitor is not False: no_kapacitor='--no-kapacitor '
+if options.nokapacitor is not False: no_kapacitor='--no-kapacitor '
 else: no_kapacitor=''
 
-if options.verbose is not None: pytest_parameters.append(options.verbose)
-if options.verbose is None: pytest_parameters.append('-v')
-if options.junitXml is not None: pytest_parameters.append(options.junitXml)
-if options.junitXml is None: pytest_parameters.append('--junitxml=result.xml')
+pytest_parameters.append('-v')
+pytest_parameters.append('--junitxml=result.xml')
 if options.testsubset is not None: pytest_parameters.append(options.testsubset)
-if options.nocapture is not None: pytest_parameters.append(options.nocapture)
-if options.nocapture is None: pytest_parameters.append('-s')
-if options.traceback is not None: pytest_parameters.append(options.traceback)
-if options.traceback is None: pytest_parameters.append('--tb=short')
+pytest_parameters.append('-s')
+pytest_parameters.append('--tb=short')
 pytest_parameters.append('--disable-pytest-warnings')
 pytest_parameters.append('-rxfX')
 pytest_parameters.append('--html=report.html')
@@ -168,8 +163,15 @@ except IOError as e:
 #Installation of the TICK stack
 print 'INSTALLING TICK STACK'
 print '---------------------'
-print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version, cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor)
-return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os, no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor),shell=True, stdout=File)
+print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
+                                                    meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version,
+                                                    cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf,
+                                                    kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth, admin_user, admin_pass)
+return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
+                                                    data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg,
+                                                    telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os,
+                                                    no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth,
+                                                    admin_user, admin_pass),shell=True, stdout=File)
 if return_code!=0:
     print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
     exit(1)
@@ -196,7 +198,6 @@ for meta_node in range(int(num_of_meta_nodes)):
     list_of_meta_nodes.append((p.communicate()[0]).strip('\n'))
 print '-----------------------------------------------'
 print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
-
 p=subprocess.Popen('pcl host chronograf-0 -c %s' %cluster_name, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if p.wait() != 0:
     print 'FAILED TO GET CHRONOGRAF NODE. EXITING'
@@ -205,18 +206,17 @@ if p.wait() != 0:
 chronograf_name=(p.communicate()[0]).strip('\n')
 print '---------------------------------------'
 print 'CHRONOGRAF IP : ' + str(chronograf_name)
-
 p=subprocess.Popen('pcl host kapacitor-0 -c %s' %cluster_name, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if p.wait() != 0:
-	print 'FAILED TO GET kapacitor NODE. EXITING'
-	p.communicate()
-	exit (1)
+    print 'FAILED TO GET kapacitor NODE. EXITING'
+    p.communicate()
+    exit (1)
 kapacitor_name=(p.communicate()[0]).strip('\n')
 print '-------------------------------------'
 print 'KAPACITOR IP : ' + str(kapacitor_name)
 
 if options.clustername is not None:
-	pytest_parameters.append('--clustername=' + options.clustername)
+    pytest_parameters.append('--clustername=' + options.clustername)
 else:
     pytest_parameters.append('--clustername=litmus')
 if options.chronograf is not None:
