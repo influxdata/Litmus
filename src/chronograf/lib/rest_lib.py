@@ -653,7 +653,7 @@ class RestLib(BaseLib):
         :param db_name: name of the database
         :return: response schema for a particular database name for a particular data source
         '''
-        return self.get_databases(base_url, source_db_url)[db_name]
+        return self.get_databases(base_url, source_db_url).get(db_name)
 
     def get_databases(self, base_url, source_db_url):
         '''
