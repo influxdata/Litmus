@@ -55,7 +55,7 @@ parser.add_option('--cluster-env', action='store', dest='clusterenv', help='ENVI
 parser.add_option('--pkg-data', action='store', dest='localpkgdata', help='LOCAL DATA PACKAGE TO INSTALL')
 parser.add_option('--index-version', action='store', dest='indexversion', help='tsi1 OR inmem INDEX')
 parser.add_option('--pkg-meta', action='store', dest='localpkgmeta', help='LOCAL META PACKAGE TO INSTALL')
-parser.add_option('--http-auth', action='store_true', dest='httpauth', help='ENABLE AUTHENTICATION')
+parser.add_option('--http-auth', action='store_true', dest='httpauth', default=False, help='ENABLE AUTHENTICATION')
 parser.add_option('--admin-user', action='store', dest='adminuser', help='NAME OF THE ADMIN USER')
 parser.add_option('--admin-pass', action='store', dest='adminpass', help='PASSWORD OF THE ADMIN USER')
 parser.add_option('--influxdb-version', action='store', dest='dbversion',help='INFLUXDB VERSION TO INSTALL')
