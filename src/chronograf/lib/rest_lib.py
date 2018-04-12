@@ -653,7 +653,10 @@ class RestLib(BaseLib):
         :param db_name: name of the database
         :return: response schema for a particular database name for a particular data source
         '''
-        return self.get_databases(base_url, source_db_url).get(db_name)
+        databases= self.get_databases(base_url, source_db_url)
+        assert databases.get(db_name) is not None, \
+            self.log.info('Assertion Error database %s does not exist' % db_name)
+        return databases.get(db_name)
 
     def get_databases(self, base_url, source_db_url):
         '''

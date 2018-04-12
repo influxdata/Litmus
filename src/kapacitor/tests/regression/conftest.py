@@ -14,7 +14,8 @@ import src.util.database_util as du
 '''
 
 @pytest.fixture(scope='class')
-def delete_created_db(request, data_nodes_ips):
+def delete_created_db(request, data_nodes_ips, http_auth, admin_user,
+                      admin_pass):
     '''
     :param request:request object to introspect the requesting test function,
                 class or module context
@@ -28,7 +29,13 @@ def delete_created_db(request, data_nodes_ips):
     request.cls.mylog.info('FIXTURE delete_created_db - set up influxdb'
                            ' connection using host=' + str(host))
     try:
-        client=InfluxDbClient(host, 8086)
+        if http_auth:
+            username=admin_user
+            password=admin_pass
+        else:
+            username=''
+            password=''
+        client=InfluxDbClient(host, 8086, username=username, password=password)
         #  [{u'name': u'_internal'}, {u'name': u'telegraf'}, {u'name': u'test_db'}]
         request.cls.mylog.info('FIXTURE delete_created_db. Deleting all '
                                'created databases that not in the default '
