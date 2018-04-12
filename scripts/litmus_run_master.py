@@ -78,8 +78,8 @@ parser.add_option('--kapacitor-os', action='store', dest='kapacitoros', help='OS
 parser.add_option('--no-kapacitor', action='store_true', dest='nokapacitor', default=False, help='DO NOT INSTALL KAPACITOR')
 
 
-parser.add_option('--tests', action='append', dest='tests', help='')
-# add test lists
+parser.add_option('--tests', action='append', dest='tests', help='path to test suite(s) to be run')
+parser.add_option('--tests-list',action='store',dest='testslist',help='list containing the test suites to be run')
 
 (options, args)=parser.parse_args()
 pytest_parameters=[]
@@ -243,8 +243,18 @@ if options.kapacitor is not None:
 else:
     pytest_parameters.append('--kapacitor=' + kapacitor_name)
 
-if options.tests is not None: pytest_parameters.extend(options.tests)
-else: print 'There are no tests to run. Exiting', exit(1)
+# passing a file containing the test suite(s)
+if options.tests is not None:
+    pytest_parameters.extend(options.tests)
+elif options.testslist is not None:
+    test_list = []
+    # we got a test file that needs to be parsed
+    for line in open(options.testslist,'r'):
+        if not line.startswith('#'):
+            test_list.append(line.rstrip())
+    pytest_parameters.extend(test_list)
+else:
+    print 'There are no tests to run. Exiting', exit(1)
 
 print pytest_parameters
 
