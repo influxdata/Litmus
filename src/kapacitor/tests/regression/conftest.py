@@ -14,6 +14,7 @@ import src.util.database_util as du
 '''
 
 @pytest.fixture(scope='class')
+
 def delete_created_db(request, data_nodes_ips, http_auth, admin_user,
                       admin_pass):
     '''

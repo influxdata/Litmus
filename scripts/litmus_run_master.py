@@ -55,7 +55,7 @@ parser.add_option('--cluster-env', action='store', dest='clusterenv', help='ENVI
 parser.add_option('--pkg-data', action='store', dest='localpkgdata', help='LOCAL DATA PACKAGE TO INSTALL')
 parser.add_option('--index-version', action='store', dest='indexversion', help='tsi1 OR inmem INDEX')
 parser.add_option('--pkg-meta', action='store', dest='localpkgmeta', help='LOCAL META PACKAGE TO INSTALL')
-parser.add_option('--http-auth', action='store_true', dest='httpauth', help='ENABLE AUTHENTICATION')
+parser.add_option('--http-auth', action='store_true', dest='httpauth', default=False, help='ENABLE AUTHENTICATION')
 parser.add_option('--admin-user', action='store', dest='adminuser', help='NAME OF THE ADMIN USER')
 parser.add_option('--admin-pass', action='store', dest='adminpass', help='PASSWORD OF THE ADMIN USER')
 parser.add_option('--influxdb-version', action='store', dest='dbversion',help='INFLUXDB VERSION TO INSTALL')
@@ -63,7 +63,7 @@ parser.add_option('--num-data', action='store', dest='num_datanodes', help='NUMB
 parser.add_option('--num-meta', action='store', dest='num_metanodes', help='NUMBEROF META NODES')
 parser.add_option('--telegraf-version', action='store', dest='telegrafversion', help='INSTALL VERSION OF TELEGRAF')
 parser.add_option('--cluster-os', action='store', dest='clusteros', help='OS TO INSTALL THE CLUSTER ON')
-parser.add_option('--no-install', action='store_true', dest='noinstall', help='DO NOT INSTALL TH ETICK STACK')
+parser.add_option('--no-install', action='store_true', dest='noinstall', default=False, help='DO NOT INSTALL TH ETICK STACK')
 
 # install optins for chronograf
 parser.add_option('--chronograf-version', action='store', dest='chronografversion', help='VERSION OF CHRONOGRAF TO INSTALL')

@@ -14,9 +14,12 @@
 
 install_chronograf=true
 install_kapacitor=true
+install=true
+counter=0
 
 # script variables for InfluxDB cluster setup
 # number of data nodes to deploy
+DATANODES_NUM=
 DATANODES=
 # number of meta nodes to deploy
 METANODES=
@@ -72,7 +75,7 @@ HTTP_LOG="INFLUXDB_HTTP_LOG_ENABLED=true,"
 HTTP_WRITE="INFLUXDB_HTTP_WRITE_TRACING=true,"
 CLUSTER_TRACING="INFLUXDB_CLUSTER_CLUSTER_TRACING=true"
 
-CLUSTER_LOG_ENV=$DATA_META_LOG$DATA_TRACE_LOG$DATA_QUERY_LOG$HTTP_LOG$CLUSTER_TRACING
+CLUSTER_LOG_ENV=$DATA_META_LOG$DATA_TRACE_LOG$DATA_QUERY_LOG$HTTP_LOG$HTTP_WRITE$CLUSTER_TRACING
 
 # index version either inmem or tsi1 (by default tsi1)
 INDEX_VERSION=
@@ -151,6 +154,25 @@ installCluster() {
 	# create admin user and password
 	if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
 		catchFail "curl --fail -XPOST \"http://`pcl host data-0 -c $CLUSTER_NAME`:8086/query\" --data-urlencode \"q=CREATE USER $ADMIN_USER WITH PASSWORD '$ADMIN_PASSWORD' WITH ALL PRIVILEGES\""
+		echo
+		echo `date`#*************** updating telegraf configuration on each data node ******************#
+		while [ $counter -lt $DATANODES_NUM ]
+		do
+			# ssh to a datanode, stop telegraf service, update the confing and start telegraf service
+			catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf stop'"
+			out=`pcl ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+			if [ "X$out" == "X" ]; then
+				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/database/ausername = \\\"$ADMIN_USER\\\"\" /etc/telegraf/telegraf.d/output.conf'"
+				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/username/apassword = \\\"$ADMIN_PASSWORD\\\"\" /etc/telegraf/telegraf.d/output.conf'"
+				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf start'"
+                		start=`pcl ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+                		if [ "X$start" == "X" ];then
+                        		echo "TELEGRAF DID NOT START ON data-$counter. EXITING"
+                        		exit 1
+				fi
+			fi
+			let counter+=1
+		done
 	fi
 }
 
@@ -198,6 +220,15 @@ installKapacitor() {
 		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/write-tracing = false/write-tracing = true/\" /etc/kapacitor/kapacitor.conf'"
 		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/pprof-enabled = false/pprof-enabled = true/\" /etc/kapacitor/kapacitor.conf'"
 		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/level = \\\"INFO\\\"/level = \\\"DEBUG\\\"/\" /etc/kapacitor/kapacitor.conf'"
+		if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
+			# remove first an empty entries for username and password (running command 2 times to remove one line at the time until I find a solution to
+			# do it in a better way
+			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/{N;s/\n.*//;}\" /etc/kapacitor/kapacitor.conf'"
+			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/{N;s/\n.*//;}\" /etc/kapacitor/kapacitor.conf'"
+			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/ausername = \\\"$ADMIN_USER\\\"\" /etc/kapacitor/kapacitor.conf'"
+			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/apassword = \\\"$ADMIN_PASSWORD\\\"\" /etc/kapacitor/kapacitor.conf'"
+		fi
+		
 		echo "****************** starting kapacitor **************************"
 		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor start'"
 		start=`pcl ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
@@ -215,6 +246,7 @@ do
 	case $1 in
 		--num-data)
             		shift
+			DATANODES_NUM=$1
 			DATANODES="-d $1";;
 		--num-meta)
 			shift
@@ -273,6 +305,8 @@ do
                        KAPACITOR_OS="--aws-os $";;
                --no-kapacitor)
                        install_kapacitor=false;;
+               --no-install)
+                       install=false;;
 	esac
 	shift
 done
@@ -283,13 +317,15 @@ done
 #------------------------------------
 
 main() {
-    	uninstall
-    	installCluster
-	if $install_chronograf; then
+	if $install; then
+            uninstall
+            installCluster
+	    if $install_chronograf; then
 		installChronograf
-	fi
-	if $install_kapacitor; then
+	    fi
+	    if $install_kapacitor; then
 		installKapacitor
+	    fi
 	fi
 }
 

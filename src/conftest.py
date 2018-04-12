@@ -80,7 +80,7 @@ def data_nodes_ips(request):
     except:
         data_nodes=None
     assert data_nodes is not None, request.cls.mylog.info('FIXTURE data_nodes_ips() returned None')
-    request.cls.data_nodes_ips=data_nodes
+    request.cls.data_nodes_ips=[node for node in data_nodes.split(',')]
     return request.cls.data_nodes_ips
 
 @pytest.fixture(scope='class')
