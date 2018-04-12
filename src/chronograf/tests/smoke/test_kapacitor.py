@@ -15,7 +15,7 @@ class TestKapacitor():
     kapacitor fixture - to get kapacitor URL
     chronograf fixture - to get chronograf URL
     data_node and meta_nodes fixtures - to get lists of meta and data nodes
-    delete_created_sources - to delete sources created by tests
+    delete_created_sources - to delete sources created by kapacitor tests
     http_auth fixture - whether basic authentication is enabled
     admin_user and admin_pass fixtures - to get the username and password
     of the admin user.

@@ -8,23 +8,23 @@ from random import choice
 from influxdb import InfluxDBClient as influxDBClient
 
 
-
 @pytest.mark.usefixtures('kapacitor', 'data_nodes_ips', 'delete_created_db',
-                         'delete_kapacitors_tasks')
+                         'delete_kapacitors_tasks', 'http_auth', 'admin_user',
+                            'admin_pass')
 class TestKapacitorRegressions(object):
     '''
-    kapacitor fixture returns the ip of kapacitor, such as http://<ip>:<port>
-                (currently only supports http protocol, no user/password auth)
-    data_nodes_ips fixture returnes the list of ip addresses of the data nodes
-    delete_created_db - deletes all of the database with the exception
+    kapacitor fixture returns the URL of kapacitor, such as http://<ip>:<port>
+                (currently only supports http protoco)
+    data_nodes_ips fixture returns the list of ip addresses of the data nodes
+    delete_created_db fixture - deletes all of the databases with the exception
     of _internal and telegraf
-    delete_kapacitor_tasks - delete all of the existing kapacitor tasks
+    delete_kapacitor_tasks fixture- delete all of the existing kapacitor's tasks
      '''
     mylog=lu.log(lu.get_log_path(), 'w', __name__)
     rl=rest_lib.RestLib(mylog)
     krl=kapacitor_rest_lib.KapacitorRestLib(mylog)
 
-    # need to move this method into library
+    # need to move this method into library eventually
     def show_subscripitons(self, client, db_name):
         subscriptions=None
         time_end = time.time() + 10
@@ -69,8 +69,9 @@ class TestKapacitorRegressions(object):
         task_name='tddsdtk'
         field_value_1='This is a first data to write'
         field_value_final= 'This is a final data to write'
-        data_to_set={'set':{'subscriptions-sync-interval':'5s'}}
-        validate_data_to_set={'subscriptions-sync-interval':'5s'}
+        # eventually move 'set' to the the set_value method in kapacitor rest lib
+        #data_to_set={'set':{'subscriptions-sync-interval':'5s'}}
+        data_to_set={'subscriptions-sync-interval':'5s'}
         task_to_create={'id':task_name, 'type':'stream',
                         'dbrps':[{'db':'tddsdtk_db','rp':'autogen'}],
                         'script':'stream\n |from()\n .measurement(\'test\')\n |httpOut(\'test\')\n',
@@ -81,13 +82,19 @@ class TestKapacitorRegressions(object):
         final_data_to_write= [{'measurement': 'test','tags':
             {'host': 'server01','region': 'us-west'},
             'fields': {'f1':  field_value_final,}}]
-        client=influxDBClient(data_node_to_connect, 8086)
-
+        if self.http_auth:
+            username=self.admin_user
+            password=self.admin_pass
+        else:
+            username=''
+            password=''
+        client=influxDBClient(data_node_to_connect, 8086,
+                              username=username, password=password)
         self.mylog.info('test_del_db_sending_data_to_kapacitor : STEP 1'
                         ' - update subscription-sync-interval in kapacitor config'
                         ' file to be 5second instead of 1 min')
-        self.krl.set_value(self.kapacitor, 'influxdb', json=data_to_set)
-        self.krl.verify_set_value(self.kapacitor, 'influxdb', json=validate_data_to_set)
+        self.krl.set_value(self.kapacitor, 'influxdb', data_to_set)
+        self.krl.verify_set_value(self.kapacitor, 'influxdb', json=data_to_set)
         # create a task that will print a received point from a test database
         self.mylog.info('test_del_db_sending_data_to_kapacitor : STEP 2'
                          ' Creating Task')

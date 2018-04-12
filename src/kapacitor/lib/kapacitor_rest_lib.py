@@ -94,7 +94,7 @@ class KapacitorRestLib(BaseLib):
             + name
         self.mylog.info('KapacitorRestLib.set_value POST URL=' + str(path_url) )
         # post changes
-        response=self.rl.post(kapacitor_url, path_url, json=json)
+        response=self.rl.post(kapacitor_url, path_url, {'set':json})
         assert response.status_code == 204, \
             self.mylog.info('KapacitorRestLib.set_value could not set ' + str(json))
 
