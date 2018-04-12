@@ -63,7 +63,7 @@ parser.add_option('--num-data', action='store', dest='num_datanodes', help='NUMB
 parser.add_option('--num-meta', action='store', dest='num_metanodes', help='NUMBEROF META NODES')
 parser.add_option('--telegraf-version', action='store', dest='telegrafversion', help='INSTALL VERSION OF TELEGRAF')
 parser.add_option('--cluster-os', action='store', dest='clusteros', help='OS TO INSTALL THE CLUSTER ON')
-parser.add_option('--no-install', action='store_true', dest='noinstall', help='DO NOT INSTALL TH ETICK STACK')
+parser.add_option('--no-install', action='store_true', dest='noinstall', default=False, help='DO NOT INSTALL TH ETICK STACK')
 
 # install optins for chronograf
 parser.add_option('--chronograf-version', action='store', dest='chronografversion', help='VERSION OF CHRONOGRAF TO INSTALL')
