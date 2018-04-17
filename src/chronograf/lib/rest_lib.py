@@ -515,10 +515,10 @@ class RestLib(BaseLib):
         url_to_update=(kapacitor_url + '/' + kapacitor_id)
         # http://34.211.227.112:8888/chronograf/v1/sources/{id}, where url_to_update is /chronograf/v1/sources/{id}
         response = self.patch(base_url, url_to_update, json, data=data, headers=headers)
-        assert response.status_code == 200, self.log.info('RestLib.patch_kapacitor() status code='
-                                                          + str(response.status_code) + ' message='
-                                                          + str(response.json()))
-        return response.json()
+        #assert response.status_code == 200, self.log.info('RestLib.patch_kapacitor() status code='
+        #                                                  + str(response.status_code) + ' message='
+        #                                                  + str(response.json()))
+        return response
 
     def delete_kapacitor(self, base_url, kapacitor_url, kapacitor_id):
         '''
@@ -536,9 +536,10 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib:delete_kapacitor() : STEP 1 - DELETE ' + str(base_url) +
                       str(url_to_delete) + ' URL')
         response = self.delete(base_url, url_to_delete)
-        assert response.status_code == 204, self.log.info('RestLib.delete_kapacitor() status_code='
-                                                          + str(response.status_code) + ' message='
-                                                          + str(response.json()))
+        #assert response.status_code == 204, self.log.info('RestLib.delete_kapacitor() status_code='
+        #                                                  + str(response.status_code) + ' message='
+        #                                                  + str(response.json()))
+        return response
 
     ################################## DATABASE METHODS ######################################
 
