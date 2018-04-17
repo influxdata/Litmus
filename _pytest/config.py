@@ -121,7 +121,7 @@ def get_config():
 def get_plugin_manager():
     """
     Obtain a new instance of the
-    :py:class:`_pytest.orig.config.PytestPluginManager`, with default plugins
+    :py:class:`_pytest.config.PytestPluginManager`, with default plugins
     already loaded.
 
     This function can be used by integration with other tools, like hooking
@@ -413,12 +413,12 @@ class PytestPluginManager(PluginManager):
         # most often modname refers to builtin modules, e.g. "pytester",
         # "terminal" or "capture".  Those plugins are registered under their
         # basename for historic purposes but must be imported with the
-        # _pytest.orig prefix.
+        # _pytest prefix.
         assert isinstance(modname, str), "module name as string required, got %r" % modname
         if self.get_plugin(modname) is not None:
             return
         if modname in builtin_plugins:
-            importspec = "_pytest.orig." + modname
+            importspec = "_pytest." + modname
         else:
             importspec = modname
         self.rewrite_hook.mark_rewrite(importspec)
@@ -490,7 +490,7 @@ class Parser:
 
         The returned group object has an ``addoption`` method with the same
         signature as :py:func:`parser.addoption
-        <_pytest.orig.config.Parser.addoption>` but will be shown in the
+        <_pytest.config.Parser.addoption>` but will be shown in the
         respective group in the output of ``pytest. --help``.
         """
         for group in self._groups:
@@ -571,7 +571,7 @@ class Parser:
         :default: default value if no ini-file option exists but is queried.
 
         The value of ini-variables can be retrieved via a call to
-        :py:func:`config.getini(name) <_pytest.orig.config.Config.getini>`.
+        :py:func:`config.getini(name) <_pytest.config.Config.getini>`.
         """
         assert type in (None, "pathlist", "args", "linelist", "bool")
         self._inidict[name] = (help, type, default)
@@ -865,7 +865,7 @@ class Config(object):
 
     def __init__(self, pluginmanager):
         #: access to command line option as attributes.
-        #: (deprecated), use :py:func:`getoption() <_pytest.orig.config.Config.getoption>` instead
+        #: (deprecated), use :py:func:`getoption() <_pytest.config.Config.getoption>` instead
         self.option = CmdOptions()
         _a = FILE_OR_DIR
         self._parser = Parser(
