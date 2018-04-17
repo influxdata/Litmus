@@ -339,9 +339,10 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib:delete_source() : STEP 1 - DELETE ' + str(base_url) +
                       str(url_to_delete) + ' URL')
         response=self.delete(base_url, url_to_delete)
-        assert response.status_code == 204, self.log.info('RestLib.delete_source() status_code='
-                                                          + str(response.status_code) + ' message='
-                                                          + str(response.json()))
+        #assert response.status_code == 204, self.log.info('RestLib.delete_source() status_code='
+        #                                                  + str(response.status_code) + ' message='
+        #                                                 + str(response.json()))
+        return response
 
     def patch_source(self, base_url, source_url, json, source_id, data=None, headers=None):
         '''
@@ -359,10 +360,10 @@ class RestLib(BaseLib):
         url_to_update=(source_url + '/' + source_id)
         # http://34.211.227.112:8888/chronograf/v1/sources/{id}, where url_to_update is /chronograf/v1/sources/{id}
         response=self.patch(base_url, url_to_update, json, data=data, headers=headers)
-        assert response.status_code == 200, self.log.info('RestLib.patch_source() status code='
-                                                          + str(response.status_code) + ' message='
-                                                          + str(response.json()))
-        return response.json()
+        #assert response.status_code == 200, self.log.info('RestLib.patch_source() status code='
+        #                                                  + str(response.status_code) + ' message='
+        #                                                  + str(response.json()))
+        return response
 
     ################################### Kapacitor METHODS #########################################################
 
