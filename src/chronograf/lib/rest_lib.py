@@ -540,7 +540,7 @@ class RestLib(BaseLib):
                                                           + str(response.status_code) + ' message='
                                                           + str(response.json()))
 
-    ################################## DATABASE/RETENTION POLICIES METHODS ######################################
+    ################################## DATABASE METHODS ######################################
 
     def get_databases_data(self, databases) :
         '''
@@ -641,10 +641,10 @@ class RestLib(BaseLib):
                       + str(base_url) + ', source db url=' + str(source_db_url)
                       + ', json=' + str(json))
         response=self.post(base_url, source_db_url,json)
-        assert response.status_code == 201, \
-            self.log.info('rest_lib.RestLib.create_database() status='
-            + str(response.status_code))
-        return response.json()
+        #assert response.status_code == 201, \
+        #   self.log.info('rest_lib.RestLib.create_database() status='
+        #  + str(response.status_code))
+        return response
 
     def get_database(self, base_url, source_db_url, db_name):
         '''
@@ -687,10 +687,14 @@ class RestLib(BaseLib):
                       + str(base_url) + ', source db url=' + str(source_db_url)
                       + ', db name=' + str(db_name))
         path=source_db_url + '/' + db_name
-        respons=self.delete(base_url, path)
-        assert respons.status_code ==204, \
-            self.log.info('rest_lib.RestLib.delete_database() status='
-            + str(respons.status_code) + ', message=' + str(respons.json()))
+        response=self.delete(base_url, path)
+        #assert respons.status_code ==204, \
+        #   self.log.info('rest_lib.RestLib.delete_database() status='
+        #  + str(respons.status_code) + ', message=' + str(respons.json()))
+        self.log.info('rest_lib.RestLib.delete_database() response object=' + str(response.text))
+        return response
+
+    ##################### RETENTION POLICIES #################
 
     def get_retention_policies_for_database(self, chronograf, policy_link):
         '''
@@ -711,11 +715,11 @@ class RestLib(BaseLib):
                       ' method called with parameters ' + 'chronograf='
                       + str(chronograf) + ', policy_link=' + str(policy_link))
         response=self.get(chronograf, policy_link)
-        assert response.status_code == 200, \
-            self.log.info('rest_lib.RestLib.get_retention_policies_for database() '
-                          'status=' + str(response.status_code) + ', message='
-                          + str(response.json()))
-        return response.json()
+        #assert response.status_code == 200, \
+        #   self.log.info('rest_lib.RestLib.get_retention_policies_for database() '
+        #                  'status=' + str(response.status_code) + ', message='
+        #                  + str(response.json()))
+        return response
 
     def create_retention_policy_for_database(self, chronograf, policy_link, json):
         '''
@@ -734,14 +738,14 @@ class RestLib(BaseLib):
         '''
         # request body the same as response body
         self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
-                      ' method called with parameters chronograf=' + str(chronograf)
+                      ' method is called with parameters chronograf=' + str(chronograf)
                       + ', policy_link=' + str(policy_link))
         response=self.post(chronograf, policy_link, json)
-        assert response.status_code == 201, \
-            self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
-                          ' status=' + str(response.status_code) + ', message='
-                          + str(response.json()))
-        return response.json()
+        #assert response.status_code == 201, \
+        #    self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
+        #                  ' status=' + str(response.status_code) + ', message='
+        #                  + str(response.json()))
+        return response
 
     def patch_retention_policy_for_database(self, chronograf, policy_link, policy_name, json):
         '''
@@ -768,11 +772,11 @@ class RestLib(BaseLib):
         url=chronograf + policy_link + '/' + policy_name
         #response=self.patch(chronograf, path, json)
         response=requests.put(url, json=json)
-        assert response.status_code == 201, \
-            self.log.info('rest_lib.RestLib:patch_retention_policy_for _database()'
-                         ' status=' + str(response.status_code) + ', message='
-                        + str(response.text))
-        return response.json()
+        #assert response.status_code == 201, \
+        #   self.log.info('rest_lib.RestLib:patch_retention_policy_for _database()'
+        #                 ' status=' + str(response.status_code) + ', message='
+        #                + str(response.text))
+        return response
 
     def delete_retention_policy_for_database(self, chronograf, policy_link, policy_name):
         '''
@@ -789,7 +793,50 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib:delete_retention_policy_for_database() Building path' + policy_link + '/' + policy_name)
         path=policy_link +'/' + policy_name
         response=self.delete(chronograf, path)
-        assert response.status_code == 204, \
-            self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
-                          ' status=' + str(response.status_code) + ', message='
-                          + str(response.json()))
+        #assert response.status_code == 204, \
+        #    self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
+        #                  ' status=' + str(response.status_code) + ', message='
+        #                  + str(response.json()))
+        return response
+
+    ############################# USER ROLES PERMISSIONS METHODS ##############################################
+
+    def create_user(self, chronograf, users_url, json):
+        '''
+        Creates user for a specific data source
+        :param chronograf: chronograf's URL
+        :param users_url: users URL for a specific source,/chronograf/sources/}id}/users
+        :param json: request body: {'name': name, 'password':'password, 'roles':[], 'permissions:[]}
+                    where permissions : {['scope':'<all/database>, 'allowed':[list of permissions]}
+        :return: response body dic:{'name': name, permissions:[], 'roles':[]}
+        '''
+        self.log.info('rest_lib.RestLib: create_user() method is called with '
+                      'parameters: chronograf=' + str(chronograf) + ', users_url='
+                      + str(users_url) + ', json=' + str(json))
+        response=self.post(chronograf, users_url, json)
+        return response
+
+    def update_user(self):
+        pass
+
+    def delete_user(self, chronograf, users_url, user_name):
+        '''
+        :param chronograf:
+        :param users_url:
+        :param user_name:
+        :return: does not return anything
+        '''
+        self.log.info('rest_lib.RestLib: delete_user() method is called with '
+                      'parameters: chronograf=' + str(chronograf) + ', users_url='
+                      + str(users_url))
+        users_url=users_url + '/' + user_name
+        self.log.info('rest_lib.RestLib: delete_user() method : users_url='
+                      + str(users_url))
+        response=self.delete(chronograf, users_url)
+        return response
+
+    def get_user(self):
+        pass
+
+    def get_all_users(self):
+        pass

@@ -1,4 +1,4 @@
-
+from src.chronograf.lib import rest_lib
 
 def get_sources_count(test_class_instance, sources_dictionary):
     '''
