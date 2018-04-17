@@ -718,9 +718,9 @@ class RestLib(BaseLib):
                       + str(chronograf) + ', policy_link=' + str(policy_link))
         response=self.get(chronograf, policy_link)
         #assert response.status_code == 200, \
-        #   self.log.info('rest_lib.RestLib.get_retention_policies_for database() '
-        #                  'status=' + str(response.status_code) + ', message='
-        #                  + str(response.json()))
+        self.log.info('rest_lib.RestLib.get_retention_policies_for database() '
+                      'status=' + str(response.status_code) + ', message='
+                      + str(response.json()))
         return response
 
     def create_retention_policy_for_database(self, chronograf, policy_link, json):
@@ -755,7 +755,7 @@ class RestLib(BaseLib):
         :param chronograf (str):chronograf URL, http://<IP>.<PORT>
         :param policy_link (str): link to a policy URL for a database,
                      /chronograf/v1/sources/{id}/dbs/{db_id}/rps
-        :param policy_name(str): name of the policy to ater
+        :param policy_name(str): name of the policy to alter
         :param JSON, request body in JSON format
         :return:response body dictionary: "name": "weekly",
                                                                 "duration": "7d",

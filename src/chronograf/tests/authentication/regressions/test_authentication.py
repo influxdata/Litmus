@@ -106,7 +106,7 @@ class TestUserPermissions(object):
         test_name='test_user_create_rp '
         actual_action=False
         self.header(test_name)
-        data={'name':'test_user_create_rp', 'duration':'1d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
+        data={'name':test_name, 'duration':'1d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
         (name, source_db_url)=self.source_url(permission, 'DB')
         source_rp_url=source_db_url + '/_internal/rps'
         response=self.rl.create_retention_policy_for_database(self.chronograf, source_rp_url,  data)
@@ -114,16 +114,50 @@ class TestUserPermissions(object):
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
             actual_action = False
-        assert actual_action == action, self.mylog.info('test_user_create_database : Assertion Error')
-        self.footer('test_user_create_rp')
+        assert actual_action == action, self.mylog.info(test_name + ' : Assertion Error')
+        self.footer(test_name)
 
-    @pytest.mark.skip
-    def test_user_show_rp(self):
-        self.header('test_user_show_rp')
-        self.footer('test_user_show_rp')
+    @pytest.mark.parametrize('permission, action', create_db_params)
+    def test_user_show_rp(self, permission, action):
+        '''
+        :param permission:
+        :param action:
+        :return:
+        '''
+        test_name='test_user_show_rp '
+        actual_action=False
+        self.header(test_name)
+        self.mylog.info(test_name + str(permission))
+        (name, source_db_url)=self.source_url(permission, 'DB')
+        source_rp_url=source_db_url + '/_internal/rps'
+        response=self.rl.get_retention_policies_for_database(self.chronograf, source_rp_url)
+        if response.status_code == 200:
+            actual_action=True
+        elif response.json().get('code') is not None and response.json().get('code') == 400:
+            actual_action = False
+        assert actual_action == action, self.mylog.info(test_name + ' : Assertion Error')
+        self.footer(test_name)
 
-    @pytest.mark.skip
-    def test_user_alter_rp(self):
-        self.header('test_user_alter_rp')
-        self.footer('test_user_alter_rp')
+    @pytest.mark.parametrize('permission, action', create_db_params)
+    def test_user_alter_rp(self, permission, action):
+        '''
+        :param permission:
+        :param action:
+        :return:
+        '''
+        test_name='test_user_alter_rp '
+        actual_action=False
+        rp_to_update='monitor'
+        data={'name':rp_to_update, 'duration':'3d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
+        self.header(test_name)
+        self.mylog.info(test_name + str(permission))
+        (name, source_db_url)=self.source_url(permission, 'DB')
+        source_rp_url=source_db_url + '/_internal/rps'
+        response=self.rl.patch_retention_policy_for_database(self.chronograf, source_rp_url, rp_to_update, data)
+        if response.status_code == 201:
+            actual_action=True
+        elif response.json().get('code') is not None and response.json().get('code') == 400:
+            actual_action = False
+        assert actual_action == action, self.mylog.info(test_name + ' : Assertion Error')
+        self.footer(test_name)
 
