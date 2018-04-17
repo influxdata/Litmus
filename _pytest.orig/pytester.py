@@ -578,7 +578,7 @@ class Testdir:
     def getnode(self, config, arg):
         """Return the collection node of a file.
 
-        :param config: :py:class:`_pytest.config.Config` instance, see
+        :param config: :py:class:`_pytest.orig.config.Config` instance, see
            :py:meth:`parseconfig` and :py:meth:`parseconfigure` to
            create the configuration.
 
@@ -630,7 +630,7 @@ class Testdir:
         The calling test instance (the class which contains the test
         method) must provide a ``.getrunner()`` method which should
         return a runner which can run the test protocol for a single
-        item, like e.g. :py:func:`_pytest.runner.runtestprotocol`.
+        item, like e.g. :py:func:`_pytest.orig.runner.runtestprotocol`.
 
         """
         # used from runner functional tests
@@ -781,10 +781,10 @@ class Testdir:
     def parseconfig(self, *args):
         """Return a new pytest Config instance from given commandline args.
 
-        This invokes the pytest bootstrapping code in _pytest.config
-        to create a new :py:class:`_pytest.core.PluginManager` and
+        This invokes the pytest bootstrapping code in _pytest.orig.config
+        to create a new :py:class:`_pytest.orig.core.PluginManager` and
         call the pytest_cmdline_parse hook to create new
-        :py:class:`_pytest.config.Config` instance.
+        :py:class:`_pytest.orig.config.Config` instance.
 
         If :py:attr:`plugins` has been populated they should be plugin
         modules which will be registered with the PluginManager.
@@ -803,7 +803,7 @@ class Testdir:
     def parseconfigure(self, *args):
         """Return a new pytest configured Config instance.
 
-        This returns a new :py:class:`_pytest.config.Config` instance
+        This returns a new :py:class:`_pytest.orig.config.Config` instance
         like :py:meth:`parseconfig`, but also calls the
         pytest_configure hook.
 
@@ -1137,4 +1137,4 @@ class LineMatcher:
                 extralines.append(nextline)
             else:
                 self._log("remains unmatched: %r" % (line,))
-                pytest.fail(self._log_text)
+               

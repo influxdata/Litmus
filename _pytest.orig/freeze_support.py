@@ -24,10 +24,10 @@ def _iter_all_modules(package, prefix=''):
     Iterates over the names of all modules that can be found in the given
     package, recursively.
     Example:
-        _iter_all_modules(_pytest) ->
-            ['_pytest.assertion.newinterpret',
-             '_pytest.capture',
-             '_pytest.core',
+        _iter_all_modules(_pytest.orig) ->
+            ['_pytest.orig.assertion.newinterpret',
+             '_pytest.orig.capture',
+             '_pytest.orig.core',
              ...
             ]
     """
@@ -42,4 +42,4 @@ def _iter_all_modules(package, prefix=''):
             for m in _iter_all_modules(os.path.join(path, name), prefix=name + '.'):
                 yield prefix + m
         else:
-            yield prefix + name
+           

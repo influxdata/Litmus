@@ -38,17 +38,17 @@ def pytest_addoption(parser):
         :ref:`discovers plugins during startup <pluginorder>`.
 
     :arg parser: To add command line options, call
-        :py:func:`parser.addoption(...) <_pytest.config.Parser.addoption>`.
+        :py:func:`parser.addoption(...) <_pytest.orig.config.Parser.addoption>`.
         To add ini-file values call :py:func:`parser.addini(...)
-        <_pytest.config.Parser.addini>`.
+        <_pytest.orig.config.Parser.addini>`.
 
     Options can later be accessed through the
-    :py:class:`config <_pytest.config.Config>` object, respectively:
+    :py:class:`config <_pytest.orig.config.Config>` object, respectively:
 
-    - :py:func:`config.getoption(name) <_pytest.config.Config.getoption>` to
+    - :py:func:`config.getoption(name) <_pytest.orig.config.Config.getoption>` to
       retrieve the value of a command line option.
 
-    - :py:func:`config.getini(name) <_pytest.config.Config.getini>` to retrieve
+    - :py:func:`config.getini(name) <_pytest.orig.config.Config.getini>` to retrieve
       a value read from an ini-style file.
 
     The config object is passed around on many internal objects via the ``.config``
@@ -209,9 +209,9 @@ def pytest_runtest_teardown(item, nextitem):
 
 @hookspec(firstresult=True)
 def pytest_runtest_makereport(item, call):
-    """ return a :py:class:`_pytest.runner.TestReport` object
+    """ return a :py:class:`_pytest.orig.runner.TestReport` object
     for the given :py:class:`pytest.Item` and
-    :py:class:`_pytest.runner.CallInfo`.
+    :py:class:`_pytest.orig.runner.CallInfo`.
     """
 
 def pytest_runtest_logreport(report):
@@ -317,5 +317,4 @@ def pytest_enter_pdb(config):
     action just before the python debugger enters in interactive mode.
 
     :arg config: pytest config object
-    :type config: _pytest.config.Config
-    """
+    :type confi

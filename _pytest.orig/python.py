@@ -725,7 +725,7 @@ class Metafunc(fixtures.FuncargnamesCompatAttr):
     test function is defined.
     """
     def __init__(self, function, fixtureinfo, config, cls=None, module=None):
-        #: access to the :class:`_pytest.config.Config` object for the test session
+        #: access to the :class:`_pytest.orig.config.Config` object for the test session
         self.config = config
 
         #: the module object where the test function is defined in.
@@ -1065,7 +1065,7 @@ def _showfixtures_main(config, session):
     currentmodule = None
     for baseid, module, bestrel, argname, fixturedef in available:
         if currentmodule != module:
-            if not module.startswith("_pytest."):
+            if not module.startswith("_pytest.orig."):
                 tw.line()
                 tw.sep("-", "fixtures defined from %s" %(module,))
                 currentmodule = module
@@ -1156,7 +1156,7 @@ def raises(expected_exception, *args, **kwargs):
         >>> raises(ZeroDivisionError, "f(0)")
         <ExceptionInfo ...>
 
-    .. autoclass:: _pytest._code.ExceptionInfo
+    .. autoclass:: _pytest.orig._code.ExceptionInfo
         :members:
 
     .. note::
@@ -1575,4 +1575,4 @@ class Function(FunctionMixin, pytest.Item, fixtures.FuncargnamesCompatAttr):
 
     def setup(self):
         super(Function, self).setup()
-        fixtures.fillfixtures(self)
+        fixtures.fillf
