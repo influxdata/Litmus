@@ -744,9 +744,9 @@ class RestLib(BaseLib):
                       + ', policy_link=' + str(policy_link))
         response=self.post(chronograf, policy_link, json)
         #assert response.status_code == 201, \
-        #    self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
-        #                  ' status=' + str(response.status_code) + ', message='
-        #                  + str(response.json()))
+        self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
+                        ' status=' + str(response.status_code) + ', message='
+                        + str(response.json()))
         return response
 
     def patch_retention_policy_for_database(self, chronograf, policy_link, policy_name, json):
@@ -775,9 +775,9 @@ class RestLib(BaseLib):
         #response=self.patch(chronograf, path, json)
         response=requests.put(url, json=json)
         #assert response.status_code == 201, \
-        #   self.log.info('rest_lib.RestLib:patch_retention_policy_for _database()'
-        #                 ' status=' + str(response.status_code) + ', message='
-        #                + str(response.text))
+        self.log.info('rest_lib.RestLib:patch_retention_policy_for _database()'
+                         ' status=' + str(response.status_code) + ', message='
+                         + str(response.text))
         return response
 
     def delete_retention_policy_for_database(self, chronograf, policy_link, policy_name):
@@ -796,9 +796,10 @@ class RestLib(BaseLib):
         path=policy_link +'/' + policy_name
         response=self.delete(chronograf, path)
         #assert response.status_code == 204, \
-        #    self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
-        #                  ' status=' + str(response.status_code) + ', message='
-        #                  + str(response.json()))
+        if response.status_code != 204:
+            self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
+                          ' status=' + str(response.status_code) + ', message='
+                          + str(response.json()))
         return response
 
     ############################# USER ROLES PERMISSIONS METHODS ##############################################
@@ -835,6 +836,10 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib: delete_user() method : users_url='
                       + str(users_url))
         response=self.delete(chronograf, users_url)
+        if response.status_code != 204:
+            self.log.info('rest_lib.RestLib:delete_user()'
+                          ' status=' + str(response.status_code) + ', message='
+                          + str(response.json()))
         return response
 
     def get_user(self):

@@ -15,15 +15,22 @@ def create_database(test_class_instance, client, db_name):
     :param password:
     :return:
     '''
+    success=False
     try:
         test_class_instance.mylog.info('database_util.create_database() '
                                        '- Creating database ' + db_name)
-        #client=influxDbClient(host, port, user, password)
         client.create_database(db_name)
+        client.close()
+        success=True
     except e.InfluxDBServerError:
         test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+        if client is not None:
+            client.close()
     except e.InfluxDBClientError:
         test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+        if client is not None:
+            client.close()
+    return success
 
 def run_query(test_class_instance, client, query, params=None, epoch=None,
               expected_response_code=200, database=None):
@@ -49,10 +56,15 @@ def run_query(test_class_instance, client, query, params=None, epoch=None,
         result=client.query(query=query, params=params, epoch=epoch,
                             expected_response_code=expected_response_code,
                             database=database)
+        client.close()
     except e.InfluxDBServerError:
         test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+        if client is not None:
+            client.close()
     except e.InfluxDBClientError:
         test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+        if client is not None:
+            client.close()
     return result
 
 def write_points(test_class_instance, client, points, time_precision=None,
@@ -80,11 +92,64 @@ def write_points(test_class_instance, client, points, time_precision=None,
         return_value=client.write_points(points=points, time_precision=time_precision,
                                          database=database, retention_policy=retention_policy,
                                          tags=tags)
+        client.close()
     except e.InfluxDBServerError:
         test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+        if client is not None:
+            client.close()
     except e.InfluxDBClientError:
         test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+        if client is not None:
+            client.close()
     return return_value
+
+def create_rp(test_class_instance, client, rp_name, duration, replication, database, default):
+    '''
+    :param test_class_instance:
+    :param client:
+    :param database:
+    :param rp_name:
+    :return:
+    '''
+    success=False
+    try:
+        test_class_instance.mylog.info('database_util.create_rp()- CREATE RETENTION POLICY %s ON %s DURATION %s REPLICATION %s DEFAULT %s' % (rp_name, database, duration, replication, default))
+        client.create_retention_policy(rp_name, duration, replication, database, default)
+        client.close()
+        success=True
+    except e.InfluxDBServerError:
+        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+        if client is not None:
+            client.close()
+    except e.InfluxDBClientError:
+        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+        if client is not None:
+            client.close()
+    return success
+
+def drop_rp(test_class_instance, client, database, rp_name):
+    '''
+    :param test_class_instance:
+    :param client:
+    :param database:
+    :param rp_name:
+    :return:
+    '''
+    success=False
+    try:
+        test_class_instance.mylog.info('database_util.drop_rp()- DROP RETENTION POLICY %s ON %s' % (rp_name, database))
+        client.drop_retention_policy(rp_name,database)
+        client.close()
+        success=True
+    except e.InfluxDBServerError:
+        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+        if client is not None:
+            client.close()
+    except e.InfluxDBClientError:
+        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+        if client is not None:
+            client.close()
+    return success
 
 ############################################################
 def get_default_databases_links(test_class_instance, default_sources):
