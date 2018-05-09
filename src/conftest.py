@@ -5,10 +5,13 @@ def pytest_addoption(parser):
     parser.addoption('--chronograf', action='store')
     parser.addoption('--datanodes', action='store')
     parser.addoption('--metanodes', action='store')
+    parser.addoption('--nodemap', action='store')
     parser.addoption('--kapacitor', action='store')
     parser.addoption('--adminuser', action='store')
     parser.addoption('--adminpass', action='store')
-    parser.addoption('--httpauth',action='store')
+    parser.addoption('--httpauth', action='store')
+    parser.addoption('--ldapauth', action='store')
+    parser.addoption('--metaauth', action='store')
 
 def get_clustername(request):
     return request.config.getoption('--clustername')
@@ -22,6 +25,9 @@ def get_data_nodes(request):
 def get_meta_nodes(request):
     return request.config.getoption('--metanodes')
 
+def get_all_nodes(request):
+    return request.config.getoption('--nodemap')
+
 def get_kapacitor(request):
     return request.config.getoption('--kapacitor')
 
@@ -34,8 +40,18 @@ def get_admin_pass(request):
 def get_http_auth(request):
     return request.config.getoption('--httpauth')
 
+def get_ldap_auth(request):
+    return request.config.getoption('--ldapauth')
+
+def get_meta_auth(request):
+    return request.config.getoption('--metaauth')
+
 @pytest.fixture(scope='class')
 def clustername(request):
+    '''
+    :param request:
+    :return:
+    '''
     request.cls.mylog.info('clustername() fixture is being called')
     request.cls.mylog.info('----------------------------------------------------------------')
     clustername=get_clustername(request)
@@ -48,6 +64,10 @@ def clustername(request):
 
 @pytest.fixture(scope='class')
 def chronograf(request):
+    '''
+    :param request:
+    :return:
+    '''
     http='http://'
     port=':8888'
     try:
@@ -67,6 +87,10 @@ def chronograf(request):
 
 @pytest.fixture(scope='class')
 def data_nodes(request):
+    '''
+    :param request:
+    :return:
+    '''
     http='http://'
     port=':8086'
     try:
@@ -85,6 +109,10 @@ def data_nodes(request):
 
 @pytest.fixture(scope='class')
 def data_nodes_ips(request):
+    '''
+    :param request:
+    :return:
+    '''
     try:
         request.cls.mylog.info('FIXTURE data_nodes_ips(): GETTING DATA NODES')
         data_nodes=get_data_nodes(request)
@@ -97,13 +125,17 @@ def data_nodes_ips(request):
 
 @pytest.fixture(scope='class')
 def meta_nodes(request):
+    '''
+    :param request:
+    :return:
+    '''
     http='http://'
     port=':8091'
     try:
         request.cls.mylog.info('meta_nodes() fixture is being called')
         request.cls.mylog.info('---------------------------------------------------------------')
         meta_nodes=get_meta_nodes(request)
-        request.cls.mylog.info('data_nodes() fixture : meta_nodes=' + str(meta_nodes))
+        request.cls.mylog.info('meta_nodes() fixture : meta_nodes=' + str(meta_nodes))
     except:
         meta_nodes=None
     assert meta_nodes is not None, request.cls.mylog.info('meta_nodes fixture returned None')
@@ -112,6 +144,31 @@ def meta_nodes(request):
     request.cls.mylog.info('-------------------------------------------------')
     request.cls.mylog.info('')
     return request.cls.meta_nodes
+
+@pytest.fixture(scope='class')
+def private_public_ip_mapps(request):
+    '''
+    :param request:
+    :return:
+    '''
+    private_public_dic={}
+    try:
+        request.cls.mylog.info('private_public_ip_mapps() fixture is being called')
+        request.cls.mylog.info('-------------------------------------------------')
+        all_nodes_mappings=get_all_nodes(request)
+        request.cls.mylog.info('private_public_ip_mapps() fixture : meta_nodes=' + str(all_nodes_mappings))
+    except:
+        all_nodes_mappings=None
+    assert all_nodes_mappings is not None, request.cls.mylog.info('meta_leader fixture returned None')
+    nodes_list=all_nodes_mappings.split(',')
+    for nodes in nodes_list:
+        private_public_dic[nodes.split('_')[1]]=nodes.split('_')[0]
+    request.cls.mylog.info('private_public_ip_mapps fixture private/public IP mappings : ' + str(private_public_dic))
+    request.cls.private_public_ip_mapps=private_public_dic
+    request.cls.mylog.info('private_public_ip_mapps() fixture - done')
+    request.cls.mylog.info('----------------------------------------')
+    request.cls.mylog.info('')
+    return request.cls.private_public_ip_mapps
 
 @pytest.fixture(scope='class')
 def kapacitor(request):
@@ -160,6 +217,7 @@ def admin_pass(request):
     return request.cls.admin_pass
 
 @pytest.fixture(scope='class')
+
 def http_auth(request):
     try:
         request.cls.mylog.info('http_auth() fixture is being called')
@@ -174,3 +232,35 @@ def http_auth(request):
     request.cls.mylog.info('--------------------------------------------')
     request.cls.mylog.info('')
     return request.cls.http_auth
+
+@pytest.fixture(scope='class')
+def ldap_auth(request):
+    try:
+        request.cls.mylog.info('ldap_auth() fixture is being called')
+        request.cls.mylog.info('-----------------------------------')
+        ldap_auth=get_ldap_auth(request)
+        request.cls.mylog.info('ldap_auth() fixture : ldap_auth=' + str(ldap_auth))
+    except:
+        ldap_auth=None
+    assert ldap_auth is not None, request.cls.mylog.info('ldap_auth() fixture returned None')
+    request.cls.ldap_auth=ldap_auth
+    request.cls.mylog.info('ldap_auth() fixture - done')
+    request.cls.mylog.info('--------------------------')
+    request.cls.mylog.info('')
+    return request.cls.ldap_auth
+
+@pytest.fixture(scope='class')
+def meta_auth(request):
+    try:
+        request.cls.mylog.info('meta_auth() fixture is being called')
+        request.cls.mylog.info('-----------------------------------')
+        meta_auth=get_meta_auth(request)
+        request.cls.mylog.info('meta_auth() fixture : meta_auth=' + str(meta_auth))
+    except:
+        meta_auth=None
+    assert meta_auth is not None, request.cls.mylog.info('meta_auth() fixture returned None')
+    request.cls.meta_auth=meta_auth
+    request.cls.mylog.info('http_auth() fixture - done')
+    request.cls.mylog.info('--------------------------')
+    request.cls.mylog.info('')
+    return request.cls.meta_auth

@@ -1,7 +1,7 @@
 
 import pytest
 import src.util.login_util as lu
-from src.chronograf.lib import rest_lib
+from src.chronograf.lib import chronograf_rest_lib
 from influxdb import InfluxDBClient
 from random import choice
 from src.util import database_util as du
@@ -22,7 +22,7 @@ class TestUserPermissions(object):
     data_node_ips - to be used in InfluxDBCLient
     '''
     mylog=lu.log(lu.get_log_path(), 'w', __name__)
-    rl=rest_lib.RestLib(mylog)
+    rl= chronograf_rest_lib.RestLib(mylog)
 
     # CreateDatabase permissions is good for Creating databases, create RP, alter RP and View RP
     create_db_params=[('user_ViewAdmin', False), ('user_ViewChronograf', False), ('user_CreateDatabase', True),
@@ -81,10 +81,13 @@ class TestUserPermissions(object):
         # create source with a specific user
         test_name='test_user_create_database'
         actual_action=False
+        auth=None
+        if self.http_auth:
+            auth=(permission, permission)
         self.header(test_name)
         self.mylog.info(test_name + str(permission))
         (name, source_db_url)=self.source_url(permission, 'DB')
-        response=self.rl.create_database(self.chronograf, source_db_url, {'name':name})
+        response=self.rl.create_database(self.chronograf, source_db_url, {'name':name}, auth=auth)
         if response.status_code == 201:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -102,9 +105,12 @@ class TestUserPermissions(object):
         '''
         test_name='test_user_drop_database '
         actual_action=False
+        auth = None
+        if self.http_auth:
+            auth = (permission, permission)
         self.header(test_name)
         (name, source_db_url)=self.source_url(permission,'DB')
-        response=self.rl.delete_database(self.chronograf, source_db_url, 'drop_test_db')
+        response=self.rl.delete_database(self.chronograf, source_db_url, 'drop_test_db', auth=auth)
         if response.status_code == 204:
             actual_action = True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -123,12 +129,15 @@ class TestUserPermissions(object):
         '''
         test_name='test_user_create_rp '
         actual_action=False
+        auth=None
+        if self.http_auth:
+            auth=(permission, permission)
         self.header(test_name)
         data={'name':test_name, 'duration':'1d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
         self.mylog.info(test_name + str(permission))
         (name, source_db_url)=self.source_url(permission, 'DB')
         source_rp_url=source_db_url + '/_internal/rps'
-        response=self.rl.create_retention_policy_for_database(self.chronograf, source_rp_url,  data)
+        response=self.rl.create_retention_policy_for_database(self.chronograf, source_rp_url, data, auth=auth)
         if response.status_code == 201:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -147,11 +156,14 @@ class TestUserPermissions(object):
         '''
         test_name='test_user_show_rp '
         actual_action=False
+        auth = None
+        if self.http_auth:
+            auth = (permission, permission)
         self.header(test_name)
         self.mylog.info(test_name + str(permission))
         (name, source_db_url)=self.source_url(permission, 'DB')
         source_rp_url=source_db_url + '/_internal/rps'
-        response=self.rl.get_retention_policies_for_database(self.chronograf, source_rp_url)
+        response=self.rl.get_retention_policies_for_database(self.chronograf, source_rp_url, auth=auth)
         if response.status_code == 200:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -172,11 +184,15 @@ class TestUserPermissions(object):
         actual_action=False
         rp_to_update='monitor'
         data={'name':rp_to_update, 'duration':'3d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
+        auth = None
+        if self.http_auth:
+            auth = (permission, permission)
         self.header(test_name)
         self.mylog.info(test_name + str(permission))
         (name, source_db_url)=self.source_url(permission, 'DB')
         source_rp_url=source_db_url + '/_internal/rps'
-        response=self.rl.patch_retention_policy_for_database(self.chronograf, source_rp_url, rp_to_update, data)
+        response=self.rl.patch_retention_policy_for_database(self.chronograf, source_rp_url,
+                                                             rp_to_update, data, auth=auth)
         if response.status_code == 201:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -194,6 +210,9 @@ class TestUserPermissions(object):
         '''
         test_name = 'test_user_delete_rp '
         actual_action = False
+        auth=None
+        if self.http_auth:
+            auth=(permission, permission)
         # creating the same RP multiple time won't create multiple RP or ERROR's out
         rp_to_create = 'DELETE_RP'
         duration='3d'
@@ -210,18 +229,18 @@ class TestUserPermissions(object):
             username=self.admin_user
             password=self.admin_pass
         client=InfluxDBClient(host=data_node,username=username, password=password)
-        success=du.create_rp(self, client, rp_to_create, duration, replication, database, default)
+        success=du.create_retention_policy(self, client, rp_to_create, duration, replication, database, default)
         assert success, self.mylog.info(test_name + ' Assertion Error, was not able to create RP')
-        (name, source_db_url) = self.source_url(permission, 'DB')
-        source_rp_url = source_db_url + '/_internal/rps'
-        response = self.rl.delete_retention_policy_for_database(self.chronograf, source_rp_url, rp_to_create)
+        (name, source_db_url)=self.source_url(permission, 'DB')
+        source_rp_url=source_db_url + '/_internal/rps'
+        response=self.rl.delete_retention_policy_for_database(self.chronograf, source_rp_url, rp_to_create, auth=auth)
         if response.status_code == 204:
             # make sure that retention policy was actually dropped.
-            ret_policies = client.get_list_retention_policies(database)
+            ret_policies=client.get_list_retention_policies(database)
             if rp_to_create not in [item['name'] for item in ret_policies]:
                 actual_action = True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
-            actual_action = False
+            actual_action=False
         assert actual_action == action, self.mylog.info(test_name + ' : Assertion Error')
         self.footer(test_name)
 
@@ -234,16 +253,18 @@ class TestUserPermissions(object):
         '''
         test_name = 'test_user_createuser '
         actual_action = False
-
+        auth=None
+        if self.http_auth:
+            auth=(permission, permission)
         self.header(test_name)
         self.mylog.info(test_name + str(permission))
-        (name, source_users_url) = self.source_url(permission, 'USERS')
+        (name, source_users_url)=self.source_url(permission, 'USERS')
         data = {'name': name+'_createuser', 'password': name+'_createuser'}
-        response = self.rl.create_user(self.chronograf, source_users_url, data)
+        response=self.rl.create_user(self.chronograf, source_users_url, data, auth=auth)
         if response.status_code == 201:
-            actual_action = True
+            actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
-            actual_action = False
+            actual_action=False
         assert actual_action == action, self.mylog.info(test_name + ' : Assertion Error')
         self.footer(test_name)
 
@@ -254,22 +275,24 @@ class TestUserPermissions(object):
         :param action:
         :return:
         '''
-        test_name = 'test_user_deleteuser '
-        data_node = choice(self.data_nodes_ips)
-        actual_action = False
+        test_name='test_user_deleteuser '
+        data_node=choice(self.data_nodes_ips)
+        actual_action=False
 
         self.header(test_name)
         self.mylog.info(test_name + str(permission))
         user_name, user_password=permission+'_deleteuser', permission+'_deleteuser'
         username, password = '', ''
+        auth=None
         if self.http_auth:
             username = self.admin_user
             password = self.admin_pass
-        client = InfluxDBClient(host=data_node, username=username, password=password)
+            auth = (permission, permission)
+        client=InfluxDBClient(host=data_node, username=username, password=password)
         (name, source_users_url) = self.source_url(permission, 'USERS')
-        success=uu.create_user(self, client, user_name, user_password, False)
+        (success,message)=uu.create_user(self, client, user_name, user_password, False)
         assert success, self.mylog.info(test_name + ' : Assertion Error')
-        response=self.rl.delete_user(self.chronograf, source_users_url, user_name)
+        response=self.rl.delete_user(self.chronograf, source_users_url, user_name, auth=auth)
         if response.status_code == 204:
             # TODO add verification that user indeed was deleted
             actual_action = True

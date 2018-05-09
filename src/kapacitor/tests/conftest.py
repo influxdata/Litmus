@@ -1,11 +1,8 @@
 import pytest
-import re
 from influxdb import InfluxDBClient as InfluxDbClient
 from influxdb import exceptions as e
 from random import choice
 from src.kapacitor.lib import kapacitor_rest_lib
-from src.chronograf.lib import rest_lib
-import src.util.database_util as du
 
 '''
  need to remove the created databases, all with the exception of 

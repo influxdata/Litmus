@@ -1,7 +1,7 @@
 import pytest
 import src.util.login_util as lu
 import src.util.database_util as du
-from src.chronograf.lib import rest_lib
+from src.chronograf.lib import chronograf_rest_lib
 from random import choice
 
 
@@ -20,7 +20,7 @@ class TestDefaultDatabases(object):
     get_source_path - returns path to a 'source' URL
      '''
     mylog=lu.log(lu.get_log_path(), 'w', __name__)
-    rl=rest_lib.RestLib(mylog)
+    rl= chronograf_rest_lib.RestLib(mylog)
 
     create_rp_name='test_create_rp'
     alter_rp_name='test_alter_rp'

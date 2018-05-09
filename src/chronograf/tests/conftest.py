@@ -4,11 +4,11 @@ import src.util.database_util as du
 from influxdb import InfluxDBClient as influxDbClient
 from influxdb import exceptions as e
 from random import choice
-from src.chronograf.lib import rest_lib
+from src.chronograf.lib import chronograf_rest_lib
 
 
 @pytest.fixture(scope='class')
-def get_all_paths(request, chronograf):
+def get_all_paths(request, chronograf, http_auth, admin_user, admin_pass):
     '''
     Returns all of the chronograf paths
     :param request:request object to introspect the requesting test function, class or module context
@@ -27,10 +27,13 @@ def get_all_paths(request, chronograf):
             config --> {u'self': u'/chronograf/v1/config', u'auth': u'/chronograf/v1/config/auth'}
             mappings --> /chronograf/v1/mappings
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
+    auth=None
+    if http_auth is not None:
+        auth=(admin_user, admin_pass)
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('get_all_paths() fixture is being called')
     request.cls.mylog.info('-----------------------------------------------------------------')
-    response=rl.get_chronograf_paths(chronograf)
+    response=rl.get_chronograf_paths(chronograf, auth=auth)
     request.cls.get_all_paths=response
     request.cls.mylog.info('get_all_paths() fixture - done')
     request.cls.mylog.info('---------------------------------------------------')
@@ -38,7 +41,7 @@ def get_all_paths(request, chronograf):
     return request.cls.get_all_paths
 
 @pytest.fixture(scope='class')
-def get_source_path(request, chronograf):
+def get_source_path(request, chronograf, http_auth, admin_user, admin_pass):
     '''
     :param request:request object to introspect the rtequesting test function, class or module context
     :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
@@ -47,7 +50,7 @@ def get_source_path(request, chronograf):
     request.cls.mylog.info('get_source_path() fixture is being called')
     request.cls.mylog.info('-----------------------------------------------------------------------')
     request.cls.mylog.info('get_source_path() call get_all_paths() fixture')
-    source_path=get_all_paths(request, chronograf)['sources']
+    source_path=get_all_paths(request, chronograf, http_auth, admin_user, admin_pass)['sources']
     assert source_path is not None, request.cls.mylog.info('get_source_path() ASSERTION ERROR')
     request.cls.mylog.info('get_source_path() fixture source_path=' + str(source_path))
     request.cls.get_source_path=source_path
@@ -69,7 +72,7 @@ def create_source(request, chronograf, data_nodes, meta_nodes,
     '''
     request.cls.mylog.info('create_source() fixture is being called')
     request.cls.mylog.info('-------------------------------------------------------------------')
-    rl=rest_lib.RestLib(request.cls.mylog)
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     source_name=request.param
     # assert lists of data and meta nodes are not empty
     assert len(data_nodes) != 0 and len(meta_nodes) != 0, \
@@ -82,23 +85,21 @@ def create_source(request, chronograf, data_nodes, meta_nodes,
     metanode=choice(meta_nodes)
     request.cls.mylog.info('create_source() fixture : metanode=' + str(metanode))
     # create source
-    username, password='', ''
+    auth=None
     if http_auth:
-        username=admin_user
-        password=admin_pass
-    request.cls.mylog.info('create_source() fixture : username=' + str(username))
-    request.cls.mylog.info('create_source() fixture : password=' + str(password))
-    source_path=get_source_path(request, chronograf)
+        auth=(admin_user, admin_pass)
+    request.cls.mylog.info('create_source() fixture : username=' + str(admin_user))
+    request.cls.mylog.info('create_source() fixture : password=' + str(admin_pass))
+    source_path=get_source_path(request, chronograf, http_auth, admin_user, admin_pass)
     data={'url':datanode, 'metaUrl':metanode, 'name':source_name,
-          'username':username, 'password':password}
-    (status, source_data, source_id)=rl.create_source(chronograf,
-                                               source_url=source_path, json=data)
+          'username':admin_user, 'password':admin_pass}
+    (status, source_data, source_id)=rl.create_source(chronograf, source_url=source_path, json=data, auth=auth)
     assert status == 201, request.cls.mylog.info('create_source.'
                                                  'create_source() status=' + str(status))
     assert source_id is not None, request.cls.mylog.info('create_source.'
                                                  'create_source() source_id=' + str(source_id))
     # get created source data
-    result_dic=rl.get_source(chronograf, source_path, source_id)
+    result_dic=rl.get_source(chronograf, source_path, source_id, auth=auth)
     request.cls.create_source=(source_id, result_dic)
     request.cls.mylog.info('create_source() fixture - done')
     request.cls.mylog.info('-----------------------------------------------------')
@@ -140,7 +141,7 @@ def all_sources(request, chronograf, http_auth, admin_user, admin_pass,
     :param meta_nodes: list of meta nodes
     :return: dictionary of all sources where dict key is a data source_id
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('all_sources() FIXTURE IS CALLED')
     request.cls.mylog.info('all_sources() : GET ALL OF THE SOURCES')
     source_path=get_source_path(request, chronograf)
@@ -174,25 +175,28 @@ def all_sources(request, chronograf, http_auth, admin_user, admin_pass,
     return request.cls.all_sources
 
 @pytest.fixture(scope='class')
-def delete_sources(request, chronograf):
+def delete_sources(request, chronograf, http_auth , admin_user, admin_pass):
     '''
     Deletes all of the exisitng sources, including default ones.
     :param request:request object to introspect the rtequesting test function, class or module context
     :param chronograf:Chronograf URL, e.g. http://<ID>:<PORT>, where port is 8888
     :return: assert status code == 204
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
+    auth=None
+    if http_auth is not None:
+        auth=(admin_user, admin_pass)
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('delete_sources() FIXTURE IS CALLED')
     request.cls.mylog.info('delete_sources() : GET ALL OF THE SOURCES')
-    source_path=get_source_path(request, chronograf)
-    sources=rl.get_sources(chronograf, source_path)
+    source_path=get_source_path(request, chronograf, http_auth, admin_user, admin_pass)
+    sources=rl.get_sources(chronograf, source_path, auth=auth)
     for source in sources.keys():
         request.cls.mylog.info('delete_sources() : DELETING SOURCE ID=' + str(source))
-        rl.delete_source(chronograf, source_path, source)
+        rl.delete_source(chronograf, source_path, source, auth=auth)
     request.cls.mylog.info('delete_sources() IS DONE')
 
 @pytest.fixture(scope='class')
-def delete_created_sources(request, chronograf, clustername):
+def delete_created_sources(request, chronograf, clustername, http_auth , admin_user, admin_pass):
     '''
     Deletes all of the created by tests sources
     :param request:request object to introspect the rtequesting test function, class or module context
@@ -200,40 +204,46 @@ def delete_created_sources(request, chronograf, clustername):
     :param clustername:Name of the cluster
     :return: does not return, make an assertion status code == 204
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
+    auth = None
+    if http_auth is not None:
+        auth = (admin_user, admin_pass)
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('delete_created_sources() fixture is called')
     request.cls.mylog.info('--------------------------------------------------------------------------')
     request.cls.mylog.info('delete_created_sources() fixture calls get_source_path fixture')
-    source_path=get_source_path(request, chronograf)
+    source_path=get_source_path(request, chronograf, http_auth , admin_user, admin_pass)
     request.cls.mylog.info('delete_created_sources() fixture calls rest_lib.get_sources() method')
     request.cls.mylog.info('-------------------------------------------------------------------------------------------------------------------------')
-    sources=rl.get_sources(chronograf, source_path)
+    sources=rl.get_sources(chronograf, source_path, auth=auth)
     for source in sources.keys():
         if (sources[source].get('NAME')).find(clustername) == -1:
             request.cls.mylog.info('delete_created_sources() fixture : deleting source_id=' + str(source))
-            rl.delete_source(chronograf, source_path, source)
+            rl.delete_source(chronograf, source_path, source, auth=auth)
     request.cls.mylog.info('delete_created_sources() fixture - done')
     request.cls.mylog.info('-----------------------------------------------------------------------')
     request.cls.mylog.info('')
 
 @pytest.fixture(scope='class')
-def delete_created_databases(request, chronograf, all_sources):
+def delete_created_databases(request, chronograf, all_sources, http_auth, admin_user, admin_pass):
     '''
     Deleted all of the created databases with the exception of default ones.
     :param request:
     :param chronograf:
     :return: asserts status == 204
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
+    auth=None
+    if http_auth is not None:
+        auth=(admin_user, admin_pass)
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('delete_created_databases() FIXTURE IS CALLED')
     dbs_links=du.get_all_databases_links(request.cls, all_sources)
     request.cls.mylog.info('delete_created_databases() dbs_links ' + str(dbs_links))
     db_link=choice(dbs_links)
-    response=rl.get_databases(chronograf, db_link)
+    response=rl.get_databases(chronograf, db_link, auth=None)
     for name in response.keys():
         if name not in ['_internal', 'telegraf']:
             request.cls.mylog.info('delete_created_databases() DELETING DATABASE ' + str(name))
-            rl.delete_database(chronograf, db_link, name)
+            rl.delete_database(chronograf, db_link, name, auth=auth)
     request.cls.mylog.info('delete_created_databases() FIXTURE IS DONE')
 
 @pytest.fixture(scope='class')
@@ -247,7 +257,15 @@ def delete_created_rp(request, chronograf, data_nodes_ips, default_sources,
     :param default_sources: dictionary of default sources with a source_id as a key
     :param chronograf: URL to achronograf, ie. http://<IP>:<port>
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
+    auth=None
+    if http_auth:
+        username=admin_user
+        password=admin_pass
+        auth=(username, password)
+    else:
+        username=''
+        password=''
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('delete_created_rp() FIXURE IS CALLED')
     # randomly choose a data_node
     data_node=choice(data_nodes_ips)
@@ -256,17 +274,11 @@ def delete_created_rp(request, chronograf, data_nodes_ips, default_sources,
     # get a database url from a chosen default data source
     dbs_url=default_sources[source_id]['DBS']
     # get all retention policies for default databases: _internal and telegraf
-    telegraf_rp=rl.get_database(chronograf, dbs_url, 'telegraf').get('RETENTION_POLICIES').keys()
+    telegraf_rp=rl.get_database(chronograf, dbs_url, 'telegraf', auth=auth).get('RETENTION_POLICIES').keys()
     request.cls.mylog.info('delete_created_rp() retention policies for telegraf db=' + str(telegraf_rp))
-    internal_rp=rl.get_database(chronograf, dbs_url, '_internal').get('RETENTION_POLICIES').keys()
+    internal_rp=rl.get_database(chronograf, dbs_url, '_internal', auth=auth).get('RETENTION_POLICIES').keys()
     request.cls.mylog.info('delete_created_rp() retention policies for _internal db=' + str(internal_rp))
     # define parameter - list of retention policies to be removed
-    if http_auth:
-        username=admin_user
-        password=admin_pass
-    else:
-        username=''
-        password=''
     try:
         client=influxDbClient(host=data_node,port=8086, username=username, password=password)
         for rp in telegraf_rp:
