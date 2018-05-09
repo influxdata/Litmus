@@ -2,3 +2,4 @@ src/chronograf/tests/databases/smoke/test_databases.py
 src/chronograf/tests/kapacitor/smoke/test_kapacitor.py
 src/chronograf/tests/sources/smoke/test_sources.py
 src/kapacitor/tests/regressions/test_kapacitor.py
+src/chronograf/tests/authentication/regressions/test_authentication.py

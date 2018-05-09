@@ -7,9 +7,10 @@
 
 import pkgutil
 import subprocess
+import time
 
 PIP_CMD = 'sudo -H pip install --no-cache-dir'
-MODULES = ['pytest','requests','python-dateutil','pytest-html','pytest-metadata']
+MODULES = ['pytest','requests','python-dateutil','pytest-html','pytest-metadata', 'influxdb']
 for module in MODULES:
     if None == pkgutil.find_loader(module):
         if module == 'requests':
@@ -26,6 +27,9 @@ for module in MODULES:
             assert proc == 0, 'FAILED TO INSTALL %s' % module
         elif module == 'pytest-metadata':
             proc = subprocess.call('%s %s==1.5.0' % (PIP_CMD, module), shell=True)
+            assert proc == 0, 'FAILED TO INSTALL %s' % module
+        elif module == 'influxdb':
+            proc = subprocess.call('%s %s' % (PIP_CMD, module), shell=True)
             assert proc == 0, 'FAILED TO INSTALL %s' % module
 
 import os, sys
@@ -64,6 +68,8 @@ parser.add_option('--num-meta', action='store', dest='num_metanodes', help='NUMB
 parser.add_option('--telegraf-version', action='store', dest='telegrafversion', help='INSTALL VERSION OF TELEGRAF')
 parser.add_option('--cluster-os', action='store', dest='clusteros', help='OS TO INSTALL THE CLUSTER ON')
 parser.add_option('--no-install', action='store_true', dest='noinstall', default=False, help='DO NOT INSTALL TH ETICK STACK')
+parser.add_option('--ldap-auth', action='store_true', dest='ldapauth', default=False, help='Enable LDAP authentication')
+parser.add_option('--meta-auth', action='store_true', dest='metaauth', default=False, help='Enable META NODE authentication')
 
 # install optins for chronograf
 parser.add_option('--chronograf-version', action='store', dest='chronografversion', help='VERSION OF CHRONOGRAF TO INSTALL')
@@ -85,8 +91,8 @@ parser.add_option('--tests-list',action='store',dest='testslist',help='list cont
 pytest_parameters=[]
 
 # cluster install options
-cluster_name=options.clustername
-if cluster_name is None: cluster_name=''
+if options.clustername is not None: cluster_name='--cluster-name ' + options.clustername
+else: cluster_name=''
 if options.clusterenv is not None: cluster_env='--cluster-env ' + options.clusterenv
 else: cluster_env=''
 if options.localpkgdata is not None: data_pkg='--pkg-data ' + options.localpkgdata
@@ -109,6 +115,18 @@ if options.clusteros is not None: cluster_os='--cluster-os ' + options.clusteros
 else: cluster_os=''
 if options.indexversion is not None: index_version='--index-version ' + options.indexversion
 else: index_version=''
+if options.ldapauth is not False:
+    ldap_auth='--ldap-auth'
+    pytest_parameters.append('--ldapauth=' + 'AUTH')
+else:
+    ldap_auth=''
+    pytest_parameters.append('--ldapauth=' + '')
+if options.metaauth is not False:
+    meta_auth='--meta-auth'
+    pytest_parameters.append('--metaauth=' + 'AUTH')
+else:
+    meta_auth=''
+    pytest_parameters.append('--metaauth=' + '')
 if options.httpauth is not False:
     http_auth='--http-auth'
     pytest_parameters.append('--httpauth=' + 'AUTH')
@@ -166,81 +184,118 @@ except IOError as e:
 #Installation of the TICK stack
 print 'INSTALLING TICK STACK'
 print '---------------------'
-print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
+print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
                                                     meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version,
                                                     cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf,
-                                                    kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth, admin_user, admin_pass, no_install)
-return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
+                                                    kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth, admin_user,
+                                                    admin_pass, no_install, ldap_auth, meta_auth)
+return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
                                                     data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg,
                                                     telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os,
                                                     no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth,
-                                                    admin_user, admin_pass, no_install),shell=True, stdout=File)
+                                                    admin_user, admin_pass, no_install, ldap_auth, meta_auth),shell=True, stdout=File)
 if return_code!=0:
     print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
     exit(1)
 
-# get all of the data nodes
-list_of_data_nodes=[]
-if cluster_name == '': cluster_name='litmus'
-for data_node in range(int(num_of_data_nodes)):
-    p=subprocess.Popen('pcl host data-%d -c "%s"' %(data_node,cluster_name) ,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    if p.wait() != 0:
-        print 'FAILED TO GET DATA NODE. EXITING'
-        print p.communicate()
-        exit (1)
-    list_of_data_nodes.append((p.communicate()[0]).strip('\n'))
-print '-----------------------------------------------'
-print 'LIST OF DATA NODES : ' + str(list_of_data_nodes)
-list_of_meta_nodes=[]
-for meta_node in range(int(num_of_meta_nodes)):
-    p=subprocess.Popen('pcl host meta-%d -c "%s"' %(meta_node,cluster_name) ,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    if p.wait() != 0:
-        print 'FAILED TO GET META NODE. EXITING'
-        print p.communicate()
-        exit (1)
-    list_of_meta_nodes.append((p.communicate()[0]).strip('\n'))
-print '-----------------------------------------------'
-print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
-p=subprocess.Popen('pcl host chronograf-0 -c %s' %cluster_name, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-if p.wait() != 0:
-    print 'FAILED TO GET CHRONOGRAF NODE. EXITING'
-    p.communicate()
-    exit (1)
-chronograf_name=(p.communicate()[0]).strip('\n')
-print '---------------------------------------'
-print 'CHRONOGRAF IP : ' + str(chronograf_name)
-p=subprocess.Popen('pcl host kapacitor-0 -c %s' %cluster_name, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-if p.wait() != 0:
-    print 'FAILED TO GET kapacitor NODE. EXITING'
-    p.communicate()
-    exit (1)
-kapacitor_name=(p.communicate()[0]).strip('\n')
-print '-------------------------------------'
-print 'KAPACITOR IP : ' + str(kapacitor_name)
+if options.clustername is not None:
+    cluster_name=options.clustername
+else: cluster_name='litmus'
 
+##### CLUSTER NAME
 if options.clustername is not None:
     pytest_parameters.append('--clustername=' + options.clustername)
 else:
     pytest_parameters.append('--clustername=litmus')
+
+##### CHRONOGRAF NODE(S)
 if options.chronograf is not None:
     pytest_parameters.append('--chronograf=' + options.chronograf)
+    print 'CHRONOGRAF IP : ' + options.chronograf
+elif options.nochronograf is not False:
+    print 'NOT INSTALLING CHRONOGRAF'
 else:
+    p=subprocess.Popen('pcl host chronograf-0 -c %s' % cluster_name, shell=True, stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE)
+    if p.wait() != 0:
+        print 'FAILED TO GET CHRONOGRAF NODE. EXITING'
+        print p.communicate()
+        exit(1)
+    chronograf_name = (p.communicate()[0]).strip('\n')
+    print '---------------------------------------'
+    print 'CHRONOGRAF IP : ' + str(chronograf_name)
     pytest_parameters.append('--chronograf=' + chronograf_name)
+
+######### DATA NODES
 if options.datanodes is not None:
     data_node_str=options.datanodes
 else: 
     # get data-node URL from pcl list -c <cluster>s
-	data_node_str=','.join(list_of_data_nodes)
+    list_of_data_nodes = []
+    for data_node in range(int(num_of_data_nodes)):
+        p = subprocess.Popen('pcl host data-%d -c "%s"' % (data_node, cluster_name), shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        if p.wait() != 0:
+            print 'FAILED TO GET DATA NODE. EXITING'
+            print p.communicate()
+            exit(1)
+        list_of_data_nodes.append((p.communicate()[0]).strip('\n'))
+    print '-----------------------------------------------'
+    print 'LIST OF DATA NODES : ' + str(list_of_data_nodes)
+    data_node_str=','.join(list_of_data_nodes)
 pytest_parameters.append('--datanodes=' + data_node_str)
+
+##### META NODES
 if options.metanodes is not None:
     meta_node_str=options.metanodes
 else: 
     # get meta-node URL from pcl list -c <cluster>
+    list_of_meta_nodes = []
+    for meta_node in range(int(num_of_meta_nodes)):
+        p = subprocess.Popen('pcl host meta-%d -c "%s"' % (meta_node, cluster_name), shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        if p.wait() != 0:
+            print 'FAILED TO GET META NODE. EXITING'
+            print p.communicate()
+            exit(1)
+        list_of_meta_nodes.append((p.communicate()[0]).strip('\n'))
+    print '-----------------------------------------------'
+    print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
     meta_node_str=','.join(list_of_meta_nodes)
+    # get a mapping of private IPs and Public IPs to be used to find leader meta node
+m=subprocess.Popen("pcl list -c \"%s\"| awk '{ if ($1 != \"ID\") print $4, $5 }'" % cluster_name, shell=True,
+                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+if m.wait() != 0:
+    print 'FAILED TO GET ALL OF THE NODES. EXITING'
+    print m.communicate()
+    exit(1)
+all_nodes=(m.communicate()[0]).strip('\n') # '52.10.147.183 10.0.207.136\n18.236.77.176 10.0.181.224'
+all_nodes=','.join(['_'.join(ips.split()) for ips in all_nodes.split('\n')])
+print '-------------------------------------------------------'
+print 'LIST OF ALL NODES MAPPINGS : ' + str(all_nodes)
 pytest_parameters.append('--metanodes=' + meta_node_str)
+pytest_parameters.append('--nodemap=' + all_nodes)
+
+###### KAPACITOR
 if options.kapacitor is not None:
     pytest_parameters.append('--kapacitor=' + options.kapacitor)
+    print '-------------------------------------'
+    print 'KAPACITOR IP : ' + options.kapacitor
+    print '-------------------------------------'
+elif options.nokapacitor is not False:
+    print 'NOT INSTALLING KAPACITOR'
 else:
+    p = subprocess.Popen('pcl host kapacitor-0 -c %s' % cluster_name, shell=True, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    if p.wait() != 0:
+        print 'FAILED TO GET kapacitor NODE. EXITING'
+        p.communicate()
+        exit(1)
+    kapacitor_name = (p.communicate()[0]).strip('\n')
+    print '-------------------------------------'
+    print 'KAPACITOR IP : ' + str(kapacitor_name)
+    print '-------------------------------------'
+    print ''
     pytest_parameters.append('--kapacitor=' + kapacitor_name)
 
 # passing a file containing the test suite(s)

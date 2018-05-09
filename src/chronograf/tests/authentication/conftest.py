@@ -1,5 +1,5 @@
 import pytest
-from src.chronograf.lib import rest_lib
+from src.chronograf.lib import chronograf_rest_lib
 import src.util.sources_util as su
 from random import choice
 
@@ -19,7 +19,6 @@ def _get_users_url(request, create_source):
     :param create_source:
     :return: users_url, e.g. /chronograf/v1/source/{id}/users
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('_get_users_url is being called')
     request.cls.mylog.info('-----------------------------------------------------')
     (source_id, result_dic)=create_source
@@ -32,26 +31,31 @@ def _get_users_url(request, create_source):
     return users_url
 
 @pytest.fixture(scope='class')
-def setup_users(request, chronograf, _get_users_url):
+def setup_users(request, chronograf, _get_users_url, http_auth, admin_user, admin_pass):
     '''
     :param request:
     :param create_source:
     :param chronograf:
     :return:
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('setup_users() fixture is being called')
     request.cls.mylog.info('----------------------------------------------------------------')
     users_url=_get_users_url
     assert users_url is not None, request.cls.log.info('Assertion Error: '
                                                        'users_url is None')
+    auth=None
+    if http_auth is not None:
+        username=admin_user
+        password=admin_pass
+        auth=(username, password)
     for permission in cluster_permissions:
         # create a user per permission
         name='user_%s' % permission
         request.cls.mylog.info('setup_users fixture - create user \''
                                + str(name) + '\'')
         data={'name':name, 'password':name, 'permissions':[{'scope':'all', 'allowed':[permission]}]}
-        response=rl.create_user(chronograf=chronograf, users_url=users_url, json=data)
+        response=rl.create_user(chronograf=chronograf, users_url=users_url, json=data, auth=auth)
         assert response.status_code == 201, \
             request.cls.mylog.info('Assert Error ' + str(response.json()))
     request.cls.mylog.info('setup_users fixture - done')
@@ -59,26 +63,38 @@ def setup_users(request, chronograf, _get_users_url):
     request.cls.mylog.info('')
 
 @pytest.fixture(scope='class')
-def cleanup_users(request, chronograf, _get_users_url):
+def cleanup_users(request, chronograf, _get_users_url, http_auth, admin_user, admin_pass):
     '''
     :param request:
     :return:
     '''
-    rl=rest_lib.RestLib(request.cls.mylog)
+    rl= chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('cleanup_users() fixture is being called')
     request.cls.mylog.info('--------------------------------------------------------------------')
     users_url=_get_users_url
     assert users_url is not None, request.cls.log.info('Assertion Error: '
                                                        'users_url is None')
+    auth=None
+    if http_auth is not None:
+        username=admin_user
+        password=admin_pass
+        auth=(username, password)
     for permission in cluster_permissions:
         # delete users
         name='user_%s' % permission
         request.cls.mylog.info('cleanup_users fixture - deleting user \''
                                + str(name) + '\'')
-        response=rl.delete_user(chronograf=chronograf, users_url=users_url, user_name=name)
+        response=rl.delete_user(chronograf=chronograf, users_url=users_url, user_name=name, auth=auth)
         assert response.status_code == 204, \
             request.cls.mylog.info('cleanup_users() fixture Assertion Error '
                                    + str(response.json()))
+    for permission in cluster_permissions:
+        # delete users
+        name='user_%s_createuser' % permission
+        request.cls.mylog.info('cleanup_users fixture - deleting user \''
+                               + str(name) + '\'')
+        rl.delete_user(chronograf=chronograf, users_url=users_url, user_name=name, auth=auth)
+        # do not assert, because user might not exist
     request.cls.mylog.info('cleanup_users() fixture - done')
     request.cls.mylog.info('-----------------------------------------------------')
     request.cls.mylog.info('')
@@ -86,7 +102,7 @@ def cleanup_users(request, chronograf, _get_users_url):
 # create source for each created user
 @pytest.fixture(scope='class')
 def create_sources_for_test_users(request, chronograf,data_nodes,
-                                  meta_nodes):
+                meta_nodes, http_auth, admin_user, admin_pass):
     '''
     :param request:
     :return:
@@ -101,22 +117,25 @@ def create_sources_for_test_users(request, chronograf,data_nodes,
     data_node=choice(data_nodes)
     meta_node=choice(meta_nodes)
     sources_url='/chronograf/v1/sources'
-    rl=rest_lib.RestLib(request.cls.mylog)
+    rl=chronograf_rest_lib.RestLib(request.cls.mylog)
     request.cls.mylog.info('create_sources_for_test_users() fixture is being called')
-    request.cls.mylog.info('-------------------------------------------------------------------------------------------------')
+    request.cls.mylog.info('-------------------------------------------------------')
+    auth=None
+    if http_auth is not None:
+        auth=(admin_user, admin_pass)
     for permission in cluster_permissions:
         name='user_%s' % permission
         request.cls.mylog.info('create_sources_for_test_users() fixture - '
                                'create data source for  \'' + str(name) + '\'')
         data={'name':name, 'username':name, 'password':name,
               'metaUrl':meta_node, 'url':data_node}
-        (status, source_data, source_id)=rl.create_source(chronograf, sources_url, json=data)
+        (status, source_data, source_id)=rl.create_source(chronograf, sources_url, json=data, auth=auth)
         assert status == 201, request.cls.mylog.info('create_sources_for_test_users '
                                                  'status=' + str(status))
         assert source_id is not None, request.cls.mylog.info('create_sources_for_test_users '
                                                  ' source_id=' + str(source_id))
     # get all sources
-    sources=rl.get_sources(chronograf, sources_url)
+    sources=rl.get_sources(chronograf, sources_url, auth=auth)
     # need to convert result dictionary so keys are the names of the datasources
     for key in sources:
         source_name=su.get_source_name(request.cls, key, sources)

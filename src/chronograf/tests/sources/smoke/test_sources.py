@@ -1,8 +1,7 @@
 import pytest
 import src.util.login_util as lu
 import src.util.sources_util as su
-import src.util.kapacitor_util as ku
-from src.chronograf.lib import rest_lib
+from src.chronograf.lib import chronograf_rest_lib
 from random import choice
 
 # before running test suite make sure there are no sources.
@@ -22,7 +21,7 @@ class TestSources():
     '''
 
     mylog=lu.log(lu.get_log_path(), 'w', __name__)
-    rl=rest_lib.RestLib(mylog)
+    rl= chronograf_rest_lib.RestLib(mylog)
 
     CUSTOM_NAME='Test Create Source User Options'
     UPDATE_NAME='Test Update Source Name'

@@ -1,18 +1,118 @@
-
+import requests
 from src.chronograf.lib.base_lib import BaseLib
-from src.chronograf.lib import rest_lib
-import  src.util.login_util as lu
 
 class KapacitorRestLib(BaseLib):
     """
 
     """
 
+    ############################################# GENERIC HTTP methods #################################################
+
+    def post(self, base_url, path, json=None, data=None, headers=None, auth=None):
+        '''
+        :param base_url:meta node url, e.g http://<metanode>:<8091>
+        :param path:path to post url
+        :param json:JSON object containiong post data
+        :param data:dictionary containing post data
+        :param headers: any custom headers for post request
+        :return:response object
+        '''
+        self.log.info('InfluxDBRestLib.post() is called with parameters: base_url=' + str(base_url) + ', path=' + str(path)
+                      + ', json=' + str(json) + ', auth=' + str(auth))
+        try:
+            response = requests.post(base_url + path, json=json, data=data, headers=headers, auth=auth)
+            self.log.info('InfluxDBRestLib.post() response code=' + str(response.status_code))
+            # TODO add more logging
+        except requests.ConnectionError, e:
+            self.log.info('InfluxDBRestLib.post() - ConnectionError : ' + str(e.message))
+            response = None
+        except requests.RequestException, e:
+            self.log.info('InfluxDBRestLib.post() - RequestsException : ' + str(e.message))
+            response = None
+        assert response is not None, self.log.info('SOME ERROR MESSAGE FOR POST')
+        return response
+
+    def get(self, base_url, path, params=None, headers=None, auth=None):
+        '''
+        :param base_url:Chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888 (default)
+        :param path:path to get url
+        :param params: (optional) Dictionary to be sent in the query string for the request
+        :param headers
+        :param auth
+        :return: response object
+        '''
+        self.log.info('InfluxDBRestLib.get() is called with parameters: base_url = '
+                      + str(base_url) + ', path = ' + str(path) + ', params = '
+                      + str(params) + ', headers= ' + str(headers) + ', auth=' + str(auth))
+        try:
+            response = requests.get(base_url + path, params=params, headers=headers, auth=auth)
+            self.log.info('InfluxDBRestLib.get() - response status_code = ' + str(response.status_code))
+            self.log.info('InfluxDBRestLib.get() - response headers = ' + str(response.headers))
+            self.log.info('InfluxDBRestLib.get() - response url = ' + str(response.url))
+        except requests.ConnectionError, e:
+            self.log.info('InfluxDBRestLib.get() - ConnectionError : ' + str(e.message))
+            response = None
+        except requests.RequestException, e:
+            self.log.info('InfluxDBRestLib.get() - RequestsException : ' + str(e.message))
+            response = None
+        except requests.exceptions, e:
+            self.log.info('InfluxDBRestLib.get() - RequestsException : ' + str(e.message))
+            response = None
+        assert response is not None, self.log.info('InfluxDBRestLib.get() - ASSERTION ERROR')
+        return response
+
+    def delete(self, base_url, path, auth=None):
+        '''
+        :param base_url:meta node url, e.g. http://<IP>:<PORT>, where PORT=8091 (default)
+        :param path: path to delete url
+        :param auth
+        :return:response object
+        '''
+        self.log.info('InfluxDBRestLib.delete() is called with parameters: base_url=' +
+                      str(base_url) + ', path=' + str(path))
+        try:
+            response = requests.delete(base_url + path, auth=auth)
+            self.log.info('InfluxDBRestLib.delete() - status_code=' + str(response.status_code))
+        except requests.ConnectionError, e:
+            self.log.info('InfluxDBRestLib.delete() - ConnectionError : ' + str(e.message))
+            response = None
+        except requests.RequestException, e:
+            self.log.info('InfluxDBRestLib.delete() - RequestsException : ' + str(e.message))
+            response = None
+        assert response is not None, self.log.info('InfluxDBRestLib.delete() - ASSERTION ERROR')
+        return response
+
+    def patch(self, base_url, path, json=None, data=None, headers=None, auth=None):
+        '''
+        :param base_url:chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888
+        :param path:path to patch url
+        :param json: data that needs to be updated in json format
+        :param data: data that needs to be updated in dictionary format
+        :param headers: optional
+        :param auth
+        :return: response object
+        '''
+        self.log.info('InfluxDBRestLib.patch() is called with parameters: base_url='
+                      + str(base_url) + ', path=' + str(path) + ', json=' + str(json) +
+                      ', data=' + str(data) + ', headers=' + str(headers) + ', auth=' + str(auth))
+        try:
+            response = requests.patch(base_url + path, json=json, data=data, headers=headers)
+            self.log.info('InfluxDBRestLib.patch() response code=' + str(response.status_code))
+        except requests.ConnectionError, e:
+            self.log.info('InfluxDBRestLib.patch() - ConnectionError : ' + str(e.message))
+            response = None
+        except requests.RequestException, e:
+            self.log.info('InfluxDBRestLib.patch() - ConnectionError : ' + str(e.message))
+            response = None
+        assert response is not None, self.log.info('InfluxDBRestLib.patch() response is none')
+        return response
+
+    ####################################################################################################################
+
+
     KAPACITOR_CONFIG_PATH='/kapacitor/v1/config/'
     KAPACITOR_TASKS='/kapacitor/v1/tasks'
 
-    mylog=lu.log(lu.get_log_path(), 'w', __name__)
-    rl=rest_lib.RestLib(mylog)
 
     ################### set/delete/add value ######################
 
@@ -26,9 +126,9 @@ class KapacitorRestLib(BaseLib):
         :return: dictionary of elements of a particular section
         '''
         final_dictionary={}
-        response=self.rl.get(kapacitor_url + self.KAPACITOR_CONFIG_PATH, section)
+        response=self.get(kapacitor_url + self.KAPACITOR_CONFIG_PATH, section)
         assert response.status_code == 200, \
-            self.mylog.info('KapacitorRestLib._get_section() return code is '
+            self.log.info('KapacitorRestLib._get_section() return code is '
                             + response.status_code)
         '''
         each section can have multiple elements, for example influxdb section
@@ -70,7 +170,7 @@ class KapacitorRestLib(BaseLib):
             key=element['options']['name']
             value=element['options']
             final_dictionary[key]=value
-        self.mylog.info('final_dictionary = ' + str(final_dictionary))
+        self.log.info('final_dictionary = ' + str(final_dictionary))
         return final_dictionary
 
     def set_value(self, kapacitor_url, section, json, name='pcl'):
@@ -83,20 +183,20 @@ class KapacitorRestLib(BaseLib):
                                 name is the pcl, the one set up by pcl installer
         :return:assertion
         '''
-        self.mylog.info('KapacitorRestLib.set_value. Get values for %s'
+        self.log.info('KapacitorRestLib.set_value. Get values for %s'
                         % section + ' for element name ' + name)
         set_value_dictionary=self._get_section(kapacitor_url, section)
         # we need to make sure (???) it is a default element
         assert set_value_dictionary[name]['default'] == True, \
-            self.mylog.info('IT IS NOT A DEFAULT ELEMENT')
+            self.log.info('IT IS NOT A DEFAULT ELEMENT')
         # construct a URL to be used to update the one or more options keys
         path_url=self.KAPACITOR_CONFIG_PATH + section + '/'\
             + name
-        self.mylog.info('KapacitorRestLib.set_value POST URL=' + str(path_url) )
+        self.log.info('KapacitorRestLib.set_value POST URL=' + str(path_url) )
         # post changes
-        response=self.rl.post(kapacitor_url, path_url, {'set':json})
+        response=self.post(kapacitor_url, path_url, {'set':json})
         assert response.status_code == 204, \
-            self.mylog.info('KapacitorRestLib.set_value could not set ' + str(json))
+            self.log.info('KapacitorRestLib.set_value could not set ' + str(json))
 
     def verify_set_value(self, kapacitor_url, section, json, name='pcl'):
         '''
@@ -106,16 +206,16 @@ class KapacitorRestLib(BaseLib):
         :param name: name of the updated element
         :return: Assertion
         '''
-        self.mylog.info('KapacitorRestLib.verify_set_value. Get values for %s'
+        self.log.info('KapacitorRestLib.verify_set_value. Get values for %s'
                         % section + ' for element name ' + name)
         verify_value_dictionary=self._get_section(kapacitor_url, section)
         # our json might have multiple values to verify
         for key in json:
-            self.mylog.info('KapacitorRestLib.verify_set_value. '
+            self.log.info('KapacitorRestLib.verify_set_value. '
                             'Asserting expected value : '  + str(json[key]) +
                             ' equals to actual value : ' + str(verify_value_dictionary[name][key]))
             assert verify_value_dictionary[name][key] == json[key], \
-                self.mylog.info('Assertion failed')
+                self.log.info('Assertion failed')
 
     def delete_value(self):
         pass
@@ -134,9 +234,9 @@ class KapacitorRestLib(BaseLib):
         :param json: JSON body of a task
         :return: response object
         '''
-        response=self.rl.post(kapacitor_url, self.KAPACITOR_TASKS, json=json)
+        response=self.post(kapacitor_url, self.KAPACITOR_TASKS, json=json)
         assert response.status_code == 200, \
-            self.mylog.info('ERROR message ' + str(response.text))
+            self.log.info('ERROR message ' + str(response.text))
         return response.json()
 
     def modify_task(self):
@@ -155,11 +255,11 @@ class KapacitorRestLib(BaseLib):
         :return nothing
         '''
         delete_path=self.KAPACITOR_TASKS + '/' + task_id
-        self.mylog.info('kapacitor_rest_lib.delete_task - delete_path='
+        self.log.info('kapacitor_rest_lib.delete_task - delete_path='
                         + str(delete_path))
-        response=self.rl.delete(kapacitor_url, delete_path)
+        response=self.delete(kapacitor_url, delete_path)
         assert response.status_code == 204, \
-            self.mylog.info('Assertion Errr ' + str(response.text))
+            self.log.info('Assertion Errr ' + str(response.text))
 
     def get_tasks_data(self, kapacitor_url):
         '''
@@ -173,58 +273,58 @@ class KapacitorRestLib(BaseLib):
             # status = enabled/disabled
             task_status=task.get('status')
             assert task_status is not None, \
-                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                self.log.info('kapacitor_rest_lib.get_tasks_data task '
                                 'status is None')
-            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_status='
+            self.log.info('kapacitor_rest_lib.get_tasks_data task_status='
                             + str(task_status))
             # type either stream or batch
             task_type=task.get('type')
             assert task_type is not None, \
-                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                self.log.info('kapacitor_rest_lib.get_tasks_data task '
                                 'type is None')
-            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_type='
+            self.log.info('kapacitor_rest_lib.get_tasks_data task_type='
                             + str(task_type))
             # script that defines the task
             task_script=task.get('script')
             assert task_script is not None, \
-                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                self.log.info('kapacitor_rest_lib.get_tasks_data task '
                                 'script is None')
-            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_script='
+            self.log.info('kapacitor_rest_lib.get_tasks_data task_script='
                             + str(task_script))
             # name of the task
             task_id=task.get('id')
             assert task_id is not None, \
-                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                self.log.info('kapacitor_rest_lib.get_tasks_data task '
                                 'id is None')
-            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_id='
+            self.log.info('kapacitor_rest_lib.get_tasks_data task_id='
                             + str(task_id))
             # list of database/rp for the task
             dbrps=task.get('dbrps')
             task_db=dbrps[0].get('db')
             assert task_db is not None, \
-                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                self.log.info('kapacitor_rest_lib.get_tasks_data task '
                                 'db is None')
-            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_db='
+            self.log.info('kapacitor_rest_lib.get_tasks_data task_db='
                             + str(task_db))
             task_rp=dbrps[0].get('rp')
             assert task_rp is not None, \
-                self.mylog.info('kapacitor_rest_lib.get_tasks_data task '
+                self.log.info('kapacitor_rest_lib.get_tasks_data task '
                                 'rp is None')
-            self.mylog.info('kapacitor_rest_lib.get_tasks_data task_rp='
+            self.log.info('kapacitor_rest_lib.get_tasks_data task_rp='
                             + str(task_rp))
             final_dictionary[task_id]={'task_status':task_status, 'task_type':task_type,
                                        'task_script':task_script, 'task_db':task_db,
                                        'task_rp':task_rp}
-        self.mylog.info('kapacitor_rest_lib.get_tasks_data final_dict=' + str(final_dictionary))
+        self.log.info('kapacitor_rest_lib.get_tasks_data final_dict=' + str(final_dictionary))
         return final_dictionary
 
     def _get_tasks(self, kapacitor_url):
         '''
         Return information about all of the tasks
         '''
-        response=self.rl.get(kapacitor_url, self.KAPACITOR_TASKS)
+        response=self.get(kapacitor_url, self.KAPACITOR_TASKS)
         assert response.status_code == 200, \
-            self.mylog.info('ERROR message ' + str(response.text))
+            self.log.info('ERROR message ' + str(response.text))
         return response.json()
 
     def get_task(self):

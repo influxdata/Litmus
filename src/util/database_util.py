@@ -1,36 +1,11 @@
 
 import src.util.sources_util as su
+import traceback
+import sys
 from influxdb.resultset import ResultSet
 from influxdb import exceptions as e
 
-######################## using influxDBClient ####################
-
-def create_database(test_class_instance, client, db_name):
-    '''
-    create database using InfluxDBClient
-    :param test_class_instance:
-    :param host:
-    :param port:
-    :param user:
-    :param password:
-    :return:
-    '''
-    success=False
-    try:
-        test_class_instance.mylog.info('database_util.create_database() '
-                                       '- Creating database ' + db_name)
-        client.create_database(db_name)
-        client.close()
-        success=True
-    except e.InfluxDBServerError:
-        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
-        if client is not None:
-            client.close()
-    except e.InfluxDBClientError:
-        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
-        if client is not None:
-            client.close()
-    return success
+################################################ using influxDBClient ##################################################
 
 def run_query(test_class_instance, client, query, params=None, epoch=None,
               expected_response_code=200, database=None):
@@ -57,12 +32,10 @@ def run_query(test_class_instance, client, query, params=None, epoch=None,
                             expected_response_code=expected_response_code,
                             database=database)
         client.close()
-    except e.InfluxDBServerError:
-        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
-        if client is not None:
-            client.close()
-    except e.InfluxDBClientError:
-        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
         if client is not None:
             client.close()
     return result
@@ -93,41 +66,101 @@ def write_points(test_class_instance, client, points, time_precision=None,
                                          database=database, retention_policy=retention_policy,
                                          tags=tags)
         client.close()
-    except e.InfluxDBServerError:
-        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
-        if client is not None:
-            client.close()
-    except e.InfluxDBClientError:
-        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
         if client is not None:
             client.close()
     return return_value
 
-def create_rp(test_class_instance, client, rp_name, duration, replication, database, default):
+def create_database(test_class_instance, client, db_name):
     '''
+    create database using InfluxDBClient
     :param test_class_instance:
-    :param client:
-    :param database:
-    :param rp_name:
+    :param host:
+    :param port:
+    :param user:
+    :param password:
     :return:
     '''
     success=False
+    error_message=''
     try:
-        test_class_instance.mylog.info('database_util.create_rp()- CREATE RETENTION POLICY %s ON %s DURATION %s REPLICATION %s DEFAULT %s' % (rp_name, database, duration, replication, default))
+        test_class_instance.mylog.info('database_util.create_database() '
+                                       '- Creating database ' + db_name)
+        client.create_database(db_name)
+        client.close()
+        success=True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message = str(clt_error_message)
+        if client is not None:
+            client.close()
+    test_class_instance.mylog.info('database_util.create_database() success=' + str(success))
+    return (success, error_message)
+
+#-------------------------------------------------- DATABASES ---------------------------------------------------------#
+
+def drop_database(test_class_instance, client, db_name):
+    '''
+    :param test_class_instance:
+    :param client:
+    :param db_name:
+    :return:
+    '''
+    success = False
+    error_message = ''
+    try:
+        test_class_instance.mylog.info('database_util.drop_database() '
+                                       '- Dropping database ' + db_name)
+        client.drop_database(db_name)
+        client.close()
+        success = True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message=str(clt_error_message)
+        if client is not None:
+            client.close()
+    return (success, error_message)
+
+def create_retention_policy(test_class_instance, client, rp_name, duration, replication, database, default):
+    '''
+    :param test_class_instance:
+    :param client:
+    :param rp_name:
+    :param duration:
+    :param replication:
+    :param database:
+    :param default:
+    :return:
+    '''
+    success=False
+    error_message=''
+    try:
+        test_class_instance.mylog.info('database_util.create_retention_policy()- '
+                                       'CREATE RETENTION POLICY %s ON %s DURATION %s REPLICATION %s DEFAULT %s'
+                                       % (rp_name, database, duration, replication, default))
+        # by default SHARD DURATION is defined by POLICY DURATION : < 2d=1 hour, >=2d <= 6m =1day and > 6month=7 days
         client.create_retention_policy(rp_name, duration, replication, database, default)
         client.close()
         success=True
-    except e.InfluxDBServerError:
-        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message = str(clt_error_message)
         if client is not None:
             client.close()
-    except e.InfluxDBClientError:
-        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
-        if client is not None:
-            client.close()
-    return success
+    return (success, error_message)
 
-def drop_rp(test_class_instance, client, database, rp_name):
+#--------------------------------------------- RETENTION POLICIES -----------------------------------------------------#
+
+def drop_retention_policies(test_class_instance, client, database, rp_name):
     '''
     :param test_class_instance:
     :param client:
@@ -136,22 +169,164 @@ def drop_rp(test_class_instance, client, database, rp_name):
     :return:
     '''
     success=False
+    error_message=''
     try:
-        test_class_instance.mylog.info('database_util.drop_rp()- DROP RETENTION POLICY %s ON %s' % (rp_name, database))
+        test_class_instance.mylog.info('database_util.drop_retention_policies()- '
+                                       'DROP RETENTION POLICY %s ON %s' % (rp_name, database))
         client.drop_retention_policy(rp_name,database)
         client.close()
         success=True
-    except e.InfluxDBServerError:
-        test_class_instance.mylog.info('InfluxDBServerError:' + str(e.InfluxDBServerError.message))
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message = str(clt_error_message)
         if client is not None:
             client.close()
-    except e.InfluxDBClientError:
-        test_class_instance.mylog.info('InfluxDBClientError:' + str(e.InfluxDBClientError.message))
-        if client is not None:
-            client.close()
-    return success
+    return (success, error_message)
 
-############################################################
+def show_retention_policies(test_class_instance, client, database):
+    '''
+    :param test_class_instance:
+    :param client:
+    :param database:
+    :return:
+    '''
+    success = False
+    error_message = ''
+    retention_policies_d={}
+    try:
+        test_class_instance.mylog.info('database_util.show_retention_policies()- '
+                                       'SHOW RETENTION POLICIES ON %s DATABASE' % database)
+        #list of retention policy dictionaries: [{u'default': True,'duration': u'0','name': u'default','replicaN': 1}]
+        retention_policies_l=client.get_list_retention_policies(database)
+        for policy in retention_policies_l:
+            # policy is represented by :{u'duration': u'24h0m0s', u'default': True, u'replicaN': 2,
+            # u'name': u'annika.sapinski_retention_policy', u'shardGroupDuration': u'1h0m0s'}
+            policy_name=policy.get('name')
+            test_class_instance.mylog.info('database_util.show_retention_policies()- policy_name=' + str(policy_name))
+            policy_duration=policy.get('duration')
+            test_class_instance.mylog.info('database_util.show_retention_policies()- policy duration='
+                                           + str(policy_duration))
+            policy_default=policy.get('default')
+            test_class_instance.mylog.info('database_util.show_retention_policies()- policy default='
+                                           + str(policy_default))
+            policy_replication=policy.get('replicaN')
+            test_class_instance.mylog.info('database_util.show_retention_policies()- policy_replication='
+                                           + str(policy_replication))
+            policy_shard_group_duration=policy.get('shardGroupDuration')
+            test_class_instance.mylog.info('database_util.show_retention_policies()- policy_shard_group_duration='
+                                           + str(policy_shard_group_duration))
+            retention_policies_d[policy_name]={'duration':policy_duration, 'default':policy_default,
+                                               'replication':policy_replication,
+                                               'shard_group_duration':policy_shard_group_duration}
+        test_class_instance.mylog.info('database_util.show_retention_policies()- returned : '
+                                       + str(retention_policies_d))
+        client.close()
+        success = True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message = str(clt_error_message)
+        if client is not None:
+            client.close()
+    return (success, retention_policies_d, error_message)
+
+def get_retention_policy(test_class_instance, dictionary_of_retention_policies, retention_policy_name):
+    '''
+    :param test_class_instance:
+    :param dictinary_of_retention_policies:
+    :param retention_policy_name:
+    :return:
+    '''
+    test_class_instance.mylog.info('database_util.get_retention_policy()- ' + str(retention_policy_name))
+    if retention_policy_name in dictionary_of_retention_policies.keys():
+        return dictionary_of_retention_policies[retention_policy_name]
+    else:
+        return None
+
+def get_retention_policy_duration(test_class_instance, retention_policy_dic):
+    '''
+    :param test_class_instance:
+    :param retention_policy_dic:
+    :return:
+    '''
+    test_class_instance.mylog.info('database_util.get_retention_policy_duration() function is being called')
+    test_class_instance.mylog.info('----------------------------------------------------------------------')
+    test_class_instance.mylog.info('database_util.get_retention_policy_duraiton() - duration='
+                                   + retention_policy_dic['duration'])
+    return retention_policy_dic['duration']
+
+def get_retention_policy_is_default(test_class_instance, retention_policy_dic):
+    '''
+    :param test_class_instance:
+    :param retention_policy_dic:
+    :return:
+    '''
+    test_class_instance.mylog.info('database_util.get_retention_policy_is_default() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------------------------')
+    test_class_instance.mylog.info('database_util.get_retention_policy_is_default() - default='
+                                   + retention_policy_dic['default'])
+    return retention_policy_dic['default']
+
+def get_retention_policy_replication(test_class_instance, retention_policy_dic):
+    '''
+    :param test_class_instance:
+    :param retention_policy_dic:
+    :return:
+    '''
+    test_class_instance.mylog.info('database_util.get_retention_policy_replication() function is being called')
+    test_class_instance.mylog.info('-------------------------------------------------------------------------')
+    test_class_instance.mylog.info('database_util.get_retention_policy_replicaiton() - replicaiton='
+                                   + str(retention_policy_dic['replication']))
+    return retention_policy_dic['replication']
+
+def get_retention_policy_shard_group_duration(test_class_instance, retention_policy_dic):
+    '''
+    :param test_class_instance:
+    :param retention_policy_dic:
+    :return:
+    '''
+    test_class_instance.mylog.info('database_util.get_retention_policy_shard_group_duration() function is being called')
+    test_class_instance.mylog.info('----------------------------------------------------------------------------------')
+    test_class_instance.mylog.info('database_util.get_retention_policy_shard_group_duraiton() - shard group duration='
+                                   + retention_policy_dic['shard_group_duration'])
+    return retention_policy_dic['shard_group_duration']
+
+def alter_retention_policy(test_class_instance, client, rp_name, database, duration=None,
+                           replication=None, default=None):
+    '''
+    :param test_class_instance:
+    :param client:
+    :param rp_name:
+    :param duration:
+    :param replicaiton:
+    :param database:
+    :param default:
+    :return:
+    '''
+    success = False
+    error_message = ''
+    try:
+        test_class_instance.mylog.info('database_util.alter_retention_policy()- '
+            'ALTER RETENTION POLICY %s ON %s DURATION %s REPLICATION %s DEFAULT %s'
+                                       % (rp_name, database, duration, replication, default))
+        client.alter_retention_policy(rp_name, database, duration, replication, default)
+        client.close()
+        success = True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message = str(clt_error_message)
+        if client is not None:
+            client.close()
+    return (success, error_message)
+
+
+######################################## REST API CHRONOGRAF ###########################################################
+
 def get_default_databases_links(test_class_instance, default_sources):
     '''
     :param test_class_instance: instance of test class

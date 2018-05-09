@@ -1,5 +1,5 @@
 
-import requests, os
+import requests
 from src.chronograf.lib.base_lib import BaseLib
 
 
@@ -14,21 +14,23 @@ class RestLib(BaseLib):
 
     CHRONOGRAF_PATH = '/chronograf/v1' # Should we make it as option passed to master script???
 
+
     ############################################# GENERIC HTTP methods #################################################
 
-    def post(self, base_url, path, json=None, data=None, headers=None):
+    def post(self, base_url, path, json=None, data=None, headers=None, auth=None):
         '''
         :param base_url:Chronograf URL, e.g http://<ip>:<port>
         :param path:path to post url
         :param json:JSON object containiong post data
         :param data:dictionary containing post data
         :param headers: any custom headers for post request
+        :param auth
         :return:response object
         '''
         self.log.info('RestLib.post() is called with parameters: base_url=' + str(base_url) + ', path=' + str(path)
-                      + ', json=' + str(json))
+                      + ', json=' + str(json)+ ', auth=' + str(auth))
         try:
-            response=requests.post(base_url + path, json=json, data=data, headers=headers)
+            response=requests.post(base_url + path, json=json, data=data, headers=headers, auth=auth)
             self.log.info('RestLib.post() response code=' + str(response.status_code))
             # TODO add more logging
         except requests.ConnectionError, e:
@@ -40,18 +42,20 @@ class RestLib(BaseLib):
         assert response is not None, self.log.info('SOME ERROR MESSAGE FOR POST')
         return response
 
-    def get(self, base_url, path, params=None, headers=None):
+    def get(self, base_url, path, params=None, headers=None, auth=None):
         '''
         :param base_url:Chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888 (default)
         :param path:path to get url
         :param params: (optional) Dictionary to be sent in the query string for the request
+        :param headers:
+        :param auth
         :return: response object
         '''
         self.log.info('RestLib.get() is called with parameters: base_url = '\
                       + str(base_url) + ', path = ' + str(path) + ', params = '\
-                      + str(params) + ', headers= ' + str(headers))
+                      + str(params) + ', headers= ' + str(headers) + ', auth=' + str(auth))
         try:
-            response=requests.get(base_url + path, params=params, headers=headers)
+            response=requests.get(base_url + path, params=params, headers=headers, auth=auth)
             self.log.info('RestLib.get() - response status_code = ' + str(response.status_code))
             self.log.info('RestLib.get() - response headers = ' + str(response.headers))
             self.log.info('RestLib.get() - response url = ' + str(response.url))
@@ -64,15 +68,17 @@ class RestLib(BaseLib):
         assert response is not None, self.log.info('RestLib.get() - ASSERTION ERROR')
         return response
 
-    def delete(self, base_url, path):
+    def delete(self, base_url, path, auth=None):
         '''
         :param base_url:Chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888 (default)
         :param path: path to delete url
+        :param auth
         :return:response object
         '''
-        self.log.info('RestLib.delete() is called with parameters: base_url=' + str(base_url) + ', path=' + str(path))
+        self.log.info('RestLib.delete() is called with parameters: base_url=' + str(base_url) +
+                      ', path=' + str(path) + ', auth=' + str(auth))
         try:
-            response=requests.delete(base_url + path)
+            response=requests.delete(base_url + path, auth=auth)
             self.log.info('RestLib.delete() - status_code=' + str(response.status_code))
         except requests.ConnectionError, e:
             self.log.info('RestLib.delete() - ConnectionError : ' + str(e.message))
@@ -83,20 +89,21 @@ class RestLib(BaseLib):
         assert response is not None, self.log.info('RestLib.delete() - ASSERTION ERROR')
         return response
 
-    def patch(self, base_url, path, json=None, data=None, headers=None):
+    def patch(self, base_url, path, json=None, data=None, headers=None, auth=None):
         '''
         :param base_url:chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888
         :param path:path to patch url
         :param json: data that needs to be updated in json format
         :param data: data that needs to be updated in dictionary format
         :param headers: optional
+        :param auth
         :return: response object
         '''
         self.log.info('RestLib.patch() is called with parameters: base_url='
                       + str(base_url) + ', path=' + str(path) +  ', json=' + str(json) +
-                      ', data=' + str(data) + ', headers=' + str(headers))
+                      ', data=' + str(data) + ', headers=' + str(headers) + ', auth=' + str(auth))
         try:
-            response=requests.patch(base_url + path, json=json, data=data, headers=headers)
+            response=requests.patch(base_url + path, json=json, data=data, headers=headers, auth=auth)
             self.log.info('RestLib.patch() response code=' + str(response.status_code))
         except requests.ConnectionError, e:
             self.log.info('RestLib.patch() - ConnectionError : ' + str(e.message))
@@ -109,16 +116,18 @@ class RestLib(BaseLib):
 
     ##############################################################################################################
 
-    def get_chronograf_paths(self, base_url): # this method is used as a fixure for chronograf smoke tests. Should
+
+    def get_chronograf_paths(self, base_url, auth=None): # this method is used as a fixure for chronograf smoke tests. Should
                                               # it be moved to a root conftest.py so every other method/function has an
                                               # access to it????
         '''
         :param base_url: Chronograf URL, e.g. http://<ip>:<port>, right now using default port 8888
+        :param auth
         :return: dictionary of URLS, where key is a name of the url and key is a path
         '''
         chronograf_path = {} # result dictionary
 
-        response = self.get(base_url, self.CHRONOGRAF_PATH)
+        response = self.get(base_url, self.CHRONOGRAF_PATH, auth=auth)
         result = response.json()
         '''
         me --> /chronograf/v1/me
@@ -249,18 +258,19 @@ class RestLib(BaseLib):
                       str(sources))
         return sources
 
-    def create_source(self, base_url, source_url, json):
+    def create_source(self, base_url, source_url, json, auth=None):
         '''
         :param base_url: the URL of chronograf, e.g. http://12.34.56.78:8888
         :param source_url:the URL of the source, e.g. /chronograf/v1/sources
         :param json: request body in JSON format, e.g.:
                      '{"url":"http://54.149.168.44:8086"}' - URL is required
                       Other options for data sources creation
+        :param auth
         :return: (response.status_code, result['message], source_id) if source was created successfully then
                  result['message'] will be empty and status code and source_id won't and if source was not created
                  successfully then status code and result['message'] won't be ampty and source_id will be.
         '''
-        response=self.post(base_url, source_url, json)
+        response=self.post(base_url, source_url, json, auth=auth)
         try:
             source_id = response.json().get('id')
             if source_id is not None:
@@ -274,11 +284,12 @@ class RestLib(BaseLib):
             self.log.info('RestLib.create_source() - Value Error :' + str(e.message))
             return (response.status_code, response.json()['message'], None)
 
-    def get_source(self, base_url, source_url, source_id):
+    def get_source(self, base_url, source_url, source_id, auth=None):
         '''
         :param base_url:Chronograf URL, e.g. http://<IP>:<PORT>
         :param source_url:path to a source URL, e.g. /chronograf/v1/sources
         :param source_id:id of the created source
+        :param auth
         :return:dictionary of response data
         '''
         self.log.info('rest_lib.RestLib:get_source() START')
@@ -286,23 +297,24 @@ class RestLib(BaseLib):
         # source_url + os.path.sep + source_id
         source_path=source_url + '/' + source_id
         self.log.info('rest_lib.RestLib:get_source() : STEP 1 - GET ' + str(base_url) + str(source_path) + ' URL')
-        response = self.get(base_url, source_path)
+        response = self.get(base_url, source_path, auth=auth)
         # get the list of a source with id = source_id
         source = response.json()
         self.log.info('rest_lib.RestLib:get_source() : STEP 2 - GET ALL OF THE RESPONSE DATA')
         return self.get_source_data(source, 'get_source')
 
-    def get_sources(self, base_url, source_url):
+    def get_sources(self, base_url, source_url, auth=None):
         '''
         :param base_url:Chronograf URL, e.g. http://<IP>:<PORT>
         :param source_url:path to a source URL, e.g. /chronograf/v1/sources
+        :param auth
         :return:dictionary of response data for all of the existing sources, where dictionary key is a source ID
         '''
         sources={}
         self.log.info('rest_lib.RestLib:get_sources() START')
         # http://<Chronograf IP>:8888/chronograf/v1/sources
         self.log.info('rest_lib.RestLib:get_sources() : STEP 1 - GET ' + str(base_url) + str(source_url) + ' URL')
-        response=self.get(base_url, source_url)
+        response=self.get(base_url, source_url, auth=auth)
         # {u'sources': [{u'username': u'nothing', u'telegraf': u'telegraf', u'name': u'gershon-litmus-data-0', u'links':
         #       {u'users': u'/chronograf/v1/sources/2/users', u'roles': u'/chronograf/v1/sources/2/roles', u'self': u'/chronograf/v1/sources/2', u'databases': u'/chronograf/v1/sources/2/dbs',
         #        u'write': u'/chronograf/v1/sources/2/write', u'proxy': u'/chronograf/v1/sources/2/proxy', u'kapacitors': u'/chronograf/v1/sources/2/kapacitors', u'queries': u'/chronograf/v1/sources/2/queries',
@@ -323,11 +335,12 @@ class RestLib(BaseLib):
         self.log.info('RestLib.get_sources() FINAL SOURCES : ' + str(sources))
         return sources
 
-    def delete_source(self, base_url, source_url, source_id):
+    def delete_source(self, base_url, source_url, source_id, auth=None):
         '''
         :param base_url:Chronograf URL, e.e http://<IP>:<PORT>, where PORT=8888 (default)
         :param source_url:the URL of the source, e.g. /chronograf/v1/sources
         :param source_id:ID of the source to be deleted
+        :param auth
         :return:does not return anything, asserts status_code is 204
         '''
         self.log.info('RestLib.delete_source() is called with parameters: base_url='
@@ -338,13 +351,13 @@ class RestLib(BaseLib):
         url_to_delete=(source_url + '/' + source_id)
         self.log.info('rest_lib.RestLib:delete_source() : STEP 1 - DELETE ' + str(base_url) +
                       str(url_to_delete) + ' URL')
-        response=self.delete(base_url, url_to_delete)
-        #assert response.status_code == 204, self.log.info('RestLib.delete_source() status_code='
-        #                                                  + str(response.status_code) + ' message='
-        #                                                 + str(response.json()))
+        response=self.delete(base_url, url_to_delete, auth=auth)
+        #assert response.status_code == 204,
+        self.log.info('RestLib.delete_source() status_code=' + str(response.status_code) + ' message='
+                      + str(response.text))
         return response
 
-    def patch_source(self, base_url, source_url, json, source_id, data=None, headers=None):
+    def patch_source(self, base_url, source_url, json, source_id, data=None, headers=None, auth=None):
         '''
         :param base_url:chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888
         :param source_url:path to a source URL, e.g. /chronograf/v1/sources
@@ -352,20 +365,22 @@ class RestLib(BaseLib):
         :param source_id:id of the source to be updated
         :param data: =data to be updated as dictionary
         :param headers: optional
+        :param auth
         :return: response object
         '''
         self.log.info('RestLib.patch_source() is called with parameters: base_url='
                       + str(base_url) + ', path=' + str(source_url) + ', json=' + str(json) + ', source id='
-                      + str(source_id) + ', data=' + str(data) + ', headers=' + str(headers))
+                      + str(source_id) + ', data=' + str(data) + ', headers=' + str(headers) + ', auth=' + str(auth))
         url_to_update=(source_url + '/' + source_id)
         # http://34.211.227.112:8888/chronograf/v1/sources/{id}, where url_to_update is /chronograf/v1/sources/{id}
-        response=self.patch(base_url, url_to_update, json, data=data, headers=headers)
-        #assert response.status_code == 200, self.log.info('RestLib.patch_source() status code='
-        #                                                  + str(response.status_code) + ' message='
-        #                                                  + str(response.json()))
+        response=self.patch(base_url, url_to_update, json, data=data, headers=headers, auth=auth)
+        #assert response.status_code == 200,
+        self.log.info('RestLib.patch_source() status code=' + str(response.status_code) + ' message='
+                      + str(response.json()))
         return response
 
     ################################### Kapacitor METHODS #########################################################
+    # NOTE : CURRENTLY NOT USING ANY AUTHENTICATION FOR KAPACITOR,
 
     def get_kapacitor_data(self, kapacitor, function):
         '''
@@ -537,9 +552,9 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib:delete_kapacitor() : STEP 1 - DELETE ' + str(base_url) +
                       str(url_to_delete) + ' URL')
         response = self.delete(base_url, url_to_delete)
-        #assert response.status_code == 204, self.log.info('RestLib.delete_kapacitor() status_code='
-        #                                                  + str(response.status_code) + ' message='
-        #                                                  + str(response.json()))
+        #assert response.status_code == 204,
+        self.log.info('RestLib.delete_kapacitor() status_code=' + str(response.status_code) +
+                      ' message=' + str(response.text))
         return response
 
     ################################## DATABASE METHODS ######################################
@@ -586,11 +601,12 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib.get_databases() RESULT DICTIONARY = ' + str(databases_result))
         return databases_result
 
-    def create_database(self, base_url, source_db_url, json):
+    def create_database(self, base_url, source_db_url, json, auth=None):
         '''
         :param base_url:chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888
         :param source_db_url: /chronograf/v1/sources/{id}/dbs db url for a specific source
         :param json: request body in JSON format
+        :param auth
         :return: response object
         '''
         '''
@@ -641,45 +657,48 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib.create_database() - STEP 1 : '
                       'CREATING DATABASE WITH PARAMS base_url='
                       + str(base_url) + ', source db url=' + str(source_db_url)
-                      + ', json=' + str(json))
-        response=self.post(base_url, source_db_url,json)
+                      + ', json=' + str(json) + ', auth=' + str(auth))
+        response=self.post(base_url, source_db_url,json, auth=auth)
         #assert response.status_code == 201, \
         #   self.log.info('rest_lib.RestLib.create_database() status='
         #  + str(response.status_code))
         return response
 
-    def get_database(self, base_url, source_db_url, db_name):
+    def get_database(self, base_url, source_db_url, db_name, auth=None):
         '''
         :param base_url: chronograf url
         :param source_db_url: path to a db url for particular source
         :param db_name: name of the database
+        :param auth
         :return: response schema for a particular database name for a particular data source
         '''
-        databases= self.get_databases(base_url, source_db_url)
+        databases= self.get_databases(base_url, source_db_url, auth=auth)
         assert databases.get(db_name) is not None, \
             self.log.info('Assertion Error database %s does not exist' % db_name)
         return databases.get(db_name)
 
-    def get_databases(self, base_url, source_db_url):
+    def get_databases(self, base_url, source_db_url, auth=None):
         '''
         :param base_url:chronograf URL, e.g. http://<IP>:<PORT>, where PORT=8888
         :param source_db_url:/chronograf/v1/sources/{id}/dbs
+        :param auth
         :return: dictionary of databases response data for a specific source
         '''
         self.log.info('rest_lib.RestLib:get_databases() START')
         # http://<chronograf IP>:8888/chronograf/v1/sources/{id}/dbs,
         self.log.info('rest_lib.RestLib:get_databases() : '
                       'STEP 1 - GET ' + str(base_url) + str(source_db_url) + ' URL')
-        response=self.get(base_url, source_db_url)
+        response=self.get(base_url, source_db_url, auth=auth)
         dbs_result=response.json()['databases']
         self.log.info('rest_lib.RestLib:get_databases_data() : STEP 2 - GET ALL OF THE RESPONSE DATA')
         return self.get_databases_data(dbs_result)
 
-    def delete_database(self, base_url, source_db_url, db_name):
+    def delete_database(self, base_url, source_db_url, db_name, auth=None):
         '''
         :param base_url: chronograf url
         :param source_db_url: path to source's dbs url
         :param db_name: name of the database to delete
+        :param auth
         :return: does not return, assert status == 204
         '''
         self.log.info('rest_lib.RestLib.delete_database() START')
@@ -687,9 +706,9 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib.delete_database() - STEP 1 : '
                       'DELETING DATABASE WITH PARAMS base_url='
                       + str(base_url) + ', source db url=' + str(source_db_url)
-                      + ', db name=' + str(db_name))
+                      + ', db name=' + str(db_name) + ', auth=' + str(auth))
         path=source_db_url + '/' + db_name
-        response=self.delete(base_url, path)
+        response=self.delete(base_url, path, auth=None)
         #assert respons.status_code ==204, \
         #   self.log.info('rest_lib.RestLib.delete_database() status='
         #  + str(respons.status_code) + ', message=' + str(respons.json()))
@@ -698,12 +717,13 @@ class RestLib(BaseLib):
 
     ##################### RETENTION POLICIES #################
 
-    def get_retention_policies_for_database(self, chronograf, policy_link):
+    def get_retention_policies_for_database(self, chronograf, policy_link, auth=None):
         '''
         Retrieves all retention policies for a databse
         :param:policy_link (str): link to retention policies for a database
                     /chronograf/v1/sources/{id}/dbs/{db_id}/rps
         :param:chronograf (str), url to a chronograf http://<IP>:<PORT>
+        :param auth
         :return:list of retention policies :[{"name":"monitor",
                                                             "duration":"168h0m0s",
                                                             "replication":1,
@@ -716,19 +736,20 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib.get_retention_policies_for database()'
                       ' method called with parameters ' + 'chronograf='
                       + str(chronograf) + ', policy_link=' + str(policy_link))
-        response=self.get(chronograf, policy_link)
+        response=self.get(chronograf, policy_link, auth=auth)
         #assert response.status_code == 200, \
         self.log.info('rest_lib.RestLib.get_retention_policies_for database() '
                       'status=' + str(response.status_code) + ', message='
                       + str(response.json()))
         return response
 
-    def create_retention_policy_for_database(self, chronograf, policy_link, json):
+    def create_retention_policy_for_database(self, chronograf, policy_link, json, auth=None):
         '''
         Creates New retention policy for a database
         :param chronograf(str):Chronograf URL http://<IP>:<PORT>
         :param policy_link:(str): link to a retention policy of a database,
                     e.g./chronograf/v1/sources/{id}/dbs/{db_id}/rps
+        :param auth
         :return:response body dictionary: "name": "weekly",
                                                                "duration": "7d",
                                                                 "replication": 1,
@@ -741,15 +762,15 @@ class RestLib(BaseLib):
         # request body the same as response body
         self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
                       ' method is called with parameters chronograf=' + str(chronograf)
-                      + ', policy_link=' + str(policy_link))
-        response=self.post(chronograf, policy_link, json)
+                      + ', policy_link=' + str(policy_link) + ', auth=' + str(auth))
+        response=self.post(chronograf, policy_link, json, auth=auth)
         #assert response.status_code == 201, \
         self.log.info('rest_lib.RestLib: create_retention_policy_for_database()'
                         ' status=' + str(response.status_code) + ', message='
                         + str(response.json()))
         return response
 
-    def patch_retention_policy_for_database(self, chronograf, policy_link, policy_name, json):
+    def patch_retention_policy_for_database(self, chronograf, policy_link, policy_name, json, auth=None):
         '''
         Alters retention policy for a database
         :param chronograf (str):chronograf URL, http://<IP>.<PORT>
@@ -757,6 +778,7 @@ class RestLib(BaseLib):
                      /chronograf/v1/sources/{id}/dbs/{db_id}/rps
         :param policy_name(str): name of the policy to alter
         :param JSON, request body in JSON format
+        :param auth
         :return:response body dictionary: "name": "weekly",
                                                                 "duration": "7d",
                                                                 "replication": 1,
@@ -769,77 +791,81 @@ class RestLib(BaseLib):
         self.log.info('rest_lib.RestLib:patch_retention_policy_for _database() '
                       'method called with parameters chronograf=' + str(chronograf)
                       + ', policy_link=' + str(policy_link) + ', policy_name='
-                      + str(policy_name) + ', json=' + str(json))
+                      + str(policy_name) + ', json=' + str(json) + ', auth=' + str(auth))
         self.log.info('rest_lib.RestLib:patch_retention_policy_for _database() build path')
         url=chronograf + policy_link + '/' + policy_name
         #response=self.patch(chronograf, path, json)
-        response=requests.put(url, json=json)
+        response=requests.put(url, json=json, auth=auth)
         #assert response.status_code == 201, \
         self.log.info('rest_lib.RestLib:patch_retention_policy_for _database()'
                          ' status=' + str(response.status_code) + ', message='
                          + str(response.text))
         return response
 
-    def delete_retention_policy_for_database(self, chronograf, policy_link, policy_name):
+    def delete_retention_policy_for_database(self, chronograf, policy_link, policy_name, auth=None):
         '''
         Deletes retention policy for a database
         :param chronograf: chronograf URL: http://<IP>:<PORT>
         :param policy_link:link to a policiy url for a database.
                       /chronograf/v1/sources/{id}/dbs/{db_id}/rps
         :param policy_name: name of the policy to be deleted
+        :param auth
         :return: asserts response status is 204
         '''
         self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
                       ' method called with parameters chronograf=' + str(chronograf)
                       + ', policy_link=' + str(policy_link) + ', policy_name=' + str(policy_name))
-        self.log.info('rest_lib.RestLib:delete_retention_policy_for_database() Building path' + policy_link + '/' + policy_name)
+        self.log.info('rest_lib.RestLib:delete_retention_policy_for_database() Building path' +
+                      policy_link + '/' + policy_name)
         path=policy_link +'/' + policy_name
-        response=self.delete(chronograf, path)
+        response=self.delete(chronograf, path, auth=auth)
         #assert response.status_code == 204, \
-        if response.status_code != 204:
-            self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
+        #if response.status_code != 204:
+        self.log.info('rest_lib.RestLib:delete_retention_policy_for_database()'
                           ' status=' + str(response.status_code) + ', message='
-                          + str(response.json()))
+                          + str(response.text))
         return response
 
     ############################# USER ROLES PERMISSIONS METHODS ##############################################
 
-    def create_user(self, chronograf, users_url, json):
+    def create_user(self, chronograf, users_url, json, auth=None):
         '''
         Creates user for a specific data source
         :param chronograf: chronograf's URL
         :param users_url: users URL for a specific source,/chronograf/sources/}id}/users
         :param json: request body: {'name': name, 'password':'password, 'roles':[], 'permissions:[]}
                     where permissions : {['scope':'<all/database>, 'allowed':[list of permissions]}
+        :param auth:
         :return: response body dic:{'name': name, permissions:[], 'roles':[]}
         '''
         self.log.info('rest_lib.RestLib: create_user() method is called with '
                       'parameters: chronograf=' + str(chronograf) + ', users_url='
-                      + str(users_url) + ', json=' + str(json))
-        response=self.post(chronograf, users_url, json)
+                      + str(users_url) + ', json=' + str(json) + ',auth=' + str(auth))
+        response=self.post(chronograf, users_url, json, auth=auth)
         return response
 
     def update_user(self):
         pass
 
-    def delete_user(self, chronograf, users_url, user_name):
+    def delete_user(self, chronograf, users_url, user_name, auth=None):
         '''
         :param chronograf:
         :param users_url:
         :param user_name:
+        :param auth
         :return: does not return anything
         '''
         self.log.info('rest_lib.RestLib: delete_user() method is called with '
                       'parameters: chronograf=' + str(chronograf) + ', users_url='
-                      + str(users_url))
+                      + str(users_url) + ', auth=' + str(auth))
         users_url=users_url + '/' + user_name
         self.log.info('rest_lib.RestLib: delete_user() method : users_url='
                       + str(users_url))
-        response=self.delete(chronograf, users_url)
-        if response.status_code != 204:
-            self.log.info('rest_lib.RestLib:delete_user()'
+        response=self.delete(chronograf, users_url, auth=auth)
+        #if response.status_code != 204:
+        self.log.info('rest_lib.RestLib:delete_user()'
                           ' status=' + str(response.status_code) + ', message='
-                          + str(response.json()))
+                          + str(response.text))
         return response
 
     def get_user(self):
