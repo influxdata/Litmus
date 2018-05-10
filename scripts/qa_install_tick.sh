@@ -21,9 +21,10 @@ SCP="/usr/bin/scp"
 SSH="/usr/bin/ssh"
 PRIVATE_KEY="gershon-pcl"
 INFLUXD_CTL="/usr/bin/influxd-ctl"
+PCL="$HOME/go/bin/pcl"
 
 # script variables for InfluxDB cluster setup
-# number of data nodes to deploy
+# number of data nodes/pcl to deploy
 DATANODES_NUM=
 DATANODES=
 # number of meta nodes to deploy
@@ -129,15 +130,15 @@ runCmd () {
 # uninstall()
 #-----------------------------------------------------------------
 # Uninstall an existing TICK stack.
-# If pcl list -cluster <cluster name> returns nothing, do nothing
+# If $PCL list -cluster <cluster name> returns nothing, do nothing
 
 uninstall() {
 	echo
 	echo `date` "***************  uninstalling  ***************"
-	product=`pcl list -c $CLUSTER_NAME | awk '{ if ($1 != "ID") print $1 }'`
+	product=`$PCL list -c $CLUSTER_NAME | awk '{ if ($1 != "ID") print $1 }'`
 	if [ X"$product" != X"" ]
 	then
-		catchFail "echo y | pcl destroy -c $CLUSTER_NAME"
+		catchFail "echo y | $PCL destroy -c $CLUSTER_NAME"
 	else
 		echo "Nothing to uninstall"
 	fi
@@ -178,10 +179,10 @@ installCluster() {
 	fi			
     	CLUSTER_ENV=$(echo ${CLUSTER_ENV//,/ --env })
 	CLUSTER_ENV="--env $CLUSTER_ENV"
-	catchFail  "pcl create -c $CLUSTER_NAME $DATANODES $METANODES $LOCAL_PKG_DATA $LOCAL_PKG_META $CLUSTER_ENV $INFLUX_DB_VERSION $TELEGRAF_VERSION --license-key $LICENSE_KEY"
+	catchFail  "$PCL create -c $CLUSTER_NAME $DATANODES $METANODES $LOCAL_PKG_DATA $LOCAL_PKG_META $CLUSTER_ENV $INFLUX_DB_VERSION $TELEGRAF_VERSION --license-key $LICENSE_KEY"
 	# create admin user and password
 	if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
-		catchFail "curl --fail -XPOST \"http://`pcl host data-0 -c $CLUSTER_NAME`:8086/query\" --data-urlencode \"q=CREATE USER $ADMIN_USER WITH PASSWORD '$ADMIN_PASSWORD' WITH ALL PRIVILEGES\""
+		catchFail "curl --fail -XPOST \"http://`$PCL host data-0 -c $CLUSTER_NAME`:8086/query\" --data-urlencode \"q=CREATE USER $ADMIN_USER WITH PASSWORD '$ADMIN_PASSWORD' WITH ALL PRIVILEGES\""
 		if [ "X"$META_LDAP_ALLOWED != "X" ]; then
             # copy Ldap config to every meta node
             echo `date` "*************** copying ldap config file and private key to meta and data nodes ****************"
@@ -190,22 +191,22 @@ installCluster() {
 	        counter=0
 		    while [ $counter -lt $METANODES_NUM ]
 		    do
-		        catchFail "$SCP -o StrictHostKeyChecking=no $PRIVATE_KEY $OS@`pcl host meta-$counter -c $CLUSTER_NAME`:/tmp"
-		        catchFail "$SCP -o StrictHostKeyChecking=no $LDAP_CONFIG $OS@`pcl host meta-$counter -c $CLUSTER_NAME`:/tmp"
+		        catchFail "$SCP -i $PRIVATE_KEY -o StrictHostKeyChecking=no $PRIVATE_KEY $OS@`$PCL host meta-$counter -c $CLUSTER_NAME`:/tmp"
+		        catchFail "$SCP -i $PRIVATE_KEY -o StrictHostKeyChecking=no $LDAP_CONFIG $OS@`$PCL host meta-$counter -c $CLUSTER_NAME`:/tmp"
 		        echo `date` "********* PORT FORWARD FOR LDAP *********"
-		        catchFail "$SSH -f -o StrictHostKeyChecking=no $OS@`pcl host meta-$counter -c $CLUSTER_NAME` 'sudo $SSH -o StrictHostKeyChecking=no -l tunnel -fN -L 3389:10.0.1.69:389 34.217.54.237 -i /tmp/$PRIVATE_KEY'"
+		        catchFail "$SSH -i $PRIVATE_KEY -f -o StrictHostKeyChecking=no $OS@`$PCL host meta-$counter -c $CLUSTER_NAME` 'sudo $SSH -o StrictHostKeyChecking=no -l tunnel -fN -L 3389:10.0.1.69:389 34.217.54.237 -i /tmp/$PRIVATE_KEY'"
 		        echo `date` "********* INSTALL LDAP-UTILS *********"
-		        catchFail "$SSH -f -o StrictHostKeyChecking=no $OS@`pcl host meta-$counter -c $CLUSTER_NAME` 'sudo apt install ldap-utils'"
+		        catchFail "$SSH -i $PRIVATE_KEY -f -o StrictHostKeyChecking=no $OS@`$PCL host meta-$counter -c $CLUSTER_NAME` 'sudo apt install ldap-utils'"
 		        let counter+=1
 		    done
 		    counter=0
 		    while [ $counter -lt $DATANODES_NUM ]
 		    do
-		        catchFail "$SCP -o StrictHostKeyChecking=no $PRIVATE_KEY $OS@`pcl host data-$counter -c $CLUSTER_NAME`:/tmp"
-		        catchFail "$SCP -o StrictHostKeyChecking=no $LDAP_CONFIG $OS@`pcl host data-$counter -c $CLUSTER_NAME`:/tmp"
+		        catchFail "$SCP -i $PRIVATE_KEY -o StrictHostKeyChecking=no $PRIVATE_KEY $OS@`$PCL host data-$counter -c $CLUSTER_NAME`:/tmp"
+		        catchFail "$SCP -i $PRIVATE_KEY -o StrictHostKeyChecking=no $LDAP_CONFIG $OS@`$PCL host data-$counter -c $CLUSTER_NAME`:/tmp"
 		        echo `date` "********* PORT FORWARD FOR LDAP *********"
-		        catchFail "$SSH -f -o StrictHostKeyChecking=no $OS@`pcl host data-$counter -c $CLUSTER_NAME` 'sudo $SSH -o StrictHostKeyChecking=no -l tunnel -fN -L 3389:10.0.1.69:389 34.217.54.237 -i /tmp/$PRIVATE_KEY'"
-		        catchFail "$SSH -f -o StrictHostKeyChecking=no $OS@`pcl host data-$counter -c $CLUSTER_NAME` 'sudo apt install ldap-utils'"
+		        catchFail "$SSH -i $PRIVATE_KEY -f -o StrictHostKeyChecking=no $OS@`$PCL host data-$counter -c $CLUSTER_NAME` 'sudo $SSH -o StrictHostKeyChecking=no -l tunnel -fN -L 3389:10.0.1.69:389 34.217.54.237 -i /tmp/$PRIVATE_KEY'"
+		        catchFail "$SSH -i $PRIVATE_KEY -f -o StrictHostKeyChecking=no $OS@`$PCL host data-$counter -c $CLUSTER_NAME` 'sudo apt install ldap-utils'"
 		        let counter+=1
 		    done
 		fi
@@ -216,13 +217,13 @@ installCluster() {
 		while [ $counter -lt $DATANODES_NUM ]
 		do
 			# ssh to a datanode, stop telegraf service, update the confing and start telegraf service
-			catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf stop'"
-			out=`pcl ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+			catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf stop'"
+			out=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
 			if [ "X$out" == "X" ]; then
-				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/database/ausername = \\\"$ADMIN_USER\\\"\" $TELEGRAF_CONFIG'"
-				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/username/apassword = \\\"$ADMIN_PASSWORD\\\"\" $TELEGRAF_CONFIG'"
-				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf start'"
-                		start=`pcl ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/database/ausername = \\\"$ADMIN_USER\\\"\" $TELEGRAF_CONFIG'"
+				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/username/apassword = \\\"$ADMIN_PASSWORD\\\"\" $TELEGRAF_CONFIG'"
+				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf start'"
+                		start=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
                 		if [ "X$start" == "X" ];then
                         		echo "TELEGRAF DID NOT START ON data-$counter. EXITING"
                         		exit 1
@@ -246,7 +247,7 @@ installChronograf() {
 	echo
 	echo `date`"**************** installing chronograf *********************"
 	echo ""
-	catchFail "pcl add-chronograf -c $CLUSTER_NAME $CHRONOGRAF_VERSION $CHRONOGRAF_INSTANCES $CHRONOGRAF_OS"
+	catchFail "$PCL add-chronograf -c $CLUSTER_NAME $CHRONOGRAF_VERSION $CHRONOGRAF_INSTANCES $CHRONOGRAF_OS"
 }
 
 #----------------------------------------------------------------------------------
@@ -263,16 +264,16 @@ installKapacitor() {
 	echo
 	echo `date`"***************** installing kapacitor **********************"
 	echo ""
-	catchFail "pcl add-kapacitor -c $CLUSTER_NAME $KAPACITOR_VERSION $KAPACITOR_INSTANCES $KAPACITOR_OS"
+	catchFail "$PCL add-kapacitor -c $CLUSTER_NAME $KAPACITOR_VERSION $KAPACITOR_INSTANCES $KAPACITOR_OS"
 	if [ "X"$NUMBER_OF_KAPACITORS == "X" ]; then
 		echo 
 		echo `date`"*********************** stopping kapacitor-0 ****************************"
 		echo ""
-		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor stop'"
+		catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor stop'"
 		# check if kapacitor was stopped
-		out=`pcl ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
+		out=`$PCL ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
 		if [ "X$out" == "X" ]; then
-			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'kapacitord config > /tmp/test.conf;sudo cp /tmp/test.conf /etc/kapacitor/kapacitor.conf.generated;sudo cp /etc/kapacitor/kapacitor.conf /etc/kapacitor/kapacitor.conf.orig;sudo cp /etc/kapacitor/kapacitor.conf.generated /etc/kapacitor/kapacitor.conf'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'kapacitord config > /tmp/test.conf;sudo cp /tmp/test.conf /etc/kapacitor/kapacitor.conf.generated;sudo cp /etc/kapacitor/kapacitor.conf /etc/kapacitor/kapacitor.conf.orig;sudo cp /etc/kapacitor/kapacitor.conf.generated /etc/kapacitor/kapacitor.conf'"
 		else
 			echo "COULD NOT STOP THE KAPACITOR.EXITING"
 			exit 1
@@ -281,26 +282,26 @@ installKapacitor() {
 		echo ""
 		echo " SETTING write-tracing = true, pprof-enabled = true, level = \"DEBUG\""
 		echo ""
-		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/write-tracing = false/write-tracing = true/\" $KAPACITOR_CONFIG'"
-		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/pprof-enabled = false/pprof-enabled = true/\" $KAPACITOR_CONFIG'"
-		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/level = \\\"INFO\\\"/level = \\\"DEBUG\\\"/\" $KAPACITOR_CONFIG'"
+		catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/write-tracing = false/write-tracing = true/\" $KAPACITOR_CONFIG'"
+		catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/pprof-enabled = false/pprof-enabled = true/\" $KAPACITOR_CONFIG'"
+		catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/level = \\\"INFO\\\"/level = \\\"DEBUG\\\"/\" $KAPACITOR_CONFIG'"
 		if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
 			# remove first an empty entries for username and password (running command 2 times to remove one line at the time until I find a solution to
 			# do it in a better way
-			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/{N;s/\n.*//;}\" $KAPACITOR_CONFIG'"
-			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/{N;s/\n.*//;}\" $KAPACITOR_CONFIG'"
-			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/ausername = \\\"$ADMIN_USER\\\"\" $KAPACITOR_CONFIG'"
-			catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/apassword = \\\"$ADMIN_PASSWORD\\\"\" $KAPACITOR_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/{N;s/\n.*//;}\" $KAPACITOR_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/{N;s/\n.*//;}\" $KAPACITOR_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/ausername = \\\"$ADMIN_USER\\\"\" $KAPACITOR_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/apassword = \\\"$ADMIN_PASSWORD\\\"\" $KAPACITOR_CONFIG'"
 			if [ "X"$META_LDAP_ALLOWED != "X" ]; then
-			    catchFail "$SCP -o StrictHostKeyChecking=no $PRIVATE_KEY $OS@`pcl host kapacitor-0 -c $CLUSTER_NAME`:/tmp"
-			    catchFail "$SSH -f -o StrictHostKeyChecking=no $OS@`pcl host kapacitor-0 -c $CLUSTER_NAME` 'sudo $SSH -o StrictHostKeyChecking=no -l tunnel -fN -L 3389:10.0.1.69:389 34.217.54.237 -i /tmp/$PRIVATE_KEY'"
+			    catchFail "$SCP -i $PRIVATE_KEY -o StrictHostKeyChecking=no $PRIVATE_KEY $OS@`$PCL host kapacitor-0 -c $CLUSTER_NAME`:/tmp"
+			    catchFail "$SSH -i $PRIVATE_KEY -f -o StrictHostKeyChecking=no $OS@`$PCL host kapacitor-0 -c $CLUSTER_NAME` 'sudo $SSH -o StrictHostKeyChecking=no -l tunnel -fN -L 3389:10.0.1.69:389 34.217.54.237 -i /tmp/$PRIVATE_KEY'"
 		    fi
 		fi
 		
 		echo "****************** starting kapacitor **************************"
 		echo ""
-		catchFail "pcl ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor start'"
-		start=`pcl ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
+		catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor start'"
+		start=`$PCL ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
 		if [ "X$start" == "X" ];then
 			echo "KAPACITOR DID NOT START. EXITING"
 			exit 1
@@ -325,13 +326,13 @@ enableLdapAuth() {
     if $meta_auth; then
         echo `date` "********** META AUTHENTICATION IS ENABLED **********"
         # need to user admin user and password that is passed with --admin-user/--admin-pass
-        catchFail "$SSH -o StrictHostKeyChecking=no $OS@`pcl host meta-0 -c ldap` '$INFLUXD_CTL -auth-type basec -user $ADMIN_USER -pwd $ADMIN_PASSWORD ldap set-config /tmp/$LDAP_CONFIG'"
+        catchFail "$SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` '$INFLUXD_CTL -auth-type basec -user $ADMIN_USER -pwd $ADMIN_PASSWORD ldap set-config /tmp/$LDAP_CONFIG'"
     else
         echo `date` "********** META AUTHENTICATION IS NOT ENABLED **********"
-        catchFail "$SSH -o StrictHostKeyChecking=no $OS@`pcl host meta-0 -c ldap` '$INFLUXD_CTL ldap set-config /tmp/$LDAP_CONFIG'"
+        catchFail "$SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` '$INFLUXD_CTL ldap set-config /tmp/$LDAP_CONFIG'"
     fi
     # verify that ldap config was loded successfully
-    success=$($SSH -o StrictHostKeyChecking=no $OS@`pcl host meta-0 -c ldap` "$INFLUXD_CTL ldap get-config")
+    success=$($SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` "$INFLUXD_CTL ldap get-config")
     if [ "X"$success == "X" ]; then
         echo "LDAP CONFIG WAS NOT LOADED SUCCESSFULLY. EXISTING"
         exit 1;
@@ -344,13 +345,13 @@ enableLdapAuth() {
     while [ $counter -lt $DATANODES_NUM ]
 		do
 			# ssh to a datanode, stop telegraf service, update the confing and start telegraf service
-			catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf stop'"
-			out=`pcl ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+			catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf stop'"
+			out=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
 			if [ "X$out" == "X" ]; then
-				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/username = .*/username = \\\"$LDAP_ADMIN\\\"/\" $TELEGRAF_CONFIG'"
-				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/pasword = .*/password = \\\"$LDAP_PASSWORD\\\"/\" $TELEGRAF_CONFIG'"
-				catchFail "pcl ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf start'"
-                		start=`pcl ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/username = .*/username = \\\"$LDAP_ADMIN\\\"/\" $TELEGRAF_CONFIG'"
+				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/pasword = .*/password = \\\"$LDAP_PASSWORD\\\"/\" $TELEGRAF_CONFIG'"
+				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf start'"
+                		start=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
                 		if [ "X$start" == "X" ];then
                         		echo "TELEGRAF DID NOT START ON data-$counter. EXITING"
                         		exit 1
