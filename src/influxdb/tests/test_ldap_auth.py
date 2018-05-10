@@ -30,7 +30,7 @@ single_role_users=[('a_first','annika.sapinski'), # CreateDatabase
                    ('j_first','jutta.vicenteno'), # ReadData
                    ('k_first','kyong.nap'), # WriteData
                    ('l_first','lynwood.vanboerum') # No Permissions
-] # No Permissions
+]
 
 single_role_users_ids=['CreateDatabase Role-%s' % single_role_users[0][1],
                        'DropDatabase Role-%s' % single_role_users[1][1],
@@ -187,13 +187,16 @@ class TestLdapAdminUser(object):
         database='_internal'
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
         error_message='modifying user privileges is disallowed when ldap is enabled'
-
+        error_message_user_doesnot_exist='user not found'
         self.header(test_name)
         (success, message)=uu.revoke_privilege(self, client, permission, database, user)
         assert success is False, self.mylog.info(test_name + 'Assertion Error REVOKE PRIVILEGE returned True')
-        assert message == error_message, \
-            self.mylog.info(test_name + ' Expected Error message :' + error_message +
-                            ' is different from actual : ' + message)
+        if user == 'non_existing_user':
+            assert message == error_message_user_doesnot_exist, self.mylog.info(test_name + ' Expected Error message :'
+                                                        + error_message + ' is different from actual : ' + message)
+        else:
+            assert message == error_message, self.mylog.info(test_name + ' Expected Error message :' + error_message +
+                                                        ' is different from actual : ' + message)
         self.footer(test_name)
 
     # CreateUserAndRolePermission
