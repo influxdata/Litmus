@@ -19,7 +19,7 @@ ldap_auth=false
 install=true
 SCP="/usr/bin/scp"
 SSH="/usr/bin/ssh"
-PRIVATE_KEY="gershon-pcl"
+PRIVATE_KEY="litmus-pcl"
 INFLUXD_CTL="/usr/bin/influxd-ctl"
 PCL="$HOME/go/bin/pcl"
 
