@@ -19,7 +19,7 @@ ldap_auth=false
 install=true
 SCP="/usr/bin/scp"
 SSH="/usr/bin/ssh"
-PRIVATE_KEY="litmus-pcl"
+PRIVATE_KEY=
 INFLUXD_CTL="/usr/bin/influxd-ctl"
 PCL="$HOME/go/bin/pcl"
 
@@ -99,6 +99,11 @@ if [ "X"$CLUSTER_OS == "X" ]; then
 else
     OS=$CLUSTER_OS
 fi
+
+if [ "$PRIVATE_KEY" == "X" ]; then
+    PRIVATE_KEY="litmus-pcl"
+else
+    PRIVATE_KEY=$PRIVATE_KEY
 
 #-------------------------------------------------------------------------
 # catchFail()
@@ -437,6 +442,9 @@ do
             install_kapacitor=false;;
         --no-install)
             install=false;;
+        --private-key)
+            shift
+            PRIVATE_KEY="$1";;
 	esac
 	shift
 done
