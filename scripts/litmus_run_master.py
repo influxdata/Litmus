@@ -67,6 +67,7 @@ parser.add_option('--num-data', action='store', dest='num_datanodes', help='NUMB
 parser.add_option('--num-meta', action='store', dest='num_metanodes', help='NUMBEROF META NODES')
 parser.add_option('--telegraf-version', action='store', dest='telegrafversion', help='INSTALL VERSION OF TELEGRAF')
 parser.add_option('--cluster-os', action='store', dest='clusteros', help='OS TO INSTALL THE CLUSTER ON')
+parser.add_option('--private-key', action='store', dest='privatekey', help='Private key file')
 parser.add_option('--no-install', action='store_true', dest='noinstall', default=False, help='DO NOT INSTALL TH ETICK STACK')
 parser.add_option('--ldap-auth', action='store_true', dest='ldapauth', default=False, help='Enable LDAP authentication')
 parser.add_option('--meta-auth', action='store_true', dest='metaauth', default=False, help='Enable META NODE authentication')
@@ -113,6 +114,8 @@ if options.telegrafversion is not None: telegraf_version='--telegraf-version ' +
 else: telegraf_version=''
 if options.clusteros is not None: cluster_os='--cluster-os ' + options.clusteros
 else: cluster_os=''
+if options.privatekey is not None: private_key='--private-key ' + options.privatekey
+else: private_key=''
 if options.indexversion is not None: index_version='--index-version ' + options.indexversion
 else: index_version=''
 if options.ldapauth is not False:
@@ -184,16 +187,16 @@ except IOError as e:
 #Installation of the TICK stack
 print 'INSTALLING TICK STACK'
 print '---------------------'
-print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
+print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
                                                     meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version,
                                                     cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf,
                                                     kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth, admin_user,
-                                                    admin_pass, no_install, ldap_auth, meta_auth)
-return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
+                                                    admin_pass, no_install, ldap_auth, meta_auth, private_key)
+return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
                                                     data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg,
                                                     telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os,
                                                     no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth,
-                                                    admin_user, admin_pass, no_install, ldap_auth, meta_auth),shell=True, stdout=File)
+                                                    admin_user, admin_pass, no_install, ldap_auth, meta_auth, private_key),shell=True, stdout=File)
 if return_code!=0:
     print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
     exit(1)
