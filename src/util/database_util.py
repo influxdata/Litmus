@@ -22,6 +22,8 @@ def run_query(test_class_instance, client, query, params=None, epoch=None,
     :return: ResultSet of queried data
     """
     result=ResultSet
+    success=False
+    error=''
     try:
         test_class_instance.mylog.info('database_util.run_query() is called '
                                        'with query=%s, params=%s, epoch=%s, '
@@ -32,13 +34,15 @@ def run_query(test_class_instance, client, query, params=None, epoch=None,
                             expected_response_code=expected_response_code,
                             database=database)
         client.close()
+        success=True
     except:
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
         test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
         test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
         if client is not None:
             client.close()
-    return result
+        error=clt_error_message
+    return (success, result, error)
 
 def write_points(test_class_instance, client, points, time_precision=None,
                  database=None, retention_policy=None, tags=None):
@@ -97,7 +101,7 @@ def create_database(test_class_instance, client, db_name):
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
         test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
         test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
-        error_message = str(clt_error_message)
+        error_message=str(clt_error_message)
         if client is not None:
             client.close()
     test_class_instance.mylog.info('database_util.create_database() success=' + str(success))
@@ -162,6 +166,30 @@ def drop_series(test_class_instance, client, database, measurement=None, tags=No
             client.close()
     return (success, error_message)
 
+def delete_series(test_class_instance, client, database, measurement=None, tags=None, time=None):
+    '''
+    DELETE SERIES query deletes all points from a series in database. It does not drop the series from the index,
+    and it supports time intervals in the WHERE clause
+    :param test_class_instance:
+    :param client:
+    :param database: (str)
+    :param measurement: (str)
+    :param tags: (dict)
+    :param time: (str)
+    :return:
+    '''
+
+    if measurement is None and time is None:
+        return (False, None, 'Either measurement or time values should be supplied')
+    if measurement is not None:
+        query='DELETE FROM %s' % measurement
+        if tags is not None:
+            query=query+' WHERE %s = \'%s\'' % (''.join(tags.keys()),''.join(tags.values()))
+    else:
+        query='DELETE WHERE time < \'%s\'' % time
+    test_class_instance.mylog.info('database_util.delete_series() - QUERY : %s' % (query))
+    return run_query(test_class_instance, client, query, database=database)
+
 def list_series(test_class_instance, client, database):
     '''
     :param test_class_instance:
@@ -177,9 +205,12 @@ def list_series(test_class_instance, client, database):
     try:
         test_class_instance.mylog.info('database_util.list_series()- '
                                        'Geting all of the series for database %s' % database)
-        query_result=run_query(test_class_instance, client, query, database=database)
+        (success, query_result, error)=run_query(test_class_instance, client, query, database=database)
+        assert success, \
+            test_class_instance.mylog.info('database_util.list_series()- Failed to SHOW SERIES' + str(error))
         # get the list of lists : [[u'foobar,id=0'], [u'foobar,id=1'], [u'foobar,id=10'], [u'foobar,id=11']]
         list_of_series=query_result._get_series()[0].get('values')
+        test_class_instance.mylog.info('database_util.list_series()- series : ' + str(list_of_series))
         # convert the above list of lists to the list of strings
         for item in list_of_series:
             series.append(''.join(item))
@@ -247,6 +278,30 @@ def list_measurements(test_class_instance, client):
                                    + str(measurements_l))
     return (success, measurements_l, error_message)
 
+def use_database(test_class_instance, client, database):
+    '''
+    Changes the client databse
+    :param test_class_instance:
+    :param client:
+    :param database: (str) the name of the database to switch to
+    :return: success=True/False, if False, get the error message as well
+    '''
+    success=False
+    error=''
+    try:
+        test_class_instance.mylog.info('database_util.use_database() - Switch to %s database' % database)
+        client.switch_database(database)
+        client.close()
+        success=True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error=str(clt_error_message)
+        if client is not None:
+            client.close()
+    test_class_instance.mylog.info('database_util.use_database() success=' + str(success))
+    return (success, error)
 
 #--------------------------------------------- RETENTION POLICIES -----------------------------------------------------#
 

@@ -317,7 +317,7 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         message=''
         self.log.info('InfluxDBInfluxDBRestLib.drop_subscription() FUNCTION IS CALLED')
         self.log.info('==============================================================')
-        drop_subscription_stmt = 'DROP SUBSCRIPTION %s ON "%s"."%s"' % (subscription_name, database, retention_policy)
+        drop_subscription_stmt = 'DROP SUBSCRIPTION "%s" ON "%s"."%s"' % (subscription_name, database, retention_policy)
         self.log.info('InfluxDBInfluxDBRestLib.drop_subscription() DROP SUBSCRIPTION STATEMENT : '
                       + str(drop_subscription_stmt))
         path='/query?q=%s' % drop_subscription_stmt
