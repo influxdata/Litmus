@@ -3,7 +3,7 @@ import src.util.sources_util as su
 import traceback
 import sys
 from influxdb.resultset import ResultSet
-from influxdb import exceptions as e
+
 
 ################################################ using influxDBClient ##################################################
 
@@ -74,6 +74,7 @@ def write_points(test_class_instance, client, points, time_precision=None,
             client.close()
     return return_value
 
+#-------------------------------------------------- DATABASES ---------------------------------------------------------#
 def create_database(test_class_instance, client, db_name):
     '''
     create database using InfluxDBClient
@@ -102,8 +103,6 @@ def create_database(test_class_instance, client, db_name):
     test_class_instance.mylog.info('database_util.create_database() success=' + str(success))
     return (success, error_message)
 
-#-------------------------------------------------- DATABASES ---------------------------------------------------------#
-
 def drop_database(test_class_instance, client, db_name):
     '''
     :param test_class_instance:
@@ -127,6 +126,129 @@ def drop_database(test_class_instance, client, db_name):
         if client is not None:
             client.close()
     return (success, error_message)
+
+def drop_series(test_class_instance, client, database, measurement=None, tags=None):
+    '''
+    DROP SERIES deletes all points from a series in a databases, and it drops the series from the index
+    DROP SERIES does not support TIME INTERVALS
+    DROP SERIES FROM <measurement_name[,measurement_name]> WHERE <tag_key>='<tag_value>'
+    Either measurement or tags must be specified
+    :param test_class_instance:
+    :param client:
+    :param database: (str) - the database from which the series shoudl be deleted.
+    :param measurement: (str) - Delete All series from a measurements.
+    :param tags: (dict) - Delete all series that match the given tags.
+    :return:
+    '''
+    success=False
+    error_message=''
+    # check for measurement/tags
+    if measurement is None and measurement is None:
+        test_class_instance.mylog.info('database_util.drop_series() - must specify either measurement or tags')
+        return (success, 'must specify either measurement or tags')
+    try:
+        test_class_instance.mylog.info('database_util.drop_series() - Dropping Series for database %s, '
+                                       'measurement %s and tags %s' % (database, measurement, tags))
+        # the function's name is delete_series, but it should have been named drop_series
+        client.delete_series(database, measurement=measurement, tags=tags)
+        client.close()
+        success=True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message=str(clt_error_message)
+        if client is not None:
+            client.close()
+    return (success, error_message)
+
+def list_series(test_class_instance, client, database):
+    '''
+    :param test_class_instance:
+    :param client:
+    :param query:
+    :param database:
+    :return:
+    '''
+    series=[]
+    success=False
+    query='SHOW SERIES'
+    error_message=''
+    try:
+        test_class_instance.mylog.info('database_util.list_series()- '
+                                       'Geting all of the series for database %s' % database)
+        query_result=run_query(test_class_instance, client, query, database=database)
+        # get the list of lists : [[u'foobar,id=0'], [u'foobar,id=1'], [u'foobar,id=10'], [u'foobar,id=11']]
+        list_of_series=query_result._get_series()[0].get('values')
+        # convert the above list of lists to the list of strings
+        for item in list_of_series:
+            series.append(''.join(item))
+        test_class_instance.mylog.info('database_util.list_series()- final series ' + str(series))
+        success=True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('SHOW SERIES Error:' + str(clt_error_message))
+        test_class_instance.mylog.info('SHOW SERIES Error:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message=str(clt_error_message)
+    return (success, series, error_message)
+
+def drop_measurement(test_class_instance, client, measurement):
+    '''
+    :param test_class_instance:
+    :param client:
+    :param measurement: (str) - the name of measurement to drop
+    :return:
+    '''
+    success=False
+    error_message=''
+    try:
+        test_class_instance.mylog.info('database_util.drop_database()- Dropping measurement %s' % measurement)
+        client.drop_measurement(measurement)
+        client.close()
+        success=True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message=str(clt_error_message)
+        if client is not None:
+            client.close()
+    return (success, error_message)
+
+def list_measurements(test_class_instance, client):
+    '''
+    :param test_class_instance:
+    :param client:
+    :return: (list) - all measurements in InfluxDB
+            [measurements1','measurements2,'measurements3']
+    '''
+    measurements_l=[]
+    success=False
+    error_message=''
+    try:
+        test_class_instance.mylog.info('database_util.list_measurements()- Geting all of the measurements')
+        list_of_measurements=client.get_list_measurements()
+        test_class_instance.mylog.info('database_util.list_measurements()- get_list_measurements returned : '
+                                       + str(list_of_measurements))
+        # list of measurements returns list of dictionaries: [{u'name': u'measurements1'},{u'name': u'measurements2'}]
+        if len(list_of_measurements) != 0:
+            for measurement in list_of_measurements:
+                measurements_l.append(measurement.get('name'))
+        client.close()
+        success=True
+    except:
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('InfluxDBError:' + str(clt_error_message))
+        test_class_instance.mylog.info('InfluxDBError:' + str(traceback.extract_tb(clt_error_traceback)))
+        error_message = str(clt_error_message)
+        if client is not None:
+            client.close()
+    test_class_instance.mylog.info('database_util.list_measurements() - list of measurements '
+                                   + str(measurements_l))
+    return (success, measurements_l, error_message)
+
+
+#--------------------------------------------- RETENTION POLICIES -----------------------------------------------------#
 
 def create_retention_policy(test_class_instance, client, rp_name, duration, replication, database, default):
     '''
@@ -157,8 +279,6 @@ def create_retention_policy(test_class_instance, client, rp_name, duration, repl
         if client is not None:
             client.close()
     return (success, error_message)
-
-#--------------------------------------------- RETENTION POLICIES -----------------------------------------------------#
 
 def drop_retention_policies(test_class_instance, client, database, rp_name):
     '''

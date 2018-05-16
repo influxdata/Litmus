@@ -6,6 +6,8 @@ from influxdb import InfluxDBClient as InfluxDBClient
 from src.influxdb.lib import influxdb_rest_lib
 import src.util.login_util as lu
 import pytest
+import math
+import datetime
 
 # any user that belongs to X_lastnames AD group is an admin user
 LDAP_ADMIN_USERS='sal.xu'
@@ -46,30 +48,26 @@ single_role_users_ids=['CreateDatabase Role-%s' % single_role_users[0][1],
                        'No Permissions-%s' % single_role_users[11][1]
 ]
 
-
-b_last='' # DropDatabase
-c_last='' # CreateUserAndRole
-d_last='' # ManageSubscription
-e_last='' # ManageContinuousQuery
-f_last='' # DropData
-g_last='' # ManageShard
-h_last='' # ManageQuery
-i_last='' # Monitor
-j_last='' # ReadData
-k_last='' # WriteData
-l_last='' # No Permissions
-
-a_first_a_last='amal.altiery'
-a_first_b_last='alecia.bartosch'
-a_first_c_last='adah.clayborn'
-a_first_d_last='adan.dittmann'
-a_first_e_last='astrid.elkins'
-a_first_f_last='alvera.filsinger'
-a_first_g_last='avery.gloyd'
-a_first_h_last='alice.hennigan'
-a_first_i_last='avis.ingle'
-a_first_k_last='ashleigh.kretzinger'
-a_first_l_last='alonso.led'
+# generate test data
+def gen_test_data(measurement):
+    '''
+    :return:
+    '''
+    points=[]
+    for entry in range(0, 100):
+        y = 10 + math.sin(math.radians(entry)) * 10
+        point = {
+            "measurement": measurement,
+            "time": int(datetime.datetime.now().strftime('%s')) + entry,
+            "fields": {
+                "value": y
+            },
+            "tags": {
+                "id": entry,
+            }
+        }
+        points.append(point)
+    return points
 
 @pytest.mark.usefixtures('data_nodes_ips','kapacitor')
 class TestLdapAdminUser(object):
@@ -96,7 +94,7 @@ class TestLdapAdminUser(object):
 
     ########################################### Admin User Permissions Test Cases ######################################
 
-    # CreateUserAndRolePermission
+    #***************************************** CreateUserAndRolePermission *********************************************
     def test_admin_create_user(self):
         '''
 
@@ -115,7 +113,6 @@ class TestLdapAdminUser(object):
                             ' is different from actual : ' + message)
         self.footer(test_name)
 
-    # CreateUserAndRolePermission
     @pytest.mark.parametrize('user', users, ids=ids)
     def test_admin_delete_users(self, user):
         '''
@@ -134,7 +131,6 @@ class TestLdapAdminUser(object):
                             ' is different from actual : ' + message)
         self.footer(test_name)
 
-    # CreateUserAndRolePermission
     @pytest.mark.parametrize('user', users, ids=ids)
     @pytest.mark.parametrize('permission', permissions)
     def test_admin_grant_privilege(self, user, permission):
@@ -155,7 +151,6 @@ class TestLdapAdminUser(object):
                             ' is different from actual : ' + message)
         self.footer(test_name)
 
-    # CreateUserAndRolePermission
     @pytest.mark.parametrize('user', users, ids=ids)
     def test_admin_grant_admin_privileges(self, user):
         '''
@@ -174,7 +169,6 @@ class TestLdapAdminUser(object):
                             ' is different from actual : ' + message)
         self.footer(test_name)
 
-    # CreateUserAndRolePermission
     # https://github.com/influxdata/plutonium/issues/2454
     @pytest.mark.parametrize('user', users, ids=ids)
     @pytest.mark.parametrize('permission', permissions)
@@ -199,7 +193,6 @@ class TestLdapAdminUser(object):
                                                         ' is different from actual : ' + message)
         self.footer(test_name)
 
-    # CreateUserAndRolePermission
     # https://github.com/influxdata/plutonium/issues/2454
     @pytest.mark.parametrize('user', users, ids=ids)
     def test_admin_revoke_admin_privileges(self, user):
@@ -219,7 +212,6 @@ class TestLdapAdminUser(object):
                             ' is different from actual : ' + message)
         self.footer(test_name)
 
-    # CreateUserAndRolePermission
     @pytest.mark.parametrize('user', users, ids=ids)
     def test_admin_set_password(self, user):
         '''
@@ -239,7 +231,6 @@ class TestLdapAdminUser(object):
                             ' is different from actual : ' + message)
         self.footer(test_name)
 
-    # CreateUserAndRolePermission
     def test_admin_show_users(self):
         '''
 
@@ -257,7 +248,6 @@ class TestLdapAdminUser(object):
                             ' is different from actual : ' + str(len(list_of_users)))
         self.footer(test_name)
 
-    # CreateUserAndRolePermission
     @pytest.mark.parametrize('user', users, ids=ids)
     def test_admin_show_grants(self, user):
         '''
@@ -280,7 +270,7 @@ class TestLdapAdminUser(object):
             assert len(user_grants) == 0, test_name + 'Assertion Error for %s user' % user
         self.footer(test_name)
 
-    # CreateDatabase Permission
+    #******************************************* CreateDatabase Permission *********************************************
     @pytest.mark.parametrize('drop_database', ['test_admin_create_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('drop_database')
     def test_admin_create_database(self):
@@ -297,7 +287,6 @@ class TestLdapAdminUser(object):
         assert success, test_name + 'Failed to create database for admin user=%s' % LDAP_ADMIN_USERS
         self.footer(test_name)
 
-    # CreateDatabase Permission
     @pytest.mark.parametrize('create_database', ['test_admin_creat_retention_policy_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     def test_admin_create_retention_policy(self):
@@ -315,7 +304,6 @@ class TestLdapAdminUser(object):
         assert success, test_name + 'Failed to create retention policy for user=%s' % LDAP_ADMIN_USERS
         self.footer(test_name)
 
-    # CreateDatabase Permission
     @pytest.mark.parametrize('create_database', ['test_admin_view_retention_policy_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     def test_admin_view_retention_policy(self):
@@ -353,7 +341,6 @@ class TestLdapAdminUser(object):
         assert shard_group_duration == '1h0m0s'
         self.footer(test_name)
 
-    # CreateDatabase Permission
     @pytest.mark.parametrize('create_database', ['test_admin_alter_retention_policy_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     def test_admin_alter_retention_policy(self):
@@ -388,7 +375,46 @@ class TestLdapAdminUser(object):
                             % (duration, alter_rp_duration))
         assert duration == alter_rp_duration
 
-    # ManageSubscription Permission
+    #***************************************** DropDatabase Permissions ************************************************
+    # DropDatabase permission for AdminUser is covered by using 'drop_database' fixture
+    @pytest.mark.parametrize('create_database', ['test_admin_drop_retention_policy_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_admin_drop_retention_policy(self):
+        '''
+        STEP 1: Creating InfluxDBClient
+        STEP 2: Creating retention policy
+        STEP 3: Dropping retention
+        STEP 4: Show retention policies for database
+        STEP 5: Verify database does not have the retention policy
+        '''
+        test_name='test_admin_drop_retention_policy '
+        data_node=choice(self.data_nodes_ips)
+        database='test_admin_drop_retention_policy_db'
+        rp_name='admin_drop_retention_policy'
+        rp_duration='3h0m0s'
+        rp_replication='2'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=3,
+                                      retries=1)
+        self.mylog.info(test_name + 'STEP 2: Creating retention policy %s with duration %s and replication %s'
+                        % (rp_name, rp_duration, rp_replication))
+        (success, errormessage)=du.create_retention_policy(self, client_admin, rp_name=rp_name, duration=rp_duration,
+                                                           replication=rp_replication, database=database, default=True)
+        assert success, self.mylog.info(test_name + 'unable to create retention policy ' + str(errormessage))
+        self.mylog.info(test_name + 'STEP 3: Dropping retention policy %s' % rp_name)
+        (success, errormessage)=du.drop_retention_policies(self, client_admin, database, rp_name)
+        assert success, self.mylog.info(test_name + 'unable to drop retention policy ' + str(errormessage))
+        self.mylog.info(test_name + 'STEP 4: Show retention policies for database %s' % database)
+        (success, retention_policies_d, error_message)=du.show_retention_policies(self, client_admin, database)
+        assert success, self.mylog.info(test_name + 'unable to get retention policies for database %s' % database)
+        self.mylog.info(test_name + 'STEP 5: Verify database does not have the retention policy %s' % rp_name)
+        result=du.get_retention_policy(self, retention_policies_d, rp_name)
+        assert result == None, self.mylog.info(test_name + ' retention policy %s still could be found' % rp_name)
+        self.footer(test_name)
+
+    #****************************************** ManageSubscription Permission ******************************************
     @pytest.mark.parametrize('create_database', ['test_admin_create_subscription_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     def test_admin_create_subscription(self):
@@ -407,7 +433,6 @@ class TestLdapAdminUser(object):
         assert success, self.mylog.info(test_name + 'unable to create subscription, error=%s' % message)
         self.footer(test_name)
 
-    # ManageSubscription Permission
     @pytest.mark.parametrize('create_database', ['test_admin_drop_subscription_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     def test_admin_drop_subscription(self):
@@ -429,7 +454,6 @@ class TestLdapAdminUser(object):
         assert success, self.mylog.info(test_name + ' unable to drop subscription, error=%s' % message)
         self.footer(test_name)
 
-    # ManageSubscription Permission
     @pytest.mark.parametrize('create_database', ['test_admin_show_subscriptions_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     def test_admin_show_subscriptions(self):
@@ -463,7 +487,81 @@ class TestLdapAdminUser(object):
         assert actual_mode == mode
         self.footer(test_name)
 
+    #*************************************** DropData Parmissions ******************************************************
+    @pytest.mark.parametrize('create_database', ['test_admin_drop_measurement_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_admin_drop_measurement(self):
+        '''
+
+        '''
+        test_name='test_admin_drop_measurement '
+        database='test_admin_drop_measurement_db'
+        data_node = choice(self.data_nodes_ips)
+        measurement='testm'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin = InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                      database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 3: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 4: get created measurement')
+        (success, result, error)=du.list_measurements(self, client_admin)
+        assert success, self.mylog.info(test_name + 'Failed to get measurements ' + str(error))
+        assert measurement in result, self.mylog.info(test_name + 'Created measurement was not found')
+        self.mylog.info(test_name + 'STEP 5: drop_measurement %s' % measurement)
+        (success, error_measurement)=du.drop_measurement(self, client_admin, measurement)
+        assert success, self.mylog.info(test_name + 'Failed to drop measurement' + str(error_measurement))
+        self.mylog.info(test_name + 'STEP 6: get measurements')
+        (success, result, error) = du.list_measurements(self, client_admin)
+        assert success, self.mylog.info(test_name + 'Failed to get measurements ' + str(error))
+        self.mylog.info(test_name + 'STEP 7: Assert measurement was deleted')
+        assert measurement not in result, self.mylog.info(test_name + 'Measurement still can be found')
+        self.footer(test_name)
+
+    @pytest.mark.parametrize('create_database', ['test_admin_drop_series_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_admin_drop_series(self):
+        '''
+
+        '''
+        test_name='test_admin_drop_series '
+        database='test_admin_drop_series_db'
+        data_node=choice(self.data_nodes_ips)
+        measurement='test_drop_series'
+        series_to_delete=measurement+',id=17'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                      database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 3: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 4: get series for the %s' % database)
+        (success, series, error)=du.list_series(self, client_admin, database)
+        assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
+        assert series_to_delete in series, self.mylog.info(test_name + 'Series was not found')
+        self.mylog.info(test_name + 'STEP 5: delete series %s' % series_to_delete)
+        # only one measurement is in the database, so deleting one series
+        (success, error_series)=du.drop_series(self, client_admin, database=database,
+                                                 measurement=measurement, tags={'id':'17'})
+        assert success, self.mylog.info(test_name + 'Failed to delete series' + str(error_series))
+        self.mylog.info(test_name + 'STEP 6: get series')
+        (success, series, error)=du.list_series(self, client_admin, database)
+        assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
+        self.mylog.info(test_name + 'STEP 7: Assert series was deleted')
+        assert series_to_delete not in series, self.mylog.info(test_name + 'Series still can be found')
+        self.footer(test_name)
+
 ########################################################################################################################
+########################################################################################################################
+
 
 @pytest.mark.usefixtures('delete_roles', 'setup_roles_permissions', 'data_nodes_ips', 'kapacitor')
 class TestLdapUser(object):
@@ -487,9 +585,10 @@ class TestLdapUser(object):
         self.mylog.info('<--------------- %s END --------------->' % test_name)
         self.mylog.info('#######################################################')
         self.mylog.info('')
-    # =================================== CreateDatabase permission Test Cases ======================================= #
+    ######################################## Non-Admin Users Test Cases ################################################
 
-    # Should be able to create database, CreateDatabase
+    #************************************ CreateDatabase permission Test Cases ****************************************#
+
     @pytest.mark.parametrize('drop_database',['test_create_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('drop_database')
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
@@ -517,7 +616,6 @@ class TestLdapUser(object):
                 self.mylog.info(test_name + 'expected error message is different from actual')
         self.footer(test_name)
 
-    # Should be able to create retention policy, CreateDatabase
     @pytest.mark.parametrize('create_database', ['test_creat_retention_policy_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
@@ -548,7 +646,6 @@ class TestLdapUser(object):
                 self.mylog.info(test_name + 'expected error `message is different from actual')
         self.footer(test_name)
 
-    # Should be able to View retention policy CreateDatabase,  ReadData permission lets users view RP as well
     # https://github.com/influxdata/influxdb/issues/9727
     @pytest.mark.parametrize('create_database', ['test_view_retention_policy_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
@@ -602,7 +699,6 @@ class TestLdapUser(object):
                 self.mylog.info(test_name + 'expected error `message is different from actual')
         self.footer(test_name)
 
-    # Should be able to Alter retention policy (CreateDatabase)
     @pytest.mark.parametrize('create_database', ['test_alter_retention_policy_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
@@ -647,8 +743,7 @@ class TestLdapUser(object):
             assert success == False, self.mylog.info(test_name + 'able to alter retention policies for %s, error=%s'
                                         % (database, str(error_message)))
 
-    # ==================================== DropDatabase Permission Test Cases =========================================#
-    # DropDatabase Permission
+    #************************************* DropDatabase Permission Test Cases *****************************************#
     @pytest.mark.parametrize('create_database', ['test_drop_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
@@ -676,8 +771,49 @@ class TestLdapUser(object):
                 self.mylog.info(test_name + 'expected error message is different from actual')
         self.footer(test_name)
 
+    @pytest.mark.parametrize('create_database', ['test_user_drop_retention_policy_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
+    def test_user_drop_retention_policy(self, role, user):
+        '''
+        STEP 1: Creating InfluxDBClient
+        STEP 2: Creating retention policy
+        STEP 3: Dropping retention
+        STEP 4: Show retention policies for database
+        STEP 5: Verify database does not have the retention policy
+        '''
+        test_name='test_user_drop_retention_policy '
+        data_node=choice(self.data_nodes_ips)
+        database='test_user_drop_retention_policy_db'
+        rp_name='user_drop_retention_policy'
+        rp_duration='3h0m0s'
+        rp_replication='2'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating Admin InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=3,
+                                    retries=1)
+        self.mylog.info(test_name + 'STEP 2: Creating retention policy %s with duration %s and replication %s'
+                        % (rp_name, rp_duration, rp_replication))
+        (success, errormessage)=du.create_retention_policy(self, client_admin, rp_name=rp_name, duration=rp_duration,
+                                                           replication=rp_replication, database=database, default=True)
+        assert success, self.mylog.info(test_name + 'unable to create retention policy ' + str(errormessage))
+        self.mylog.info(test_name + 'STEP 3: Dropping retention policy %s' % rp_name)
+        client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=3, retries=1)
+        (success, errormessage)=du.drop_retention_policies(self, client, database, rp_name)
+        if role == 'b_first':
+            assert success, self.mylog.info(test_name + 'unable to drop retention policy ' + str(errormessage))
+            self.mylog.info(test_name + 'STEP 4: Show retention policies for database %s' % database)
+            (success, retention_policies_d, error_message) = du.show_retention_policies(self, client_admin, database)
+            assert success, self.mylog.info(test_name + 'unable to get retention policies for database %s' % database)
+            self.mylog.info(test_name + 'STEP 5: Verify database does not have the retention policy %s' % rp_name)
+            result=du.get_retention_policy(self, retention_policies_d, rp_name)
+            assert result == None, self.mylog.info(test_name + ' retention policy %s still could be found' % rp_name)
+        else:
+            assert success == False, self.mylog.info(test_name + 'able to drop retention policy ' + str(errormessage))
+        self.footer(test_name)
+
     # ==================================== ManageSubscription Permission Test Cases ===================================#
-    # ManageSubscription Permission
     @pytest.mark.parametrize('create_database', ['test_user_create_subscription_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
@@ -701,7 +837,6 @@ class TestLdapUser(object):
                 self.mylog.info(test_name + 'able to create subscription, error=%s' % message)
         self.footer(test_name)
 
-    # ManageSubscription Permission
     @pytest.mark.parametrize('create_database', ['test_user_drop_subscription_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
@@ -728,7 +863,6 @@ class TestLdapUser(object):
                 self.mylog.info(test_name + ' able to drop subscription, error=%s' % message)
         self.footer(test_name)
 
-    # ManageSubscription Permission
     @pytest.mark.parametrize('create_database', ['test_user_show_subscriptions_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
@@ -951,7 +1085,7 @@ class TestLdapUser(object):
         self.header(test_name)
         (success, list_of_users)=uu.show_users(self, client)
         if role == 'c_first':
-            assert success is True, self.mylog.info(test_name + 'Assertion Error npt able getting users')
+            assert success is True, self.mylog.info(test_name + 'Assertion Error not able getting users')
             assert expected_number_of_users == len(list_of_users), \
                 self.mylog.info(test_name + ' Expected number of users :' + str(expected_number_of_users) +
                             ' is different from actual : ' + str(len(list_of_users)))
@@ -974,4 +1108,89 @@ class TestLdapUser(object):
             assert len(user_grants) == 2, self.mylog.info(test_name + 'Assertion Error for %s user' % user)
         else:
             assert success == False, self.mylog.info(test_name + 'Assertion Error SHOW GRANTS FOR %s' % user)
+        self.footer(test_name)
+
+    # =================================== DropData Permission TEst Cases ==============================================#
+    @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
+    @pytest.mark.parametrize('create_database', ['test_user_drop_measurement_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_user_drop_measurement(self, role, user):
+        '''
+
+        '''
+        test_name='test_user_drop_measurement '
+        database='test_user_drop_measurement_db'
+        data_node=choice(self.data_nodes_ips)
+        measurement='testm_user'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, user, LDAP_ADMIN_PASS))
+        client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, database=database, timeout=3,
+                                      retries=1)
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, database=database,
+                                    timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 1: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 2: Write points to the database as admin user')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 4: get created measurement')
+        (success, result, error)=du.list_measurements(self, client_admin)
+        assert success, self.mylog.info(test_name + 'Failed to get measurements ' + str(error))
+        assert measurement in result, self.mylog.info(test_name + 'Created measurement was not found')
+        self.mylog.info(test_name + 'STEP 5: drop_measurement %s' % measurement)
+        (success, error_measurement)=du.drop_measurement(self, client, measurement)
+        if role == 'f_first':
+            assert success, self.mylog.info(test_name + 'Failed to drop measurement -' + str(error_measurement))
+            self.mylog.info(test_name + 'STEP 6: get measurements')
+            (success, result, error) = du.list_measurements(self, client_admin)
+            assert success, self.mylog.info(test_name + 'Failed to get measurements ' + str(error))
+            self.mylog.info(test_name + 'STEP 7: Assert measurement was deleted')
+            assert measurement not in result, self.mylog.info(test_name + 'Measurement still can be found')
+        else:
+            assert success == False, self.mylog.info(test_name + 'able to drop measurement '
+                                                     + str(error_measurement))
+        self.footer(test_name)
+
+    @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
+    @pytest.mark.parametrize('create_database', ['test_user_drop_series_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_user_drop_series(self, role, user):
+        '''
+        '''
+        test_name='test_user_drop_series '
+        database='test_user_drop_series_db'
+        data_node=choice(self.data_nodes_ips)
+        measurement='test_user_series'
+        series_to_delete = measurement+',id=28'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                database=database, timeout=3, retries=1)
+        client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS,
+                                      database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 3: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 4: get series for the %s' % database)
+        (success, series, error)=du.list_series(self, client_admin, database)
+        assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
+        assert series_to_delete in series, self.mylog.info(test_name + 'Series was not found')
+        self.mylog.info(test_name + 'STEP 5: delete series %s' % series_to_delete)
+        # only one measurement is in the database, so deleting one series
+        (success, error_series)=du.drop_series(self, client, database=database,
+                                               measurement=measurement, tags={'id': '28'})
+        if role == 'f_first':
+            assert success, self.mylog.info(test_name + 'Failed to delete series' + str(error_series))
+            self.mylog.info(test_name + 'STEP 6: get series')
+            (success, series, error)=du.list_series(self, client_admin, database)
+            assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
+            self.mylog.info(test_name + 'STEP 7: Assert series was deleted')
+            assert series_to_delete not in series, self.mylog.info(test_name + 'Series still can be found')
+        else:
+            assert success == False, self.mylog.info(test_name + 'able to drop series '
+                                                     + str(error))
         self.footer(test_name)
