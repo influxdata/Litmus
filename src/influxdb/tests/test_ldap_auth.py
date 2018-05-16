@@ -118,7 +118,7 @@ class TestLdapAdminUser(object):
         '''
 
         '''
-        test_name='test_admin_delete_users '
+        test_name='test_admin_delete_users_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=3, retries=1)
         error_message='dropping users is disallowed when ldap is enabled'
@@ -137,7 +137,7 @@ class TestLdapAdminUser(object):
         '''
 
         '''
-        test_name='test_admin_grant_privilege '
+        test_name='test_admin_grant_privilege_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         database='_internal'
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
@@ -156,7 +156,7 @@ class TestLdapAdminUser(object):
         '''
 
         '''
-        test_name='test_admin_grant_admin_privileges '
+        test_name='test_admin_grant_admin_privileges_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
         error_message='setting admin privileges is disallowed when ldap is enabled'
@@ -176,7 +176,7 @@ class TestLdapAdminUser(object):
         '''
 
         '''
-        test_name='test_admin_revoke_privilege '
+        test_name='test_admin_revoke_privilege_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         database='_internal'
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
@@ -198,7 +198,7 @@ class TestLdapAdminUser(object):
         '''
 
         '''
-        test_name='test_admin_revoke_admin_privileges '
+        test_name='test_admin_revoke_admin_privileges_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
         error_message='revoking admin privileges is disallowed when ldap is enabled'
@@ -216,7 +216,7 @@ class TestLdapAdminUser(object):
         '''
 
         '''
-        test_name='test_admin_set_password '
+        test_name='test_admin_set_password_' + user + ' '
         password='p@ssw0rd'
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=3, retries=1)
@@ -253,7 +253,7 @@ class TestLdapAdminUser(object):
         :param user:
         :return:
         '''
-        test_name='test_admin_show_grants '
+        test_name='test_admin_show_grants_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
         self.header(test_name)
@@ -546,11 +546,50 @@ class TestLdapAdminUser(object):
         (success, series, error)=du.list_series(self, client_admin, database)
         assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
         assert series_to_delete in series, self.mylog.info(test_name + 'Series was not found')
-        self.mylog.info(test_name + 'STEP 5: delete series %s' % series_to_delete)
+        self.mylog.info(test_name + 'STEP 5: drop series %s' % series_to_delete)
         # only one measurement is in the database, so deleting one series
         (success, error_series)=du.drop_series(self, client_admin, database=database,
                                                  measurement=measurement, tags={'id':'17'})
-        assert success, self.mylog.info(test_name + 'Failed to delete series' + str(error_series))
+        assert success, self.mylog.info(test_name + 'Failed to drop series' + str(error_series))
+        self.mylog.info(test_name + 'STEP 6: get series')
+        (success, series, error)=du.list_series(self, client_admin, database)
+        assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
+        self.mylog.info(test_name + 'STEP 7: Assert series were dropped')
+        assert series_to_delete not in series, self.mylog.info(test_name + 'Series still can be found')
+        self.footer(test_name)
+
+    @pytest.mark.parametrize('create_database', ['test_admin_delete_series_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_admin_delete_series(self):
+        '''
+
+        '''
+        test_name = 'test_admin_delete_series '
+        database = 'test_admin_delete_series_db'
+        data_node = choice(self.data_nodes_ips)
+        measurement = 'test_delete_series'
+        series_to_delete = measurement + ',id=27'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                      database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 3: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 4: get series for the %s' % database)
+        (success, series, error)=du.list_series(self, client_admin, database)
+        assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
+        assert series_to_delete in series, self.mylog.info(test_name + 'Series was not found')
+        self.mylog.info(test_name + 'STEP 5: delete series %s' % series_to_delete)
+        # only one measurement is in the database, so deleting one series
+        (success, result, error)=du.delete_series(self, client_admin, database=database,
+                                                  measurement=measurement, tags={'id': '27'})
+        assert success, self.mylog.info(test_name + 'Failed to delete series ' + str(error))
+        assert len(result.items()) == 0, \
+            self.mylog.info(test_name + 'Failed to delete series ' + str(error))
         self.mylog.info(test_name + 'STEP 6: get series')
         (success, series, error)=du.list_series(self, client_admin, database)
         assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
@@ -595,7 +634,7 @@ class TestLdapUser(object):
         '''
 
         '''
-        test_name = 'test_user_create_database '
+        test_name = 'test_user_create_database_' + user + ' '
         data_node = choice(self.data_nodes_ips)
         database='test_create_db'
         error_message='error authorizing query: %s not authorized to execute statement \'CREATE DATABASE %s\'' \
@@ -623,7 +662,7 @@ class TestLdapUser(object):
         :return:
         '''
 
-        test_name='test_user_create_retention_policy '
+        test_name='test_user_create_retention_policy_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         database='test_creat_retention_policy_db'
         error_message='error authorizing query: %s not authorized to execute statement ' \
@@ -655,7 +694,7 @@ class TestLdapUser(object):
         :param user:
         :return:
         '''
-        test_name='test_user_view_retention_policy '
+        test_name='test_user_view_retention_policy_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         database='test_view_retention_policy_db'
         rp_name='view_retention_policy'
@@ -709,7 +748,7 @@ class TestLdapUser(object):
         :param users:
         :return:
         '''
-        test_name = 'test_user_alter_retention_policy '
+        test_name = 'test_user_alter_retention_policy_' + user + ' '
         data_node = choice(self.data_nodes_ips)
         database = 'test_alter_retention_policy_db'
         rp_name = 'alter_retention_policy'
@@ -752,7 +791,7 @@ class TestLdapUser(object):
         '''
 
         '''
-        test_name = 'test_user_drop_database '
+        test_name = 'test_user_drop_database_' + user + ' '
         data_node = choice(self.data_nodes_ips)
         database='test_drop_db'
         error_message='error authorizing query: %s not authorized to execute statement \'DROP DATABASE %s\'' \
@@ -783,7 +822,7 @@ class TestLdapUser(object):
         STEP 4: Show retention policies for database
         STEP 5: Verify database does not have the retention policy
         '''
-        test_name='test_user_drop_retention_policy '
+        test_name='test_user_drop_retention_policy_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         database='test_user_drop_retention_policy_db'
         rp_name='user_drop_retention_policy'
@@ -822,7 +861,7 @@ class TestLdapUser(object):
         '''
 
         '''
-        test_name='test_user_create_subscription'
+        test_name='test_user_create_subscription_' + user + ' '
         database='test_user_create_subscription_db'
         retention_policy='autogen'
         mode='ALL'
@@ -845,7 +884,7 @@ class TestLdapUser(object):
         '''
 
         '''
-        test_name='test_user_drop_subscription'
+        test_name='test_user_drop_subscription_' + user + ' '
         database='test_user_drop_subscription_db'
         retention_policy='autogen'
         mode='ALL'
@@ -871,7 +910,7 @@ class TestLdapUser(object):
         '''
 
         '''
-        test_name='test_user_show_subscriptions '
+        test_name='test_user_show_subscriptions_' + user + ' '
         database='test_user_show_subscriptions_db'
         retention_policy='autogen'
         mode='ALL'
@@ -906,7 +945,7 @@ class TestLdapUser(object):
     def test_user_create_user(self, role, user):
         '''
         '''
-        test_name='test_user_create_user '
+        test_name='test_user_create_user_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node,username=user, password=LDAP_ADMIN_PASS, timeout=3, retries=1)
         user_to_create, password_to_create='test_user_create_user','test_user_create_password'
@@ -933,7 +972,7 @@ class TestLdapUser(object):
     def test_user_delete_user(self, role, user):
         '''
         '''
-        test_name='test_user_delete_user '
+        test_name='test_user_delete_user_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=3, retries=1)
         error_message_authorized='dropping users is disallowed when ldap is enabled'
@@ -958,7 +997,7 @@ class TestLdapUser(object):
     def test_user_grant_privilege(self, role, user, permission):
         '''
         '''
-        test_name='test_user_grant_privilege '
+        test_name='test_user_grant_privilege_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         database='_internal'
         client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
@@ -981,7 +1020,7 @@ class TestLdapUser(object):
     def test_user_grant_admin_privileges(self, role, user):
         '''
         '''
-        test_name='test_user_grant_admin_privileges '
+        test_name='test_user_grant_admin_privileges_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
         error_message_authorized='setting admin privileges is disallowed when ldap is enabled'
@@ -1006,7 +1045,7 @@ class TestLdapUser(object):
     def test_user_revoke_privilege(self, role, user, permission):
         '''
         '''
-        test_name='test_user_revoke_privilege '
+        test_name='test_user_revoke_privilege_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         database='_internal'
         client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
@@ -1031,7 +1070,7 @@ class TestLdapUser(object):
     def test_user_revoke_admin_privileges(self, role, user):
         '''
         '''
-        test_name='test_user_revoke_admin_privileges '
+        test_name='test_user_revoke_admin_privileges_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
         error_message_authorized='revoking admin privileges is disallowed when ldap is enabled'
@@ -1055,7 +1094,7 @@ class TestLdapUser(object):
     def test_user_set_password(self, role, user):
         '''
         '''
-        test_name='test_user_set_password '
+        test_name='test_user_set_password_' + user + ' '
         password='newpassword'
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=3, retries=1)
@@ -1079,7 +1118,7 @@ class TestLdapUser(object):
     def test_user_show_users(self, role, user):
         '''
         '''
-        test_name = 'test_user_show_users '
+        test_name = 'test_user_show_users_' + user + ' '
         expected_number_of_users=5000
         data_node = choice(self.data_nodes_ips)
         client = InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=3, retries=1)
@@ -1101,7 +1140,7 @@ class TestLdapUser(object):
     def test_user_show_grants(self, role, user):
         '''
         '''
-        test_name='test_user_show_grants '
+        test_name='test_user_show_grants_' + user + ' '
         data_node=choice(self.data_nodes_ips)
         client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS, timeout=1, retries=1)
         self.header(test_name)
@@ -1113,7 +1152,7 @@ class TestLdapUser(object):
             assert success == False, self.mylog.info(test_name + 'Assertion Error SHOW GRANTS FOR %s' % user)
         self.footer(test_name)
 
-    # =================================== DropData Permission TEst Cases ==============================================#
+    # =================================== DropData Permission Test Cases ==============================================#
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
     @pytest.mark.parametrize('create_database', ['test_user_drop_measurement_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
@@ -1121,7 +1160,7 @@ class TestLdapUser(object):
         '''
 
         '''
-        test_name='test_user_drop_measurement '
+        test_name='test_user_drop_measurement_' + user + ' '
         database='test_user_drop_measurement_db'
         data_node=choice(self.data_nodes_ips)
         measurement='testm_user'
@@ -1161,7 +1200,7 @@ class TestLdapUser(object):
     def test_user_drop_series(self, role, user):
         '''
         '''
-        test_name='test_user_drop_series '
+        test_name='test_user_drop_series_' + user + ' '
         database='test_user_drop_series_db'
         data_node=choice(self.data_nodes_ips)
         measurement='test_user_series'
@@ -1195,5 +1234,52 @@ class TestLdapUser(object):
             assert series_to_delete not in series, self.mylog.info(test_name + 'Series still can be found')
         else:
             assert success == False, self.mylog.info(test_name + 'able to drop series '
+                                                     + str(error))
+        self.footer(test_name)
+
+    @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
+    @pytest.mark.parametrize('create_database', ['test_user_delete_series_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_user_delete_series(self, role, user):
+        '''
+
+        '''
+        test_name='test_user_delete_series_' + user + ' '
+        database='test_user_delete_series_db'
+        data_node=choice(self.data_nodes_ips)
+        measurement='test_user_delete_series'
+        series_to_delete=measurement + ',id=47'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                    database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, user, LDAP_ADMIN_PASS))
+        client=InfluxDBClient(data_node, username=user, password=LDAP_ADMIN_PASS,
+                              database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 3: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 4: get series for the %s' % database)
+        (success, series, error)=du.list_series(self, client_admin, database)
+        assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
+        assert series_to_delete in series, self.mylog.info(test_name + 'Series was not found')
+        self.mylog.info(test_name + 'STEP 5: delete series %s' % series_to_delete)
+        # only one measurement is in the database, so deleting one series
+        (success, result, error) = du.delete_series(self, client, database=database,
+                                                    measurement=measurement, tags={'id': '47'})
+        if role == 'f_first':
+            assert success, self.mylog.info(test_name + 'Failed to delete series')
+            assert len(result.items()) == 0, self.mylog.info(test_name + 'Failed to delete series ' + str(error))
+            self.mylog.info(test_name + 'STEP 6: get series')
+            (success, series, error)=du.list_series(self, client_admin, database)
+            assert success, self.mylog.info(test_name + 'Failed to get series ' + str(error))
+            self.mylog.info(test_name + 'STEP 7: Assert series was deleted')
+            assert series_to_delete not in series, self.mylog.info(test_name + 'Series still can be found')
+        else:
+            assert success == False, self.mylog.info(test_name + ' able to delete series '
                                                      + str(error))
         self.footer(test_name)
