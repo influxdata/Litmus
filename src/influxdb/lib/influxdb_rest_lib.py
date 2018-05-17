@@ -336,8 +336,56 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         self.log.info('==============================================================')
         return (success, message)
 
+    ############################################### CONTINUOUS QUERIES #################################################
 
-    ################################################## FGA #############################################################
+    def create_continuos_query(self, data_url, cq_name, database, cq_query,
+                               interval=None, every=None, duration=None, auth=None):
+        '''
+        CQ will run periodically and automatically on real time data and store query result in a specific measurement
+        :param test_class_instance:
+        :param client:
+        :param cq_name:
+        :param database:
+        :param cq_query:
+        :param interval:
+        :return:
+        '''
+        success=False
+        message=''
+        self.log.info('InfluxDBInfluxDBRestLib.create_continuos_query() FUNCTION IS CALLED WITH ARGUMENTS: DATA_URL='
+                      + str(data_url) + 'CQ NAME=' + str(cq_name) + ', DATABASE=' + str(database) + ', cq_query=' + str(cq_query)
+                      + ', interval=' + str(interval) + ', EVERY=' + str(every) + ', DURATIION=' + str(duration))
+        self.log.info('===============================================================================================')
+        query='CREATE CONTINUOUS QUERY "%s" ON "%s" ' % (cq_name, database)
+        if interval:
+            if every is None and duration is None:
+                return (False, None, 'Either \'FOR\' or \'EVERY\' should be specified')
+            if every:
+                query=query + 'RESAMPLE EVERY %s ' % every
+                if duration:
+                    query=query + 'FOR %s ' % duration
+            else:
+                query=query + 'RESAMPLE FOR %s ' % duration
+        query=query + 'BEGIN %s END' % cq_query
+        self.log.info('database_util.create_continuos_query() - FINAL QUERY = ' + str(query))
+        path='/query?q=%s' % query
+        response=self.post(data_url, path, auth=auth)
+        if response.status_code == 200:
+            result=response.json()['results'][0]
+            if result.get('error') is None:
+                success=True
+            else:
+                message=result.get('error')
+        else:
+            message=response.text
+            self.log.info('InfluxDBInfluxDBRestLib.create_continuous_query() error message=' + str(message))
+            self.log.info('================================================================================')
+        self.log.info('InfluxDBInfluxDBRestLib.create_continuous_query() FUNCTION IS DONE')
+        self.log.info('==================================================================')
+        return (success, message)
+
+
+        ################################################## FGA #############################################################
     '''
     TODO define methods for FGA for roles (as it applicable to ldap)
     '''
