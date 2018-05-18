@@ -625,10 +625,11 @@ class TestLdapAdminUser(object):
         assert success, self.mylog.info(test_name + ' Failed to create continuous query :' + str(error))
         self.mylog.info(test_name + 'STEP 3: Generate test data')
         points=gen_test_data(measurement)
-        self.mylog.info(test_name + 'STEP 3: Write points to the database')
+        self.mylog.info(test_name + 'STEP 4: Write points to the database')
         result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
         assert result, self.mylog.info(test_name + 'Failed to write points into database')
         # give it a few seconds for continuous query to process new results
+        self.mylog.info(test_name + 'STEP 5: Verify CQ populated the measurements')
         time_end=time.time() + 15
         while time.time() < time_end:
             (success, result, error)=du.run_query(self, client_admin, verify_query, database=database)
@@ -644,6 +645,56 @@ class TestLdapAdminUser(object):
             self.mylog.info(test_name + 'Failure to populate test_admin_test measurement' + str(error))
         self.footer(test_name)
 
+    @pytest.mark.parametrize('create_database', ['test_admin_drop_cq_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_admin_drop_cq(self):
+        '''
+        '''
+        test_name='test_admin_drop_cq '
+        database='test_admin_drop_cq_db'
+        measurement='test_drop_cq_mean'
+        into_measurement='test_admin_drop_cq_test'
+        data_node=choice(self.data_nodes_ips)
+        data_url='http://' + choice(self.data_nodes_ips) + ':8086'
+        cq_name='test_admin_cq'
+        cq_query='SELECT mean("value") INTO "%s"."autogen"."%s" FROM ' \
+                   '"%s"."autogen"."%s" GROUP BY time(5s)' % (database, into_measurement, database, measurement)
+        verify_query='select count(*) from "%s"."autogen"."%s"' % (database, into_measurement)
+
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                    database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Creating Continuous Query')
+        (success, error)=self.irl.create_continuos_query(data_url, cq_name, database, cq_query,
+                                                           auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        assert success, self.mylog.info(test_name + ' Failed to create continuous query :' + str(error))
+        self.mylog.info(test_name + 'STEP 3: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 4: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        # give it a few seconds for continuous query to process new results
+        self.mylog.info(test_name + 'STEP 5: Verify continuous query populated the measurement')
+        time_end = time.time() + 15
+        while time.time() < time_end:
+            (success, result, error) = du.run_query(self, client_admin, verify_query, database=database)
+            assert success, self.mylog.info(test_name + 'Failure to process query' + str(error))
+            if len(list(result.get_points())) > 0:
+                for point in result.get_points():
+                    self.mylog.info(test_name + str(point))
+                break
+            else:
+                self.mylog.info(test_name + ': SLEEPING FOR 1 SEC')
+                time.sleep(1)
+        assert len(list(result.get_points())) > 0, \
+            self.mylog.info(test_name + 'Failure to populate test_admin_test measurement' + str(error))
+        self.mylog.info(test_name + 'STEP 6: Drop created continuous query')
+        (success, error)=self.irl.drop_continuos_query(data_url, cq_name, database,
+                                                       auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        assert success, self.mylog.info(test_name + 'Failed to drop continuous query' + str(error))
+        self.footer(test_name)
 
 ########################################################################################################################
 ########################################################################################################################
@@ -1361,10 +1412,11 @@ class TestLdapUser(object):
             assert success, self.mylog.info(test_name + ' Failed to create continuous query :' + str(error))
             self.mylog.info(test_name + 'STEP 3: Generate test data')
             points = gen_test_data(measurement)
-            self.mylog.info(test_name + 'STEP 3: Write points to the database')
+            self.mylog.info(test_name + 'STEP 4: Write points to the database')
             result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
             assert result, self.mylog.info(test_name + 'Failed to write points into database')
             # give it a few seconds for continuous query to process new results
+            self.mylog.info(test_name + 'STEP 5: Verify CQ populated the measurements')
             time_end=time.time() + 15
             while time.time() < time_end:
                 (success, result, error)=du.run_query(self, client_admin, verify_query, database=database)
@@ -1381,5 +1433,61 @@ class TestLdapUser(object):
         else:
             assert success == False, \
                 self.mylog.info(test_name + ' Able to create continuous query :' + str(error))
+            # TODO assert error message is correct
+        self.footer(test_name)
+
+    @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
+    @pytest.mark.parametrize('create_database', ['test_user_drop_cq_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_user_drop_cq(self, role, user):
+        '''
+        '''
+        test_name='test_user_drop_cq_' + user + ' '
+        database='test_user_drop_cq_db'
+        measurement='test_user_drop_cq_mean'
+        into_measurement='test_user_drop_cq_test'
+        data_node=choice(self.data_nodes_ips)
+        data_url='http://' + choice(self.data_nodes_ips) + ':8086'
+        cq_name='test_user_drop_cq'
+        cq_query='SELECT mean("value") INTO "%s"."autogen"."%s" FROM ' \
+                    '"%s"."autogen"."%s" GROUP BY time(5s)' % (database, into_measurement, database, measurement)
+        verify_query='select count(*) from "%s"."autogen"."%s"' % (database, into_measurement)
+
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                      database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Creating Continuous Query')
+        (success, error)=self.irl.create_continuos_query(data_url, cq_name, database, cq_query,
+                                                           auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        assert success, self.mylog.info(test_name + ' Failed to create continuous query :' + str(error))
+        self.mylog.info(test_name + 'STEP 3: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 4: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        # give it a few seconds for continuous query to process new results
+        self.mylog.info(test_name + 'STEP 5: Verify CQ populated the measurements')
+        time_end=time.time() + 15
+        while time.time() < time_end:
+            (success, result, error)=du.run_query(self, client_admin, verify_query, database=database)
+            assert success, self.mylog.info(test_name + 'Failure to process query' + str(error))
+            if len(list(result.get_points())) > 0:
+                for point in result.get_points():
+                    self.mylog.info(test_name + str(point))
+                break
+            else:
+                self.mylog.info(test_name + ': SLEEPING FOR 1 SEC')
+                time.sleep(1)
+        assert len(list(result.get_points())) > 0, \
+            self.mylog.info(test_name + 'Failure to populate test_admin_test measurement' + str(error))
+        (success, error) = self.irl.drop_continuos_query(data_url, cq_name, database,
+                                                         auth=(user, LDAP_ADMIN_PASS))
+        if role == 'e_first':
+            assert success, self.mylog.info(test_name + 'Failed to drop continuous query' + str(error))
+        else:
+            assert success == False, \
+                self.mylog.info(test_name + ' Able to drop continuous query :' + str(error))
             # TODO assert error message is correct
         self.footer(test_name)
