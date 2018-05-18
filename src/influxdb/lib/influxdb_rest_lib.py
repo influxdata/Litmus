@@ -386,6 +386,74 @@ class InfluxDBInfluxDBRestLib(BaseLib):
 
 
         ################################################## FGA #############################################################
+
+    def drop_continuos_query(self, data_url, cq_name, database, auth=None):
+        '''
+        CQ will run periodically and automatically on real time data and store query result in a specific measurement
+        :param test_class_instance:
+        :param client:
+        :param cq_name:
+        :param database:
+        :return:
+        '''
+        success=False
+        message=''
+        self.log.info('InfluxDBInfluxDBRestLib.drop_continuos_query() FUNCTION IS CALLED WITH ARGUMENTS: DATA_URL='
+                      + str(data_url) + 'CQ NAME=' + str(cq_name) + ', DATABASE=' + str(database))
+        self.log.info('=============================================================================================')
+        query='DROP CONTINUOUS QUERY "%s" ON "%s" ' % (cq_name, database)
+        self.log.info('database_util.create_continuos_query() - FINAL QUERY = ' + str(query))
+        path='/query?q=%s' % query
+        response=self.post(data_url, path, auth=auth)
+        if response.status_code == 200:
+            result=response.json()['results'][0]
+            if result.get('error') is None:
+                success=True
+            else:
+                message=result.get('error')
+        else:
+            message=response.text
+            self.log.info('InfluxDBInfluxDBRestLib.drop_continuous_query() error message=' + str(message))
+            self.log.info('=============================================================================')
+        self.log.info('InfluxDBInfluxDBRestLib.drop_continuous_query() FUNCTION IS DONE')
+        self.log.info('================================================================')
+        return (success, message)
+
+        ################################################## FGA #############################################################
+
+    def list_continuos_queries(self, data_url, cq_name, database, auth=None):
+        '''
+        CQ will run periodically and automatically on real time data and store query result in a specific measurement
+        :param test_class_instance:
+        :param client:
+        :param cq_name:
+        :param database:
+        :return:
+        '''
+        success=False
+        message=''
+        self.log.info('InfluxDBInfluxDBRestLib.drop_continuos_query() FUNCTION IS CALLED WITH ARGUMENTS: DATA_URL='
+                      + str(data_url) + 'CQ NAME=' + str(cq_name) + ', DATABASE=' + str(database))
+        self.log.info('=============================================================================================')
+        query='DROP CONTINUOUS QUERY "%s" ON "%s" ' % (cq_name, database)
+        self.log.info('database_util.create_continuos_query() - FINAL QUERY = ' + str(query))
+        path='/query?q=%s' % query
+        response=self.post(data_url, path, auth=auth)
+        if response.status_code == 200:
+            result=response.json()['results'][0]
+            if result.get('error') is None:
+                success=True
+            else:
+                message=result.get('error')
+        else:
+            message=response.text
+            self.log.info('InfluxDBInfluxDBRestLib.drop_continuous_query() error message=' + str(message))
+            self.log.info('=============================================================================')
+        self.log.info('InfluxDBInfluxDBRestLib.drop_continuous_query() FUNCTION IS DONE')
+        self.log.info('================================================================')
+        return (success, message)
+
+        ################################################## FGA #############################################################
     '''
     TODO define methods for FGA for roles (as it applicable to ldap)
     '''
