@@ -421,39 +421,63 @@ class InfluxDBInfluxDBRestLib(BaseLib):
 
         ################################################## FGA #############################################################
 
-    def list_continuos_queries(self, data_url, cq_name, database, auth=None):
+    def list_continuos_queries(self, data_url, auth=None):
         '''
-        CQ will run periodically and automatically on real time data and store query result in a specific measurement
+        List every CQ on an InfluxDB instance
         :param test_class_instance:
         :param client:
-        :param cq_name:
-        :param database:
         :return:
         '''
         success=False
         message=''
-        self.log.info('InfluxDBInfluxDBRestLib.drop_continuos_query() FUNCTION IS CALLED WITH ARGUMENTS: DATA_URL='
-                      + str(data_url) + 'CQ NAME=' + str(cq_name) + ', DATABASE=' + str(database))
-        self.log.info('=============================================================================================')
-        query='DROP CONTINUOUS QUERY "%s" ON "%s" ' % (cq_name, database)
-        self.log.info('database_util.create_continuos_query() - FINAL QUERY = ' + str(query))
+        cq_dict={}
+        self.log.info('InfluxDBInfluxDBRestLib.list_continuos_queries() FUNCTION IS CALLED')
+        self.log.info('===================================================================')
+        query='SHOW CONTINUOUS QUERIES'
+        self.log.info('database_util.list_continuos_query() - QUERY = ' + str(query))
         path='/query?q=%s' % query
         response=self.post(data_url, path, auth=auth)
         if response.status_code == 200:
-            result=response.json()['results'][0]
-            if result.get('error') is None:
-                success=True
-            else:
-                message=result.get('error')
+            success=True
+            # result: [ {u'name': u'_internal', u'columns': [u'name', u'query']},
+            #           {u'name': u'telegraf', u'columns': [u'name', u'query']},
+            #           {u'name': u'testdb', u'columns': [u'name', u'query'],
+            #               u'values':
+            #               [
+            #                   [u'test_1',
+            #                       u'CREATE CONTINUOUS QUERY test_1 ON testdb BEGIN SELECT mean(value) INTO testdb.autogen.test_1
+            #                       FROM testdb.autogen.foobar GROUP BY time(5s) END'
+            #                   ]
+            #               ]
+            #           }
+            #         ]
+            # result is a list of dictionaries
+            result=response.json()['results'][0].get('series')
+            for entry in result:
+                self.log.info('database_util.list_continuos_query() PARSING ENTRY ' + str(entry))
+                self.log.info('================================================================')
+                # if key 'values' is present then we have one or more CQ
+                cq_values=entry.get('values') # returns list of lists.
+                db_name=entry.get('name') # returns database name as a str.
+                self.log.info('database_util.list_continuos_query() DATABASE NAME=' + str(db_name))
+                if cq_values is not None:
+                    for cq in cq_values:
+                        cq_name=cq[0]
+                        self.log.info('database_util.list_continuos_query() CQ NAME=' + str(cq_name))
+                        cq_query=cq[1]
+                        self.log.info('database_util.list_continuos_query() CQ QUERY=' + str(cq_query))
+                        cq_dict[cq_name]={'QUERY':cq_query, 'DB_NAME':db_name}
+                    self.log.info('database_util.list_continuos_query() - INTERM CQ DICT=' + str(cq_dict))
+                self.log.info('database_util.list_continuos_query() - DONE PARSING ENTRY')
+                self.log.info('=========================================================')
+            self.log.info('database_util.list_continuos_queries() - FINAL CQ DICT=' + str(cq_dict))
         else:
-            message=response.text
-            self.log.info('InfluxDBInfluxDBRestLib.drop_continuous_query() error message=' + str(message))
-            self.log.info('=============================================================================')
-        self.log.info('InfluxDBInfluxDBRestLib.drop_continuous_query() FUNCTION IS DONE')
-        self.log.info('================================================================')
-        return (success, message)
+            self.log.info('database_util.list_continuos_queries() - RESPONSE CODE = ' + str(response.status_code))
+            message=response.json().get('error')
+        self.log.info('InfluxDBInfluxDBRestLib.list_continuous_queries() FUNCTION IS DONE')
+        self.log.info('==================================================================')
+        return (success, cq_dict, message)
 
         ################################################## FGA #############################################################
-    '''
-    TODO define methods for FGA for roles (as it applicable to ldap)
-    '''
+
+    #TODO define methods for FGA for roles (as it applicable to ldap)

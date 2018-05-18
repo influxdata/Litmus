@@ -696,6 +696,40 @@ class TestLdapAdminUser(object):
         assert success, self.mylog.info(test_name + 'Failed to drop continuous query' + str(error))
         self.footer(test_name)
 
+    @pytest.mark.parametrize('create_database', ['test_admin_list_cq_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_admin_list_cq(self):
+        '''
+        '''
+        test_name='test_admin_list_cq '
+        database='test_admin_list_cq_db'
+        measurement='test_list_cq_mean'
+        into_measurement='test_admin_list_cq_test'
+        data_node=choice(self.data_nodes_ips)
+        data_url='http://' + choice(self.data_nodes_ips) + ':8086'
+        cq_name='test_admin_cq_'
+        cq_query='SELECT mean(value) INTO %s.autogen.%s FROM ' \
+                   '%s.autogen.%s GROUP BY time(5s)' % (database, into_measurement, database, measurement)
+        cq_query_create='SELECT mean("value") INTO "%s"."autogen"."%s" FROM ' \
+                  '"%s"."autogen"."%s" GROUP BY time(5s)' % (database, into_measurement, database, measurement)
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating 10 Continuous Queries')
+        for number in range(10):
+            (success, error)=self.irl.create_continuos_query(data_url, cq_name+str(number), database, cq_query_create,
+                                                           auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+            assert success, self.mylog.info(test_name + ' Failed to create continuous query :' + str(error))
+        (success, cq_list, errors)=self.irl.list_continuos_queries(data_url, auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        assert success, self.mylog.info(test_name + 'Failed to get the list of continuous queries')
+        for number in range(10):
+            self.mylog.info(test_name + ' Asserting %s name and %s query' % (cq_name+str(number), cq_query))
+            assert cq_list.get(cq_name+str(number)) is not None, \
+                self.mylog.info(test_name + 'CQ %s name is not found in the CQ list' % cq_name+str(number))
+            assert cq_query in cq_list.get(cq_name+str(number)).get('QUERY'), \
+                self.mylog.info(test_name + 'CQ Query for %s cq name is different from expected' % cq_name+str(number))
+            assert cq_list.get(cq_name+str(number)).get('DB_NAME') == database, \
+                self.mylog.info(test_name +
+                                'Database name for %s cq name is different from expected' % cq_name+str(number))
+        self.footer(test_name)
 ########################################################################################################################
 ########################################################################################################################
 
@@ -1490,4 +1524,44 @@ class TestLdapUser(object):
             assert success == False, \
                 self.mylog.info(test_name + ' Able to drop continuous query :' + str(error))
             # TODO assert error message is correct
+        self.footer(test_name)
+
+    @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
+    @pytest.mark.parametrize('create_database', ['test_user_list_cq_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_user_list_cq(self, role, user):
+        '''
+        '''
+        test_name='test_user_list_cq_' + user + ' '
+        database='test_user_list_cq_db'
+        measurement='test_user_list_cq_mean'
+        into_measurement='test_user_list_cq_test'
+        data_node=choice(self.data_nodes_ips)
+        data_url='http://' + choice(self.data_nodes_ips) + ':8086'
+        cq_name='test_user_cq_'
+        cq_query='SELECT mean(value) INTO %s.autogen.%s FROM ' \
+                   '%s.autogen.%s GROUP BY time(5s)' % (database, into_measurement, database, measurement)
+        cq_query_create='SELECT mean("value") INTO "%s"."autogen"."%s" FROM ' \
+                          '"%s"."autogen"."%s" GROUP BY time(5s)' % (database, into_measurement, database, measurement)
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating 10 Continuous Queries')
+        for number in range(10):
+            (success, error)=self.irl.create_continuos_query(data_url, cq_name + str(number), database,
+                                                             cq_query_create, auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+            assert success, self.mylog.info(test_name + ' Failed to create continuous query :' + str(error))
+        (success, cq_list, errors) = self.irl.list_continuos_queries(data_url, auth=(user, LDAP_ADMIN_PASS))
+        if role == 'e_first':
+            assert success, self.mylog.info(test_name + 'Failed to get the list of continuous queries')
+            for number in range(10):
+                self.mylog.info(test_name + ' Asserting %s name and %s query' % (cq_name + str(number), cq_query))
+                assert cq_list.get(cq_name + str(number)) is not None, \
+                    self.mylog.info(test_name + 'CQ %s name is not found in the CQ list' % cq_name + str(number))
+                assert cq_query in cq_list.get(cq_name + str(number)).get('QUERY'), \
+                    self.mylog.info(test_name + 'CQ Query for %s cq name is different from expected'
+                                    % cq_name + str(number))
+                assert cq_list.get(cq_name + str(number)).get('DB_NAME') == database, \
+                    self.mylog.info(test_name + 'Database name for %s cq name is different from expected'
+                                    % cq_name + str(number))
+        else:
+            assert success == False, self.mylog.info(test_name + 'Able to get the list of continuous queries')
         self.footer(test_name)
