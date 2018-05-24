@@ -24,7 +24,7 @@ def meta_leader(request, private_public_ip_mapps, meta_nodes):
     :param request:
     :param private_public_ip_mapps:
     :param meta_nodes
-    :return:
+    :return: leader meta node, e.g. http://<ip>:8091
     '''
     meta_leader_node=None
     irl = influxdb_rest_lib.InfluxDBInfluxDBRestLib(request.cls.mylog)
@@ -39,6 +39,7 @@ def meta_leader(request, private_public_ip_mapps, meta_nodes):
     for prv_address in private_addresses:
         if prv_address in meta_leader_url:
             meta_leader_node='http://'+prv_pub_dic[prv_address]+':8091'
+            request.cls.mylog.info('meta_leader fixture - meta_leader_url=' + str(meta_leader_node))
             break
     assert meta_leader_node is not None, \
         request.cls.mylog.info('meta_leader fixture - failed to get meta leader node')

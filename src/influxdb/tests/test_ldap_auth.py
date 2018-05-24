@@ -2,6 +2,7 @@
 from random import choice
 from src.util import users_util as uu
 from src.util import database_util as du
+from src.util import influxctl_util as iu
 from influxdb import InfluxDBClient as InfluxDBClient
 from src.influxdb.lib import influxdb_rest_lib
 import src.util.login_util as lu
@@ -70,14 +71,14 @@ def gen_test_data(measurement):
         points.append(point)
     return points
 
-@pytest.mark.usefixtures('data_nodes_ips','kapacitor')
+@pytest.mark.usefixtures('data_nodes_ips','kapacitor', 'meta_leader')
 class TestLdapAdminUser(object):
     '''
     :param delete_roles fixture:
     :param setup_roles_permissions fixture:
     :param data_nodes_ips fixture:
     '''
-    mylog = lu.log(lu.get_log_path(), 'w', __name__)
+    mylog=lu.log(lu.get_log_path(), 'w', __name__)
     irl=influxdb_rest_lib.InfluxDBInfluxDBRestLib(mylog)
 
     ####################################################################################################################
@@ -730,6 +731,61 @@ class TestLdapAdminUser(object):
                 self.mylog.info(test_name +
                                 'Database name for %s cq name is different from expected' % cq_name+str(number))
         self.footer(test_name)
+
+    #***************************************** ManageShard Permissions ************************************************
+    @pytest.mark.parametrize('create_database', ['test_admin_show_shard_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_admin_show_shard(self):
+        '''
+        '''
+        test_name='test_admin_show_shard '
+        database='test_admin_show_shard_db'
+        measurement='test_admin_show_shards_m'
+        data_node=choice(self.data_nodes_ips)
+        rp_name='test_admin_show_shard_1month'
+        duration='29d' # retentin policy duration 30days, shard group duration 1day
+        replication='2'
+        now=datetime.datetime.utcnow()
+        tomorrow=datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        month=datetime.datetime.utcnow() + datetime.timedelta(days=30)
+        expected_shard_group_start_time=now.strftime('%Y-%m-%d')+'T00:00:00Z'
+        expected_shard_group_end_time=tomorrow.strftime('%Y-%m-%d')+'T00:00:00Z'
+        expected_retention_duration=month.strftime('%Y-%m-%d')+'T00:00:00Z'
+
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                      database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Create retention policy')
+        (success, error)=du.create_retention_policy(self, client_admin, rp_name,
+                                                    duration, replication, database, default=True)
+        assert success, self.mylog.info(test_name + 'Failed to create retantion policy : ' + str(error))
+        self.mylog.info(test_name + 'STEP 3: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 4: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 5: Show shards')
+        shard_groups=iu.show_shards(self, self.irl._show_shards(meta_leader_url=self.meta_leader,
+                                                                      auth=(LDAP_ADMIN_USERS,LDAP_ADMIN_PASS)))
+        self.mylog.info(test_name + 'STEP 6: Verify values returned by show-shards command')
+        for k,v in shard_groups.items():
+            if v['database'] == database and v['retention'] == rp_name:
+                self.mylog.info(test_name + 'ASSERT expected shard_group_start_time '
+                                + str(expected_shard_group_start_time) + ' equals actual '
+                                + v['shard_group_start_time'])
+                assert str(expected_shard_group_start_time) == v['shard_group_start_time']
+                self.mylog.info(test_name + 'ASSERT expected shard_group_end_time '
+                                + str(expected_shard_group_end_time) + ' equals actual '
+                                + v['shard_group_end_time'])
+                assert str(expected_shard_group_end_time) == v['shard_group_end_time']
+                self.mylog.info(test_name + 'ASSERT expected retention_duration '
+                                + str(expected_retention_duration) + ' equals actual '
+                                + v['retention_duration'])
+                assert str(expected_retention_duration) == v['retention_duration']
+        self.footer(test_name)
+
 ########################################################################################################################
 ########################################################################################################################
 
@@ -1564,4 +1620,62 @@ class TestLdapUser(object):
                                     % cq_name + str(number))
         else:
             assert success == False, self.mylog.info(test_name + 'Able to get the list of continuous queries')
+        self.footer(test_name)
+
+    # ***************************************** ManageShard Permissions ************************************************
+    @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
+    @pytest.mark.parametrize('create_database', ['test_user_show_shard_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_user_show_shard(self, role, user):
+        '''
+        '''
+        test_name = 'test_user_show_shard_' + user + ' '
+        database = 'test_user_show_shard_db'
+        measurement = 'test_user_show_shards_m'
+        data_node = choice(self.data_nodes_ips)
+        rp_name = 'test_user_show_shard_1month'
+        duration = '29d'  # retentin policy duration 30days, shard group duration 1day
+        replication = '2'
+        now = datetime.datetime.utcnow()
+        tomorrow = datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        month = datetime.datetime.utcnow() + datetime.timedelta(days=30)
+        expected_shard_group_start_time = now.strftime('%Y-%m-%d') + 'T00:00:00Z'
+        expected_shard_group_end_time = tomorrow.strftime('%Y-%m-%d') + 'T00:00:00Z'
+        expected_retention_duration = month.strftime('%Y-%m-%d') + 'T00:00:00Z'
+
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin = InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                      database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Create retention policy')
+        (success, error) = du.create_retention_policy(self, client_admin, rp_name,
+                                                      duration, replication, database, default=True)
+        assert success, self.mylog.info(test_name + 'Failed to create retantion policy : ' + str(error))
+        self.mylog.info(test_name + 'STEP 3: Generate test data')
+        points = gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 4: Write points to the database')
+        result = du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 5: Show shards')
+        shard_groups = iu.show_shards(self, self.irl._show_shards(meta_leader_url=self.meta_leader,
+                                                                  auth=(user, LDAP_ADMIN_PASS)))
+        if role == 'g_first':
+            self.mylog.info(test_name + 'STEP 6: Verify values returned by show-shards command')
+            for k, v in shard_groups.items():
+                if v['database'] == database and v['retention'] == rp_name:
+                    self.mylog.info(test_name + 'ASSERT expected shard_group_start_time '
+                                    + str(expected_shard_group_start_time) + ' equals actual '
+                                    + v['shard_group_start_time'])
+                    assert str(expected_shard_group_start_time) == v['shard_group_start_time']
+                    self.mylog.info(test_name + 'ASSERT expected shard_group_end_time '
+                                    + str(expected_shard_group_end_time) + ' equals actual '
+                                    + v['shard_group_end_time'])
+                    assert str(expected_shard_group_end_time) == v['shard_group_end_time']
+                    self.mylog.info(test_name + 'ASSERT expected retention_duration '
+                                    + str(expected_retention_duration) + ' equals actual '
+                                    + v['retention_duration'])
+                    assert str(expected_retention_duration) == v['retention_duration']
+        else:
+            assert len(shard_groups) == 0, pytest.xfail(reason='Able to run influx-ctl show-shards, https://github.com/influxdata/plutonium/issues/2567')
         self.footer(test_name)

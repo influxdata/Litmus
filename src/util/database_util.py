@@ -309,12 +309,15 @@ def create_retention_policy(test_class_instance, client, rp_name, duration, repl
     '''
     :param test_class_instance:
     :param client:
-    :param rp_name:
-    :param duration:
-    :param replication:
-    :param database:
-    :param default:
-    :return:
+    :param rp_name: (str) -  the name of the new retention policy
+    :param duration: (str) - the duration of the new retention policy. Durations such as 1h, 90m, 12h, 7d, and 4w, are
+                             all supported and mean 1 hour, 90 minutes, 12 hours, 7 day, and 4 weeks, respectively.
+                             For infinite retention - meaning the data will never be deleted - use INF for duration.
+                             The minimum retention period is 1 hour.
+    :param replication: (str) - the replication of the retention policy
+    :param database: (str) - the database for which the retention policy is created.
+    :param default: (bool) - True/False
+    :return: success or failure
     '''
     success=False
     error_message=''
