@@ -217,7 +217,6 @@ def admin_pass(request):
     return request.cls.admin_pass
 
 @pytest.fixture(scope='class')
-
 def http_auth(request):
     try:
         request.cls.mylog.info('http_auth() fixture is being called')

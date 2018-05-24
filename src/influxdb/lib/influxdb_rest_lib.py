@@ -134,9 +134,10 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         self.log.info('==============================================================')
         return (success, meta_leader_node, message)
 
+    #********************************************** ROLES/PERMISSIONS **************************************************
     def create_role(self, meta_leader_url, role_name, auth=None):
         '''
-        :param meta_url:
+        :param meta_leader_url:
         :param role_name:
         :param auth:
         :return:
@@ -158,8 +159,9 @@ class InfluxDBInfluxDBRestLib(BaseLib):
 
     def delete_role(self, meta_leader_url, role_name, auth=None):
         '''
-        :param meta_url:
+        :param meta_leader_url:
         :param role_name:
+        :param auth:
         :return:
         '''
         self.log.info('InfluxDBInfluxDBRestLib.delete_role() FUNCTION IS CALLED')
@@ -185,11 +187,12 @@ class InfluxDBInfluxDBRestLib(BaseLib):
 
     def add_role_permissions(self, meta_leader_url, role_name, scope, permissions, auth=None):
         '''
-        :param meta_url: URL of the meta node
+        :param meta_leader_url: URL of the leader meta node
         :param role_name: name of the role (str)
         :param scope: 'database' or 'all', if scope=database, then scope=<name of the database>
                       if scope=all, then scope=''
         :param permissions: list of cluster permissions
+        :param auth
         :return:
         '''
         self.log.info('InfluxDBInfluxDBRestLib.add_role_permissions() FUNCTION IS CALLED')
@@ -205,6 +208,113 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         self.log.info('InfluxDBInfluxDBRestLib.add_role_permissions() success=' + str(success))
         self.log.info('InfluxDBInfluxDBRestLib.add_role_permissions() FUNCTION IS DONE')
         self.log.info('===============================================================')
+        return (success, message)
+
+    #************************************************ INFLUX-CTL *******************************************************
+    def _show_cluster(self, meta_leader_url, auth=None):
+        '''
+        :param meta_leader_url:
+        :param auth:
+        :return: dictionary of meta and data nodes:
+        {u'meta':
+            [{u'httpScheme': u'http', u'tcpAddr': u'10.0.150.167:8089', u'id': 2, u'version': u'meta-node version', u'addr': u'10.0.150.167:8091'},
+             {u'httpScheme': u'http', u'tcpAddr': u'10.0.248.195:8089', u'id': 1, u'version': u'meta-node version', u'addr': u'10.0.248.195:8091'},
+             {u'httpScheme': u'http', u'tcpAddr': u'10.0.51.86:8089',   u'id': 3, u'version': u'meta-node version', u'addr': u'10.0.51.86:8091'}],
+        u'data':
+            [{u'status': u'joined', u'tcpAddr': u'10.0.114.209:8088', u'httpAddr': u'10.0.114.209:8086', u'version': u'data node version', u'httpScheme': u'http', u'id': 5},
+             {u'status': u'joined', u'tcpAddr': u'10.0.92.185:8088', u'httpAddr': u'10.0.92.185:8086', u'version': u'data node version', u'httpScheme': u'http', u'id': 4}]}
+        '''
+        self.log.info('InfluxDBInfluxDBRestLib.show_cluster() FUNCTION IS CALLED')
+        self.log.info('=========================================================')
+        success=False
+        message=''
+        response=self.get(meta_leader_url, '/show-cluster', auth=auth)
+        if response.status_code == 200:
+            success=True
+            result=response.json()
+        else:
+            message=response.text
+            result=None
+        self.log.info('InfluxDBInfluxDBRestLib.show_cluster() - result=' + str(result))
+        self.log.info('InfluxDBInfluxDBRestLib.show_cluster() FUNCTION IS DONE')
+        self.log.info('=======================================================')
+        return (success, result, message)
+
+    def _show_shards(self, meta_leader_url, auth=None):
+        '''
+        :param meta_leader_url:
+        :param auth:
+        :return: list of shard groups
+        {u'shard-group-id': u'1', u'end-time': u'2018-05-24T00:00:00Z', u'start-time': u'2018-05-23T00:00:00Z', u'owners': [{u'id': u'5', u'tcpAddr': u'10.0.114.209:8088'}], u'database': u'_internal', u'retention-policy': u'monitor', u'expire-time': u'2018-05-31T00:00:00Z', u'replica-n': 1, u'truncated-at': u'0001-01-01T00:00:00Z', u'id': u'1'}
+        {u'shard-group-id': u'1', u'end-time': u'2018-05-24T00:00:00Z', u'start-time': u'2018-05-23T00:00:00Z', u'owners': [{u'id': u'4', u'tcpAddr': u'10.0.92.185:8088'}], u'database': u'_internal', u'retention-policy': u'monitor', u'expire-time': u'2018-05-31T00:00:00Z', u'replica-n': 1, u'truncated-at': u'0001-01-01T00:00:00Z', u'id': u'2'}
+        {u'shard-group-id': u'2', u'end-time': u'2018-05-28T00:00:00Z', u'start-time': u'2018-05-21T00:00:00Z', u'owners': [{u'id': u'4', u'tcpAddr': u'10.0.92.185:8088'}, {u'id': u'5', u'tcpAddr': u'10.0.114.209:8088'}], u'database': u'telegraf', u'retention-policy': u'autogen', u'expire-time': u'0001-01-01T00:00:00Z', u'replica-n': 2, u'truncated-at': u'0001-01-01T00:00:00Z', u'id': u'3'}
+        '''
+        self.log.info('InfluxDBInfluxDBRestLib.show_shards() FUNCTION IS CALLED')
+        self.log.info('=========================================================')
+        success=False
+        message=''
+        response=self.get(meta_leader_url, '/show-shards', auth=auth)
+        if response.status_code == 200:
+            success=True
+            result=response.json()
+        else:
+            message=response.text
+            result=None
+        self.log.info('InfluxDBInfluxDBRestLib.show_shards() - result=' + str(result))
+        self.log.info('InfluxDBInfluxDBRestLib.show_shards() FUNCTION IS DONE')
+        self.log.info('======================================================')
+        return (success, result, message)
+
+    def remove_shard(self, meta_leader_url, src_data_node, shard_id, auth=None):
+        '''
+        :param meta_leader_url:
+        :param src_data_node: (str) the TCP bind address of the source data node see show-shard tcpAddr value)
+        :param shard_id: (str) the shard ID (see show-shard id's key)
+        :param auth: if meta node authentication set, provide user name and password for auth
+        :return: success or failure
+        '''
+        self.log.info('InfluxDBInfluxDBRestLib.remove_shard() FUNCTION IS CALLED with PARAMS: SOURCE DATA NODE='
+                      + str(src_data_node) + ', SHARD ID=' + str(shard_id))
+        self.log.info('========================================================================================')
+        success=False
+        message=''
+        data={'src':src_data_node, 'shard':shard_id}
+        response=self.post(meta_leader_url, '/remove-shard', data=data, auth=auth)
+        if response.status_code == 204: # Successful completion of the shard removal
+            success=True
+        else: # response.status_code == 500 or response.status_code == 401 or response.status_code == 400:
+            message=response.json()
+        self.log.info('InfluxDBInfluxDBRestLib.remove_shard() - success=' + str(success))
+        self.log.info('InfluxDBInfluxDBRestLib.remove_shard() - message=' + str(message))
+        self.log.info('InfluxDBInfluxDBRestLib.remove_shard() FUNCTION IS DONE')
+        self.log.info('=======================================================')
+        return (success, message)
+
+    def copy_shard(self, meta_leader_url, src_data_node, dest_data_node, shard_id, auth=None):
+        '''
+        :param meta_leader_url:
+        :param src_data_node:
+        :param dest_data_node:
+        :param shard_id:
+        :param auth:
+        :return:
+        '''
+        self.log.info('InfluxDBInfluxDBRestLib.copy_shard() FUNCTION IS CALLED with PARAMS: SOURCE DATA NODE='
+                      + str(src_data_node) + ', SHARD ID=' + str(shard_id) + ', DESTINATION DATA NODE='
+                      + str(dest_data_node))
+        self.log.info('======================================================================================')
+        success=False
+        message=''
+        data = {'src': src_data_node, 'dest':dest_data_node,'shard': shard_id}
+        response = self.post(meta_leader_url, '/remove-shard', data=data, auth=auth)
+        if response.status_code == 204:  # Successful completion of the shard removal
+            success=True
+        else: # response.status_code == 500 or response.status_code == 401 or response.status_code == 400:
+            message=response.json()
+        self.log.info('InfluxDBInfluxDBRestLib.copy_shard() - success=' + str(success))
+        self.log.info('InfluxDBInfluxDBRestLib.copy_shard() - message=' + str(message))
+        self.log.info('InfluxDBInfluxDBRestLib.copy_shard() FUNCTION IS DONE')
+        self.log.info('=======================================================')
         return (success, message)
 
     ############################################### SUBSCRIPTIONS ######################################################
@@ -421,39 +531,63 @@ class InfluxDBInfluxDBRestLib(BaseLib):
 
         ################################################## FGA #############################################################
 
-    def list_continuos_queries(self, data_url, cq_name, database, auth=None):
+    def list_continuos_queries(self, data_url, auth=None):
         '''
-        CQ will run periodically and automatically on real time data and store query result in a specific measurement
+        List every CQ on an InfluxDB instance
         :param test_class_instance:
         :param client:
-        :param cq_name:
-        :param database:
         :return:
         '''
         success=False
         message=''
-        self.log.info('InfluxDBInfluxDBRestLib.drop_continuos_query() FUNCTION IS CALLED WITH ARGUMENTS: DATA_URL='
-                      + str(data_url) + 'CQ NAME=' + str(cq_name) + ', DATABASE=' + str(database))
-        self.log.info('=============================================================================================')
-        query='DROP CONTINUOUS QUERY "%s" ON "%s" ' % (cq_name, database)
-        self.log.info('database_util.create_continuos_query() - FINAL QUERY = ' + str(query))
+        cq_dict={}
+        self.log.info('InfluxDBInfluxDBRestLib.list_continuos_queries() FUNCTION IS CALLED')
+        self.log.info('===================================================================')
+        query='SHOW CONTINUOUS QUERIES'
+        self.log.info('database_util.list_continuos_query() - QUERY = ' + str(query))
         path='/query?q=%s' % query
         response=self.post(data_url, path, auth=auth)
         if response.status_code == 200:
-            result=response.json()['results'][0]
-            if result.get('error') is None:
-                success=True
-            else:
-                message=result.get('error')
+            success=True
+            # result: [ {u'name': u'_internal', u'columns': [u'name', u'query']},
+            #           {u'name': u'telegraf', u'columns': [u'name', u'query']},
+            #           {u'name': u'testdb', u'columns': [u'name', u'query'],
+            #               u'values':
+            #               [
+            #                   [u'test_1',
+            #                       u'CREATE CONTINUOUS QUERY test_1 ON testdb BEGIN SELECT mean(value) INTO testdb.autogen.test_1
+            #                       FROM testdb.autogen.foobar GROUP BY time(5s) END'
+            #                   ]
+            #               ]
+            #           }
+            #         ]
+            # result is a list of dictionaries
+            result=response.json()['results'][0].get('series')
+            for entry in result:
+                self.log.info('database_util.list_continuos_query() PARSING ENTRY ' + str(entry))
+                self.log.info('================================================================')
+                # if key 'values' is present then we have one or more CQ
+                cq_values=entry.get('values') # returns list of lists.
+                db_name=entry.get('name') # returns database name as a str.
+                self.log.info('database_util.list_continuos_query() DATABASE NAME=' + str(db_name))
+                if cq_values is not None:
+                    for cq in cq_values:
+                        cq_name=cq[0]
+                        self.log.info('database_util.list_continuos_query() CQ NAME=' + str(cq_name))
+                        cq_query=cq[1]
+                        self.log.info('database_util.list_continuos_query() CQ QUERY=' + str(cq_query))
+                        cq_dict[cq_name]={'QUERY':cq_query, 'DB_NAME':db_name}
+                    self.log.info('database_util.list_continuos_query() - INTERM CQ DICT=' + str(cq_dict))
+                self.log.info('database_util.list_continuos_query() - DONE PARSING ENTRY')
+                self.log.info('=========================================================')
+            self.log.info('database_util.list_continuos_queries() - FINAL CQ DICT=' + str(cq_dict))
         else:
-            message=response.text
-            self.log.info('InfluxDBInfluxDBRestLib.drop_continuous_query() error message=' + str(message))
-            self.log.info('=============================================================================')
-        self.log.info('InfluxDBInfluxDBRestLib.drop_continuous_query() FUNCTION IS DONE')
-        self.log.info('================================================================')
-        return (success, message)
+            self.log.info('database_util.list_continuos_queries() - RESPONSE CODE = ' + str(response.status_code))
+            message=response.json().get('error')
+        self.log.info('InfluxDBInfluxDBRestLib.list_continuous_queries() FUNCTION IS DONE')
+        self.log.info('==================================================================')
+        return (success, cq_dict, message)
 
         ################################################## FGA #############################################################
-    '''
-    TODO define methods for FGA for roles (as it applicable to ldap)
-    '''
+
+    #TODO define methods for FGA for roles (as it applicable to ldap)

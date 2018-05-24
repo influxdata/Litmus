@@ -32,6 +32,7 @@ METANODES_NUM=
 METANODES=
 META_CONFIG="/etc/influxdb/influxdb-meta.conf"
 META_LDAP_ALLOWED=
+META_AUTH=
 # cluster configuration
 CLUSTER_ENV=
 # name of the cluster, default name is 'litmus'
@@ -82,14 +83,21 @@ LDAP_PASSWORD="p@ssw0rd"
 
 # Cluster LOG environment Vars to be always used (data node)
 # Meta logging toggles the logging of messages from the meta service
-DATA_META_LOG=",INFLUXDB_META_LOGGING_ENABLED=true,"
+META_LOG=",INFLUXDB_META_LOGGING_ENABLED=true,"
+# Cluster tracing toggles the logging of Raft logs on Raft nodes
+META_CLUSTER_TRACING="INFLUXDB_META_CLUSTER_TRACING=true,"
+# Toggles logging of additional debug information within the TSM engine and WAL
 DATA_TRACE_LOG="INFLUXDB_DATA_TRACE_LOGGING_ENABLED=true,"
+# The query log enabled setting toggles the logging of parsed queries before execution
 DATA_QUERY_LOG="INFLUXDB_DATA_QUERY_LOG_ENABLED=true,"
+# Determines whether HTTP request logging is enabled
 HTTP_LOG="INFLUXDB_HTTP_LOG_ENABLED=true,"
+# Determines whether detailed write logging is enabled.
 HTTP_WRITE="INFLUXDB_HTTP_WRITE_TRACING=true,"
+# to enable logging of cluster communications, to verify connectivity issues between data nodes
 CLUSTER_TRACING="INFLUXDB_CLUSTER_CLUSTER_TRACING=true"
 
-CLUSTER_LOG_ENV=$DATA_META_LOG$DATA_TRACE_LOG$DATA_QUERY_LOG$HTTP_LOG$HTTP_WRITE$CLUSTER_TRACING
+CLUSTER_LOG_ENV=$META_LOG$META_CLUSTER_TRACING$DATA_TRACE_LOG$DATA_QUERY_LOG$HTTP_LOG$HTTP_WRITE$CLUSTER_TRACING
 
 # index version either inmem or tsi1 (by default tsi1)
 INDEX_VERSION=
@@ -158,10 +166,12 @@ uninstall() {
 installCluster() {
 	echo
     	echo `date` "**************** installing cluster ********************"
+    # 1. Index to be used: inmem or tsi1
 	if [ "X"$INDEX_VERSION == "X" ]; then
 		INDEX_VERSION="INFLUXDB_DATA_INDEX_VERSION=tsi1"
 	fi
-	if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then # data nodes auth enabled
+	# 2. check for data nodes authentication availability
+	if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
 		# check if admin user and password are provided
 		if [ "X"$ADMIN_USER == "X" -a "X"$ADMIN_PASSWORD == "X" ]; then
 			echo "ADMIN USER OR/AND PASSWORD IS NOT PROVIDED. EXIT"
@@ -169,27 +179,45 @@ installCluster() {
 		fi
 	fi 
 	if [ "X"$CLUSTER_ENV == "X" ]; then
-	    # need to make sure that authentication is enabled
-	    if [ "X"$META_LDAP_ALLOWED != "X" -a "X"$HTTP_AUTH_ENABLED != "X" ]; then # LDAP authentication is enabled
-		    CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$META_LDAP_ALLOWED$CLUSTER_LOG_ENV
-		else
-		    CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$CLUSTER_LOG_ENV
-	    fi
+	    # meta node authenticatin is enabled
+	    if [ "X"$META_AUTH != "X" ]; then
+	        # need to make sure if ldap authentication is enabled
+	        if [ "X"$META_LDAP_ALLOWED != "X" -a "X"$HTTP_AUTH_ENABLED != "X" ]; then # LDAP authentication is enabled
+		        CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$META_LDAP_ALLOWED$META_AUTH$CLUSTER_LOG_ENV
+		    else
+		        CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$META_AUTH$CLUSTER_LOG_ENV
+		    fi
+	    else
+	        if [ "X"$META_LDAP_ALLOWED != "X" -a "X"$HTTP_AUTH_ENABLED != "X" ]; then # LDAP authentication is enabled
+		        CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$META_LDAP_ALLOWED$CLUSTER_LOG_ENV
+            else
+                CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$CLUSTER_LOG_ENV
+            fi
+        fi
 	else
-	    if [ "X"$META_LDAP_ALLOWED != "X" -a "X"$HTTP_AUTH_ENABLED != "X" ]; then # LDAP authentication is enabled
-		    CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$META_LDAP_ALLOWED$CLUSTER_LOG_ENV","$CLUSTER_ENV
+	    # meta node authenticatin is enabled
+	    if [ "X"$META_AUTH != "X" ]; then
+	        if [ "X"$META_LDAP_ALLOWED != "X" -a "X"$HTTP_AUTH_ENABLED != "X" ]; then # LDAP authentication is enabled
+		        CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$META_LDAP_ALLOWED$META_AUTH$CLUSTER_LOG_ENV","$CLUSTER_ENV
+		    else
+		        CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$META_AUTH$CLUSTER_LOG_ENV","$CLUSTER_ENV
+		    fi
 		else
-		    CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$CLUSTER_LOG_ENV","$CLUSTER_ENV
+		    if [ "X"$META_LDAP_ALLOWED != "X" -a "X"$HTTP_AUTH_ENABLED != "X" ]; then # LDAP authentication is enabled
+		        CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$META_LDAP_ALLOWED$CLUSTER_LOG_ENV","$CLUSTER_ENV
+		    else
+		        CLUSTER_ENV=$INDEX_VERSION$HTTP_AUTH_ENABLED$CLUSTER_LOG_ENV","$CLUSTER_ENV
+		    fi
 		fi
 	fi			
-    	CLUSTER_ENV=$(echo ${CLUSTER_ENV//,/ --env })
+    CLUSTER_ENV=$(echo ${CLUSTER_ENV//,/ --env })
 	CLUSTER_ENV="--env $CLUSTER_ENV"
 	catchFail  "$PCL create -c $CLUSTER_NAME $DATANODES $METANODES $LOCAL_PKG_DATA $LOCAL_PKG_META $CLUSTER_ENV $INFLUX_DB_VERSION $TELEGRAF_VERSION --license-key $LICENSE_KEY"
 	# create admin user and password
 	if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
 		catchFail "curl --fail -XPOST \"http://`$PCL host data-0 -c $CLUSTER_NAME`:8086/query\" --data-urlencode \"q=CREATE USER $ADMIN_USER WITH PASSWORD '$ADMIN_PASSWORD' WITH ALL PRIVILEGES\""
 		if [ "X"$META_LDAP_ALLOWED != "X" ]; then
-            # copy Ldap config to every meta node
+            # copy Ldap config to every meta  and data nodes
             echo `date` "*************** copying ldap config file and private key to meta and data nodes ****************"
             echo ""
             # private key required to create tunneling for ldap server
@@ -216,7 +244,7 @@ installCluster() {
 		    done
 		fi
 		echo
-		echo `date` "*************** updating telegraf configuration on each data node ******************"
+		echo `date` "*************** updating telegraf configuration on each data and meta nodes ******************"
 		echo ""
 		counter=0
 		while [ $counter -lt $DATANODES_NUM ]
@@ -225,14 +253,35 @@ installCluster() {
 			catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf stop'"
 			out=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
 			if [ "X$out" == "X" ]; then
-				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/database/ausername = \\\"$ADMIN_USER\\\"\" $TELEGRAF_CONFIG'"
+			    catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/database/ausername = \\\"$ADMIN_USER\\\"\" $TELEGRAF_CONFIG'"
 				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i \"/username/apassword = \\\"$ADMIN_PASSWORD\\\"\" $TELEGRAF_CONFIG'"
 				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf start'"
-                		start=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
-                		if [ "X$start" == "X" ];then
-                        		echo "TELEGRAF DID NOT START ON data-$counter. EXITING"
-                        		exit 1
-                        fi
+                start=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+                if [ "X$start" == "X" ];then
+                    echo "TELEGRAF DID NOT START ON data-$counter. EXITING"
+                    exit 1
+                fi
+			else
+			    echo "COULD NOT STOP TELEGRAF. EXITING"
+			    exit 1;
+			fi
+			let counter+=1
+		done
+		counter=0
+		while [ $counter -lt $METANODES_NUM ]
+		do
+			# ssh to a metanode, stop telegraf service, update the confing and start telegraf service
+			catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo service telegraf stop'"
+			out=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep telegraf| grep -v grep"`
+			if [ "X$out" == "X" ]; then
+			    catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo sed -i \"/database/ausername = \\\"$ADMIN_USER\\\"\" $TELEGRAF_CONFIG'"
+				catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo sed -i \"/username/apassword = \\\"$ADMIN_PASSWORD\\\"\" $TELEGRAF_CONFIG'"
+				catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo service telegraf start'"
+                start=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep telegraf| grep -v grep"`
+                if [ "X$start" == "X" ];then
+                    echo "TELEGRAF DID NOT START ON meta-$counter. EXITING"
+                    exit 1
+                fi
 			else
 			    echo "COULD NOT STOP TELEGRAF. EXITING"
 			    exit 1;
@@ -291,18 +340,9 @@ installKapacitor() {
 		catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/pprof-enabled = false/pprof-enabled = true/\" $KAPACITOR_CONFIG'"
 		catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/level = \\\"INFO\\\"/level = \\\"DEBUG\\\"/\" $KAPACITOR_CONFIG'"
 		if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
-			# remove first an empty entries for username and password (running command 2 times to remove one line at the time until I find a solution to
-			# do it in a better way
-			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/{N;s/\n.*//;}\" $KAPACITOR_CONFIG'"
-			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/{N;s/\n.*//;}\" $KAPACITOR_CONFIG'"
-			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/ausername = \\\"$ADMIN_USER\\\"\" $KAPACITOR_CONFIG'"
-			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i \"/urls/apassword = \\\"$ADMIN_PASSWORD\\\"\" $KAPACITOR_CONFIG'"
-			if [ "X"$META_LDAP_ALLOWED != "X" ]; then
-			    catchFail "$SCP -i $PRIVATE_KEY -o StrictHostKeyChecking=no $PRIVATE_KEY $OS@`$PCL host kapacitor-0 -c $CLUSTER_NAME`:/tmp"
-			    catchFail "$SSH -i $PRIVATE_KEY -f -o StrictHostKeyChecking=no $OS@`$PCL host kapacitor-0 -c $CLUSTER_NAME` 'sudo $SSH -o StrictHostKeyChecking=no -l tunnel -fN -L 3389:10.0.1.69:389 34.217.54.237 -i /tmp/$PRIVATE_KEY'"
-		    fi
+            catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/username = .*/username = \\\"$ADMIN_USER\\\"/\" $KAPACITOR_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/password = .*/password = \\\"$ADMIN_PASSWORD\\\"/\" $KAPACITOR_CONFIG'"
 		fi
-		
 		echo "****************** starting kapacitor **************************"
 		echo ""
 		catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor start'"
@@ -316,58 +356,133 @@ installKapacitor() {
 	fi
 }
 
-#-------------------------------------------------------
-# enableMetaAut()
-#-------------------------------------------------------
-# To enable support for basic Meta Nodes authentication.
-# JWT authentication is not supported yet
+#---------------------------------------------------------------------
+# enableMetaAuth()
+#---------------------------------------------------------------------
+# enables authentication of Meta Nodes.
+# Meta nodes support JWT authentication and Basic authentication
+# First version of the function will support only Basic Authentication
+# The ENV vars cannot be used during installation, pcl installer with
+# throw the error: Output from failed meta join: add-meta:
+# operation exited with error: must create admin user first
 
 enableMetaAuth() {
-    echo ''
+    echo `date` "****************** Enable meta nodes authentications *************************"
+    echo ""
+    counter=0
+	while [ $counter -lt $METANODES_NUM ]
+	do
+		# ssh to a metanode, stop influxdb-meta service, update the confing and start influxdb-meta service
+		catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo service influxdb-meta stop'"
+		out=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep influxdb| grep -v grep"`
+		if [ "X$out" == "X" ]; then
+		    catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo sed -i -e \"s/.*auth-enabled = false/  auth-enabled = true/\" $META_CONFIG'"
+		    catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo service influxdb-meta start'"
+            start=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep influxdb| grep -v grep"`
+            if [ "X$start" == "X" ]; then
+                echo "INFLUXDB-META SERVICE DID NOT START ON meta-$counter. EXITING"
+                exit 1
+            fi
+        else
+            echo "COULD NOT STOP INFLUXDB-META SERVICE. EXISITNG"
+            exit 1
+        fi
+        let counter+=1
+    done
 }
+
+#---------------------------------------------
+# enableLdapAuth()
+#---------------------------------------------
+# sets ldap config on one of the meta nodes
+# and updates telegraf and kapacitor username,
+# password to connect to influxdb
 
 enableLdapAuth() {
     # are we using meta authentication
     if $meta_auth; then
         echo `date` "********** META AUTHENTICATION IS ENABLED **********"
-        # need to user admin user and password that is passed with --admin-user/--admin-pass
-        catchFail "$SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` '$INFLUXD_CTL -auth-type basec -user $ADMIN_USER -pwd $ADMIN_PASSWORD ldap set-config /tmp/$LDAP_CONFIG'"
+        # need to use admin user and password that is passed with --admin-user/--admin-pass
+        catchFail "$SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` '$INFLUXD_CTL -auth-type basic -user $ADMIN_USER -pwd $ADMIN_PASSWORD ldap set-config /tmp/$LDAP_CONFIG'"
     else
         echo `date` "********** META AUTHENTICATION IS NOT ENABLED **********"
         catchFail "$SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` '$INFLUXD_CTL ldap set-config /tmp/$LDAP_CONFIG'"
     fi
     # verify that ldap config was loded successfully
-    success=$($SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` "$INFLUXD_CTL ldap get-config")
+    if $meta_auth; then
+        success=$($SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` "$INFLUXD_CTL -auth-type basic -user $LDAP_ADMIN -pwd $LDAP_PASSWORD ldap get-config")
+    else
+        success=$($SSH -i $PRIVATE_KEY -o StrictHostKeyChecking=no $OS@`$PCL host meta-0 -c ldap` "$INFLUXD_CTL ldap get-config")
+    fi
     if [ "X"$success == "X" ]; then
         echo "LDAP CONFIG WAS NOT LOADED SUCCESSFULLY. EXISTING"
         exit 1;
     fi
     echo "LDAP CONFIG LOADED SUCCESSFULLY"
+    echo `date` "********************* Updating telegraf username/password to work with LDAP on data and meta nodes *********************"
     echo ""
-    echo `date` "*************** Update telegraf to use LDAP's admin user ***************"
+	counter=0
+	while [ $counter -lt $DATANODES_NUM ]
+	do
+	    # ssh to a datanode, stop telegraf service, update the confing and start telegraf service
+		catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf stop'"
+		out=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+		if [ "X$out" == "X" ]; then
+		    catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/username = .*/username = \\\"$LDAP_ADMIN\\\"/\" $TELEGRAF_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/password = .*/password = \\\"$LDAP_PASSWORD\\\"/\" $TELEGRAF_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf start'"
+            start=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
+                if [ "X$start" == "X" ];then
+                    echo "TELEGRAF DID NOT START ON data-$counter. EXITING"
+                    exit 1
+                fi
+		else
+		    echo "COULD NOT STOP TELEGRAF. EXITING"
+			exit 1;
+		fi
+		let counter+=1
+	done
+	counter=0
+	while [ $counter -lt $METANODES_NUM ]
+	do
+		# ssh to a metanode, stop telegraf service, update the confing and start telegraf service
+		catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo service telegraf stop'"
+		out=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep telegraf| grep -v grep"`
+		if [ "X$out" == "X" ]; then
+		    catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo sed -i -e \"s/username = .*/username = \\\"$LDAP_ADMIN\\\"/\" $TELEGRAF_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo sed -i -e \"s/password = .*/password = \\\"$LDAP_PASSWORD\\\"/\" $TELEGRAF_CONFIG'"
+			catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo service telegraf start'"
+            start=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep telegraf| grep -v grep"`
+            if [ "X$start" == "X" ];then
+                echo "TELEGRAF DID NOT START ON meta-$counter. EXITING"
+                exit 1
+            fi
+		else
+		    echo "COULD NOT STOP TELEGRAF. EXITING"
+			exit 1;
+		fi
+		let counter+=1
+	done
+
+    echo `date` "********************* Updating KAPACITOR's username/password to work with LDAP ***************************"
     echo ""
-    counter=0
-    while [ $counter -lt $DATANODES_NUM ]
-		do
-			# ssh to a datanode, stop telegraf service, update the confing and start telegraf service
-			catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf stop'"
-			out=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
-			if [ "X$out" == "X" ]; then
-				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/username = .*/username = \\\"$LDAP_ADMIN\\\"/\" $TELEGRAF_CONFIG'"
-				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/pasword = .*/password = \\\"$LDAP_PASSWORD\\\"/\" $TELEGRAF_CONFIG'"
-				catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service telegraf start'"
-                		start=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep telegraf| grep -v grep"`
-                		if [ "X$start" == "X" ];then
-                        		echo "TELEGRAF DID NOT START ON data-$counter. EXITING"
-                        		exit 1
-				fi
-			else
-			    echo "COULD NOT STOP TELEGRAF"
-			    exit 1;
-			fi
-			let counter+=1
-		done
-	# TODO update kapacitor config to use LDAP once LDAP integration is fixed in kapacitor.
+    catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor stop'"
+	out=`$PCL ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
+	if [ "X$out" == "X" ]; then
+        catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/username = .*/username = \\\"$LDAP_ADMIN\\\"/\" $KAPACITOR_CONFIG'"
+	    catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo sed -i -e \"s/password = .*/password = \\\"$LDAP_PASSWORD\\\"/\" $KAPACITOR_CONFIG'"
+	    catchFail "$SCP -i $PRIVATE_KEY -o StrictHostKeyChecking=no $PRIVATE_KEY $OS@`$PCL host kapacitor-0 -c $CLUSTER_NAME`:/tmp"
+	    catchFail "$SSH -i $PRIVATE_KEY -f -o StrictHostKeyChecking=no $OS@`$PCL host kapacitor-0 -c $CLUSTER_NAME` 'sudo $SSH -o StrictHostKeyChecking=no -l tunnel -fN -L 3389:10.0.1.69:389 34.217.54.237 -i /tmp/$PRIVATE_KEY'"
+	else
+	    echo "COULD NOT STOP THE KAPACITOR.EXITING"
+			exit 1
+	fi
+	catchFail "$PCL ssh -c $CLUSTER_NAME kapacitor-0 'sudo service kapacitor start'"
+	start=`$PCL ssh -c $CLUSTER_NAME kapacitor-0 "ps axu | grep kapacitor| grep -v grep"`
+	if [ "X$start" == "X" ];then
+	    echo "KAPACITOR DID NOT START. EXITING"
+		exit 1
+	fi
 }
 
 while [ $# -gt 0 ]
@@ -400,9 +515,13 @@ do
 			ADMIN_PASSWORD=$1;;
 		--ldap-auth)
 		    ldap_auth=true
-		    META_LDAP_ALLOWED=",INFLUXDB_META_LDAP_ALLOWED=true,INFLUXDB_META_META_AUTH_ENABLED=true";;
+		    META_LDAP_ALLOWED=",INFLUXDB_META_LDAP_ALLOWED=true";;
 		--meta-auth)
-		    meta_auth=true;;
+		    # for now meta authentication wiill support basic authentication : username/password
+		    # INFLUXDB_META_AUTH_ENABLED=true is equal to auth-enabled = true on meta node - will be set up later.
+		    # INFLUXDB_META_META_AUTH_ENABLED=true is equal to meta-auth-enabled = true on data node
+		    meta_auth=true
+		    META_AUTH=",INFLUXDB_META_META_AUTH_ENABLED=true";;
 		--pkg-data)
 			shift
 			LOCAL_PKG_DATA="--local-pkg-data $1";;
@@ -464,9 +583,9 @@ main() {
 	    if $install_kapacitor; then
 		    installKapacitor
 	    fi
-	    if $meta_auth; then
-	        enableMetaAuth
-	    fi
+        if $meta_auth; then
+            enableMetaAuth
+        fi
 	    if $ldap_auth; then
 	        enableLdapAuth
 	    fi
