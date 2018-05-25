@@ -5,6 +5,7 @@ from src.util import database_util as du
 from src.util import influxctl_util as iu
 from influxdb import InfluxDBClient as InfluxDBClient
 from src.influxdb.lib import influxdb_rest_lib
+from random import choice
 import src.util.login_util as lu
 import pytest
 import math
@@ -733,13 +734,13 @@ class TestLdapAdminUser(object):
         self.footer(test_name)
 
     #***************************************** ManageShard Permissions ************************************************
-    @pytest.mark.parametrize('create_database', ['test_admin_show_shard_db'], ids=[''], indirect=True)
+    @pytest.mark.parametrize('create_database', ['test_admin_show_shard_influxctl_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
-    def test_admin_show_shard(self):
+    def test_admin_show_shard_influxctl(self):
         '''
         '''
-        test_name='test_admin_show_shard '
-        database='test_admin_show_shard_db'
+        test_name='test_admin_show_shard_influxctl '
+        database='test_admin_show_shard__influxctl_db'
         measurement='test_admin_show_shards_m'
         data_node=choice(self.data_nodes_ips)
         rp_name='test_admin_show_shard_1month'
@@ -784,6 +785,65 @@ class TestLdapAdminUser(object):
                                 + str(expected_retention_duration) + ' equals actual '
                                 + v['retention_duration'])
                 assert str(expected_retention_duration) == v['retention_duration']
+        self.footer(test_name)
+
+    @pytest.mark.parametrize('create_database', ['test_admin_remove_shard_influxctl_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_admin_remove_shard_influxctl(self):
+        '''
+        '''
+        data_nodes=[]
+        shard_id=''
+        test_name='test_admin_remove_shard_influxctl '
+        database='test_admin_remove_shard_influxctl_db'
+        measurement='test_admin_remove_shards_m'
+        data_node=choice(self.data_nodes_ips)
+        rp_name='test_admin_remove_shard_1month_influxctl'
+        duration='29d'  # retentin policy duration 30days, shard group duration 1day
+        replication='2'
+
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                      database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Create retention policy')
+        (success, error)=du.create_retention_policy(self, client_admin, rp_name, duration, replication, database,
+                                                    default=True)
+        assert success, self.mylog.info(test_name + 'Failed to create retantion policy : ' + str(error))
+        self.mylog.info(test_name + 'STEP 3: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 4: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 5: Show shards')
+        shard_groups=iu.show_shards(self, self.irl._show_shards(meta_leader_url=self.meta_leader,
+                                                                auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS)))
+        self.mylog.info(test_name + 'STEP 6: Get data nodes')
+        for k, v in shard_groups.items():
+            if v['database'] == database and v['retention'] == rp_name:
+                data_nodes=v['data_nodes']
+                self.mylog.info(test_name + 'Data Nodes=' + str(data_nodes))
+                # since replicaiton factor is 2, then we should have 2 data nodes
+                assert len(data_nodes) == 2, self.mylog.info(test_name + 'Failed to replicate data over 2 nodes')
+                shard_id=k
+                self.mylog.info(test_name + 'SHARD_ID to be removed=' + str(shard_id))
+        self.mylog.info(test_name + 'STEP 7: Remove shard from one of the data nodes')
+        data_node_to_remove_shard_from=choice(data_nodes.keys())
+        self.mylog.info(test_name + 'Data Node to remove shard from ' + str(data_node_to_remove_shard_from))
+        (success, error)=self.irl.remove_shard(self.meta_leader, data_node_to_remove_shard_from,
+                                               shard_id, auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        assert success, self.mylog.info(test_name + 'Failure to remove shard : ' + str(error))
+        self.mylog.info(test_name + 'STEP 8: Verify shard was removed from node='
+                        + str(data_node_to_remove_shard_from))
+        shard_groups=iu.show_shards(self, self.irl._show_shards(meta_leader_url=self.meta_leader,
+                                                                  auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS)))
+        for k, v in shard_groups.items():
+            if v['database'] == database and v['retention'] == rp_name:
+                data_nodes=v['data_nodes']
+                self.mylog.info(test_name + 'Data Nodes=' + str(data_nodes))
+                assert data_node_to_remove_shard_from not in data_nodes.keys(), \
+                    self.mylog.info(test_name + 'Failed to remove shard from data node')
         self.footer(test_name)
 
 ########################################################################################################################
@@ -1624,13 +1684,13 @@ class TestLdapUser(object):
 
     # ***************************************** ManageShard Permissions ************************************************
     @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
-    @pytest.mark.parametrize('create_database', ['test_user_show_shard_db'], ids=[''], indirect=True)
+    @pytest.mark.parametrize('create_database', ['test_user_show_shard_influxctl_db'], ids=[''], indirect=True)
     @pytest.mark.usefixtures('create_database')
-    def test_user_show_shard(self, role, user):
+    def test_user_show_shard_influxctl(self, role, user):
         '''
         '''
-        test_name = 'test_user_show_shard_' + user + ' '
-        database = 'test_user_show_shard_db'
+        test_name = 'test_user_show_shard_influxctl_' + user + ' '
+        database = 'test_user_show_shard__influxctl_db'
         measurement = 'test_user_show_shards_m'
         data_node = choice(self.data_nodes_ips)
         rp_name = 'test_user_show_shard_1month'
@@ -1646,10 +1706,10 @@ class TestLdapUser(object):
         self.header(test_name)
         self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
                         (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
-        client_admin = InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
                                       database=database, timeout=3, retries=1)
         self.mylog.info(test_name + 'STEP 2: Create retention policy')
-        (success, error) = du.create_retention_policy(self, client_admin, rp_name,
+        (success, error)=du.create_retention_policy(self, client_admin, rp_name,
                                                       duration, replication, database, default=True)
         assert success, self.mylog.info(test_name + 'Failed to create retantion policy : ' + str(error))
         self.mylog.info(test_name + 'STEP 3: Generate test data')
@@ -1658,7 +1718,7 @@ class TestLdapUser(object):
         result = du.write_points(self, client_admin, points=points, time_precision='s', database=database)
         assert result, self.mylog.info(test_name + 'Failed to write points into database')
         self.mylog.info(test_name + 'STEP 5: Show shards')
-        shard_groups = iu.show_shards(self, self.irl._show_shards(meta_leader_url=self.meta_leader,
+        shard_groups=iu.show_shards(self, self.irl._show_shards(meta_leader_url=self.meta_leader,
                                                                   auth=(user, LDAP_ADMIN_PASS)))
         if role == 'g_first':
             self.mylog.info(test_name + 'STEP 6: Verify values returned by show-shards command')
@@ -1678,4 +1738,67 @@ class TestLdapUser(object):
                     assert str(expected_retention_duration) == v['retention_duration']
         else:
             assert len(shard_groups) == 0, pytest.xfail(reason='Able to run influx-ctl show-shards, https://github.com/influxdata/plutonium/issues/2567')
+        self.footer(test_name)
+
+    @pytest.mark.parametrize('role, user', single_role_users, ids=single_role_users_ids)
+    @pytest.mark.parametrize('create_database', ['test_user_remove_shard_influxctl_db'], ids=[''], indirect=True)
+    @pytest.mark.usefixtures('create_database')
+    def test_user_remove_shard_influxctl(self, role, user):
+        '''
+        '''
+        data_nodes=[]
+        shard_id=''
+        test_name='test_user_remove_shard_influxctl_' + user + ' '
+        database='test_user_remove_shard_influxctl_db'
+        measurement='test_user_remove_shards_m'
+        data_node=choice(self.data_nodes_ips)
+        rp_name='test_user_remove_shard_1month_influxctl'
+        duration='29d'  # retentin policy duration 30days, shard group duration 1day
+        replication='2'
+
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Creating InfluxDBClient data_node=%s, username=%s, password=%s' %
+                        (data_node, LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
+        client_admin=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS,
+                                    database=database, timeout=3, retries=1)
+        self.mylog.info(test_name + 'STEP 2: Create retention policy')
+        (success, error)=du.create_retention_policy(self, client_admin, rp_name, duration, replication, database,
+                                                      default=True)
+        assert success, self.mylog.info(test_name + 'Failed to create retantion policy : ' + str(error))
+        self.mylog.info(test_name + 'STEP 3: Generate test data')
+        points=gen_test_data(measurement)
+        self.mylog.info(test_name + 'STEP 4: Write points to the database')
+        result=du.write_points(self, client_admin, points=points, time_precision='s', database=database)
+        assert result, self.mylog.info(test_name + 'Failed to write points into database')
+        self.mylog.info(test_name + 'STEP 5: Show shards')
+        shard_groups=iu.show_shards(self, self.irl._show_shards(meta_leader_url=self.meta_leader,
+                                                                  auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS)))
+        self.mylog.info(test_name + 'STEP 6: Get data nodes')
+        for k, v in shard_groups.items():
+            if v['database'] == database and v['retention'] == rp_name:
+                data_nodes=v['data_nodes']
+                self.mylog.info(test_name + 'Data Nodes=' + str(data_nodes))
+                # since replicaiton factor is 2, then we should have 2 data nodes
+                assert len(data_nodes) == 2, self.mylog.info(test_name + 'Failed to replicate data over 2 nodes')
+                shard_id=k
+                self.mylog.info(test_name + 'SHARD_ID to be removed=' + str(shard_id))
+        self.mylog.info(test_name + 'STEP 7: Remove shard from one of the data nodes')
+        data_node_to_remove_shard_from=choice(data_nodes.keys())
+        self.mylog.info(test_name + 'Data Node to remove shard from' + str(data_node_to_remove_shard_from))
+        (success, error)=self.irl.remove_shard(self.meta_leader, data_node_to_remove_shard_from,
+                                                 shard_id, auth=(user, LDAP_ADMIN_PASS))
+        if role == 'g_first':
+            assert success, self.mylog.info(test_name + 'Failure to remove shard : ' + str(error))
+            self.mylog.info(test_name + 'STEP 8: Verify shard was removed from node='
+                            + str(data_node_to_remove_shard_from))
+            shard_groups = iu.show_shards(self, self.irl._show_shards(meta_leader_url=self.meta_leader,
+                                                                      auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS)))
+            for k, v in shard_groups.items():
+                if v['database'] == database and v['retention'] == rp_name:
+                    data_nodes = v['data_nodes']
+                    self.mylog.info(test_name + 'Data Nodes=' + str(data_nodes))
+                    assert data_node_to_remove_shard_from not in data_nodes.keys(), \
+                        self.mylog.info(test_name + 'Failed to remove shard from data node')
+        else:
+            assert success == False, self.mylog.info(test_name + 'Able to remove shard')
         self.footer(test_name)

@@ -23,7 +23,6 @@ def show_shards(test_class_instance, list_of_shards):
     {u'shard-group-id': u'2', u'end-time': u'2018-05-28T00:00:00Z', u'start-time': u'2018-05-21T00:00:00Z', u'owners': [{u'id': u'4', u'tcpAddr': u'10.0.92.185:8088'}, {u'id': u'5', u'tcpAddr': u'10.0.114.209:8088'}], u'database': u'telegraf', u'retention-policy': u'autogen', u'expire-time': u'0001-01-01T00:00:00Z', u'replica-n': 2, u'truncated-at': u'0001-01-01T00:00:00Z', u'id': u'3'}
     '''
     shard_group_dic={}
-    owners={}
     test_class_instance.mylog.info('influxctl_util.show_shards() function is called')
     test_class_instance.mylog.info('===============================================')
     (success, result, message)=list_of_shards
@@ -65,6 +64,7 @@ def show_shards(test_class_instance, list_of_shards):
         assert retention_duration is not None, \
             test_class_instance.mylog.info('influxctl_util.show_shards() - retention_duration is None')
         test_class_instance.mylog.info('influxctl_util.show_shards() - retention_duration = ' + str(retention_duration))
+        owners={}
         for node in shard_group.get('owners'): # list of dictionaries of data nodes that own this shard
             data_node_id=node.get('id')
             assert data_node_id is not None, \
