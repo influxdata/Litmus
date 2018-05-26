@@ -20,7 +20,7 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         :return:response object
         '''
         self.log.info('InfluxDBRestLib.post() is called with parameters: base_url=' + str(base_url) + ', path=' + str(path)
-                      + ', json=' + str(json) + ', auth=' + str(auth))
+                      + ', json=' + str(json) + ', data=' + str(data) + ', auth=' + str(auth))
         try:
             response = requests.post(base_url + path, json=json, data=data, headers=headers, auth=auth)
             self.log.info('InfluxDBRestLib.post() response code=' + str(response.status_code))
@@ -283,7 +283,7 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         if response.status_code == 204: # Successful completion of the shard removal
             success=True
         else: # response.status_code == 500 or response.status_code == 401 or response.status_code == 400:
-            message=response.json()
+            message=response.text
         self.log.info('InfluxDBInfluxDBRestLib.remove_shard() - success=' + str(success))
         self.log.info('InfluxDBInfluxDBRestLib.remove_shard() - message=' + str(message))
         self.log.info('InfluxDBInfluxDBRestLib.remove_shard() FUNCTION IS DONE')
