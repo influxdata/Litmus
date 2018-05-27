@@ -740,7 +740,7 @@ class TestLdapAdminUser(object):
         '''
         '''
         test_name='test_admin_show_shard_influxctl '
-        database='test_admin_show_shard__influxctl_db'
+        database='test_admin_show_shard_influxctl_db'
         measurement='test_admin_show_shards_m'
         data_node=choice(self.data_nodes_ips)
         rp_name='test_admin_show_shard_1month'
@@ -1690,7 +1690,7 @@ class TestLdapUser(object):
         '''
         '''
         test_name = 'test_user_show_shard_influxctl_' + user + ' '
-        database = 'test_user_show_shard__influxctl_db'
+        database = 'test_user_show_shard_influxctl_db'
         measurement = 'test_user_show_shards_m'
         data_node = choice(self.data_nodes_ips)
         rp_name = 'test_user_show_shard_1month'
