@@ -554,7 +554,7 @@ do
         --num-kapacitors)
             shift
 		    KAPACITOR_INSTANCES="--num-instances $1"
-		    NUM_OF_KAPACITORS="$1";;
+		    NUMBER_OF_KAPACITORS="$1";;
         --kapacitor-os)
             KAPACITOR_OS="--aws-os $";;
         --no-kapacitor)

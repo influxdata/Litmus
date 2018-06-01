@@ -112,8 +112,14 @@ if options.num_metanodes is not None: meta_nodes_number='--num-meta ' + options.
 else: meta_nodes_number=''
 if options.telegrafversion is not None: telegraf_version='--telegraf-version ' + options.telegrafversion
 else: telegraf_version=''
-if options.clusteros is not None: cluster_os='--cluster-os ' + options.clusteros
-else: cluster_os=''
+if options.clusteros is not None:
+    cluster_os='--cluster-os ' + options.clusteros
+    clusteros=options.clusteros
+    pytest_parameters.append('--clusteros=' + options.clusteros)
+else:
+    cluster_os='' # default OS to install the cluster on is ubuntu
+    pytest_parameters.append('--clusteros=' + 'ubuntu')
+    clusteros='ubuntu'
 if options.privatekey is not None: private_key='--private-key ' + options.privatekey
 else: private_key=''
 if options.indexversion is not None: index_version='--index-version ' + options.indexversion
@@ -196,7 +202,7 @@ return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s 
                                                     data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg,
                                                     telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os,
                                                     no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth,
-                                                    admin_user, admin_pass, no_install, ldap_auth, meta_auth, private_key),shell=True, stdout=File)
+                                                    admin_user, admin_pass, no_install, ldap_auth, meta_auth, private_key),shell=True, stdout=File, stderr=File)
 if return_code!=0:
     print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
     exit(1)
@@ -265,7 +271,27 @@ else:
     print '-----------------------------------------------'
     print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
     meta_node_str=','.join(list_of_meta_nodes)
-    # get a mapping of private IPs and Public IPs to be used to find leader meta node
+# copy writenode_lin to every metanode (for now copy to every meta node, but need to copy to just one - meta node leader)
+for meta_node in meta_node_str.split(','):
+    print 'COPYING writenode_lin TO ' + str(meta_node)
+    print 'scp -i %s -o StrictHostKeyChecking=no writenode_lin %s@%s:/tmp' % (options.privatekey, clusteros, meta_node)
+    w=subprocess.Popen('scp -i %s -o StrictHostKeyChecking=no writenode_lin %s@%s:/tmp' %
+                       (options.privatekey, clusteros, meta_node) , shell=True, stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+    waiting=w.wait()
+    if waiting != 0:
+        print 'FAILED TO COPY writenode_lin TO %s NODE' % meta_node
+        print w.communicate()
+        exit(1)
+    w=subprocess.Popen('ssh -i %s -o StrictHostKeyChecking=no %s@%s \'cd /tmp; sudo chmod +x writenode_lin\'' %
+                       (options.privatekey, clusteros, meta_node), shell=True, stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+    waiting=w.wait()
+    if waiting != 0:
+        print 'FAILED TO CHMOD FOR writenode_lin ON %s NODE' % meta_node
+        print w.communicate()
+        exit(1)
+# get a mapping of private IPs and Public IPs to be used to find leader meta node
 m=subprocess.Popen("pcl list -c \"%s\"| awk '{ if ($1 != \"ID\") print $4, $5 }'" % cluster_name, shell=True,
                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if m.wait() != 0:
