@@ -12,6 +12,10 @@ def pytest_addoption(parser):
     parser.addoption('--httpauth', action='store')
     parser.addoption('--ldapauth', action='store')
     parser.addoption('--metaauth', action='store')
+    parser.addoption('--clusteros', action='store')
+
+def get_clusteros(request):
+    return request.config.getoption('--clusteros')
 
 def get_clustername(request):
     return request.config.getoption('--clustername')
@@ -47,18 +51,34 @@ def get_meta_auth(request):
     return request.config.getoption('--metaauth')
 
 @pytest.fixture(scope='class')
+def clusteros(request):
+    '''
+    :param request:
+    :return:
+    '''
+    request.cls.mylog.info('clusteros() fixture is being called')
+    request.cls.mylog.info('-----------------------------------')
+    clusteros=get_clusteros(request)
+    request.cls.mylog.info('clusteros() fixture : clusteros=' + str(clusteros))
+    request.cls.clusteros=clusteros
+    request.cls.mylog.info('clusteros() fixture - done')
+    request.cls.mylog.info('----------------------------')
+    request.cls.mylog.info('')
+    return request.cls.clusteros
+
+@pytest.fixture(scope='class')
 def clustername(request):
     '''
     :param request:
     :return:
     '''
     request.cls.mylog.info('clustername() fixture is being called')
-    request.cls.mylog.info('----------------------------------------------------------------')
+    request.cls.mylog.info('-------------------------------------')
     clustername=get_clustername(request)
     request.cls.mylog.info('clustername() fixture : clustername=' + str(clustername))
     request.cls.clustername=clustername
     request.cls.mylog.info('clustername() fixture - done')
-    request.cls.mylog.info('-------------------------------------------------')
+    request.cls.mylog.info('----------------------------')
     request.cls.mylog.info('')
     return request.cls.clustername
 
