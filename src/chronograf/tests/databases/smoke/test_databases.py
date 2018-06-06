@@ -7,8 +7,7 @@ from random import choice
 
 @pytest.mark.usefixtures('chronograf', 'data_nodes', 'get_source_path',
                          'delete_created_databases', 'delete_created_rp',
-                         'delete_created_sources', 'default_sources',
-                         'http_auth', 'admin_user', 'admin_pass')
+                         'delete_created_sources')
 class TestDefaultDatabases(object):
     '''
     delete_created_databases - deletes all of the databases created by tests
@@ -54,7 +53,7 @@ class TestDefaultDatabases(object):
         # Default sources cannot be used to get databases
         internal_expected={
             'rp_duration':'168h0m0s',
-            'rp_replication':1,
+            'rp_replication': 1,
             'rp_default':True,
             'rp_shard_duration':'24h0m0s',
             'rp_name':'monitor'
@@ -195,8 +194,7 @@ class TestDefaultDatabases(object):
         self.mylog.info(test_name + ' - STEP 1: CHOOSE SOURCE_ID')
         source_id=choice(self.default_sources.keys())
         assert source_id is not None # just a precaution
-        self.mylog.info(test_name + '- STEP 2 : GET THE DATABASE URL FOR '
-                                    'A SOURCE_ID ' + str(source_id) )
+        self.mylog.info(test_name + '- STEP 2 : GET THE DATABASE URL FOR A SOURCE_ID ' + str(source_id) )
         dbs_url=self.default_sources[source_id].get("DBS")
         self.mylog.info(test_name + ' - STEP 3: get database info')
         result=self.rl.get_database(self.chronograf, dbs_url, self.database_name_rp)

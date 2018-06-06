@@ -81,13 +81,10 @@ class TestUserPermissions(object):
         # create source with a specific user
         test_name='test_user_create_database'
         actual_action=False
-        auth=None
-        if self.http_auth:
-            auth=(permission, permission)
         self.header(test_name)
         self.mylog.info(test_name + str(permission))
         (name, source_db_url)=self.source_url(permission, 'DB')
-        response=self.rl.create_database(self.chronograf, source_db_url, {'name':name}, auth=auth)
+        response=self.rl.create_database(self.chronograf, source_db_url, {'name':name})
         if response.status_code == 201:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -105,12 +102,9 @@ class TestUserPermissions(object):
         '''
         test_name='test_user_drop_database '
         actual_action=False
-        auth = None
-        if self.http_auth:
-            auth = (permission, permission)
         self.header(test_name)
         (name, source_db_url)=self.source_url(permission,'DB')
-        response=self.rl.delete_database(self.chronograf, source_db_url, 'drop_test_db', auth=auth)
+        response=self.rl.delete_database(self.chronograf, source_db_url, 'drop_test_db')
         if response.status_code == 204:
             actual_action = True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -129,15 +123,12 @@ class TestUserPermissions(object):
         '''
         test_name='test_user_create_rp '
         actual_action=False
-        auth=None
-        if self.http_auth:
-            auth=(permission, permission)
         self.header(test_name)
         data={'name':test_name, 'duration':'1d', 'replication':2, 'shardDuration':'2h', 'isDefault':False}
         self.mylog.info(test_name + str(permission))
         (name, source_db_url)=self.source_url(permission, 'DB')
         source_rp_url=source_db_url + '/_internal/rps'
-        response=self.rl.create_retention_policy_for_database(self.chronograf, source_rp_url, data, auth=auth)
+        response=self.rl.create_retention_policy_for_database(self.chronograf, source_rp_url, data)
         if response.status_code == 201:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -163,7 +154,7 @@ class TestUserPermissions(object):
         self.mylog.info(test_name + str(permission))
         (name, source_db_url)=self.source_url(permission, 'DB')
         source_rp_url=source_db_url + '/_internal/rps'
-        response=self.rl.get_retention_policies_for_database(self.chronograf, source_rp_url, auth=auth)
+        response=self.rl.get_retention_policies_for_database(self.chronograf, source_rp_url)
         if response.status_code == 200:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -191,8 +182,7 @@ class TestUserPermissions(object):
         self.mylog.info(test_name + str(permission))
         (name, source_db_url)=self.source_url(permission, 'DB')
         source_rp_url=source_db_url + '/_internal/rps'
-        response=self.rl.patch_retention_policy_for_database(self.chronograf, source_rp_url,
-                                                             rp_to_update, data, auth=auth)
+        response=self.rl.patch_retention_policy_for_database(self.chronograf, source_rp_url, rp_to_update, data)
         if response.status_code == 201:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -233,7 +223,7 @@ class TestUserPermissions(object):
         assert success, self.mylog.info(test_name + ' Assertion Error, was not able to create RP')
         (name, source_db_url)=self.source_url(permission, 'DB')
         source_rp_url=source_db_url + '/_internal/rps'
-        response=self.rl.delete_retention_policy_for_database(self.chronograf, source_rp_url, rp_to_create, auth=auth)
+        response=self.rl.delete_retention_policy_for_database(self.chronograf, source_rp_url, rp_to_create)
         if response.status_code == 204:
             # make sure that retention policy was actually dropped.
             ret_policies=client.get_list_retention_policies(database)
@@ -260,7 +250,7 @@ class TestUserPermissions(object):
         self.mylog.info(test_name + str(permission))
         (name, source_users_url)=self.source_url(permission, 'USERS')
         data = {'name': name+'_createuser', 'password': name+'_createuser'}
-        response=self.rl.create_user(self.chronograf, source_users_url, data, auth=auth)
+        response=self.rl.create_user(self.chronograf, source_users_url, data)
         if response.status_code == 201:
             actual_action=True
         elif response.json().get('code') is not None and response.json().get('code') == 400:
@@ -292,7 +282,7 @@ class TestUserPermissions(object):
         (name, source_users_url) = self.source_url(permission, 'USERS')
         (success,message)=uu.create_user(self, client, user_name, user_password, False)
         assert success, self.mylog.info(test_name + ' : Assertion Error')
-        response=self.rl.delete_user(self.chronograf, source_users_url, user_name, auth=auth)
+        response=self.rl.delete_user(self.chronograf, source_users_url, user_name)
         if response.status_code == 204:
             # TODO add verification that user indeed was deleted
             actual_action = True
