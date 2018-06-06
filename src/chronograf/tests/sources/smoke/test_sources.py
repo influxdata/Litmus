@@ -6,8 +6,8 @@ from random import choice
 
 # before running test suite make sure there are no sources.
 @pytest.mark.usefixtures('chronograf', 'data_nodes', 'meta_nodes',
-                                        'delete_created_sources', 'get_source_path',
-                                        'http_auth', 'admin_user', 'admin_pass')
+                         'delete_created_sources', 'get_source_path',
+                         'http_auth', 'admin_user', 'admin_pass')
 class TestSources():
     '''
     chronograf fixture - to get the chronograf URL
@@ -29,6 +29,7 @@ class TestSources():
     DELETE_NAME='Delete source name'
 
     ##########################################################
+
     def verify_source(self, expected, source_id, source):
         '''
         :param expected_data: dictionary of expected values
@@ -169,7 +170,6 @@ class TestSources():
         self.verify_source(expected, source_id, source)
         self.footer('test_create_source_url_only')
 
-    @pytest.mark.skip
     def test_create_source_incorrect_url(self):
         '''
         1. Tries to create a source using incorrect url for data node

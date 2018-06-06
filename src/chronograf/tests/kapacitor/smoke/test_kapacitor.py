@@ -3,13 +3,13 @@ import src.util.login_util as lu
 import src.util.sources_util as su
 import src.util.kapacitor_util as ku
 from src.chronograf.lib import chronograf_rest_lib
+from random import choice
 
 
 # before running test suite make sure there are no sources.
-@pytest.mark.usefixtures( 'kapacitor', 'chronograf', 'data_nodes',
-                          'meta_nodes', 'get_source_path',
-                          'delete_created_sources', 'http_auth',
-                          'admin_user', 'admin_pass')
+@pytest.mark.usefixtures( 'kapacitor', 'chronograf', 'data_nodes','meta_nodes',
+                          'get_source_path', 'delete_created_sources',
+                          'http_auth', 'admin_user', 'admin_pass')
 class TestKapacitor():
     '''
     kapacitor fixture - to get kapacitor URL
@@ -45,10 +45,10 @@ class TestKapacitor():
         4. Get kapacitor data for the above created kapacitor instance
         5. Assert Kapacitor is ping-able
         '''
-        self.header('test_ create_kapacitor')
+        self.header('test_create_kapacitor')
         source_url=self.get_source_path
-        DATA_URL=self.data_nodes[0]
-        META_URL=self.meta_nodes[0]
+        DATA_URL=choice(self.data_nodes)
+        META_URL=choice(self.meta_nodes)
         SOURCE_NAME='CREATE KAPACITOR'
         KAPACITOR_NAME='KAPACITOR 1'
         if self.http_auth:
@@ -57,7 +57,7 @@ class TestKapacitor():
                          'password':self.admin_pass}
         else:
             JSON_SOURCE={'url':DATA_URL, 'metaUrl':META_URL, 'name':SOURCE_NAME,
-                         'telegraf': 'telegraf', 'default': True}
+                    'telegraf': 'telegraf', 'default': True}
         JSON_KAPACITOR={'url':self.kapacitor, 'name':KAPACITOR_NAME}
 
         self.mylog.info('test_create_kapacitor - STEP 1: CREATE SOURCE (RestLib.create_source())')
@@ -92,8 +92,8 @@ class TestKapacitor():
         '''
         self.header('test_update_kapacitor_name')
         source_url=self.get_source_path
-        DATA_URL=self.data_nodes[0]
-        META_URL=self.meta_nodes[0]
+        DATA_URL=choice(self.data_nodes)
+        META_URL=choice(self.meta_nodes)
         SOURCE_NAME='CREATE KAPACITOR 2'
         KAPACITOR_NAME='KAPACITOR 2'
         KAPACITOR_UPDATED_NAME='KAPACITOR NEW NAME'
@@ -150,8 +150,8 @@ class TestKapacitor():
         '''
         self.header('test_delete_kapacitor')
         source_url = self.get_source_path
-        DATA_URL = self.data_nodes[0]
-        META_URL = self.meta_nodes[0]
+        DATA_URL = choice(self.data_nodes)
+        META_URL = choice(self.meta_nodes)
         SOURCE_NAME = 'CREATE KAPACITOR 3'
         KAPACITOR_NAME = 'KAPACITOR 3'
         if self.http_auth:
