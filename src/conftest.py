@@ -13,6 +13,10 @@ def pytest_addoption(parser):
     parser.addoption('--ldapauth', action='store')
     parser.addoption('--metaauth', action='store')
     parser.addoption('--clusteros', action='store')
+    parser.addoption('--privatekey', action='store')
+
+def get_privatekey(request):
+    return request.config.getoption('--privatekey')
 
 def get_clusteros(request):
     return request.config.getoption('--clusteros')
@@ -49,6 +53,22 @@ def get_ldap_auth(request):
 
 def get_meta_auth(request):
     return request.config.getoption('--metaauth')
+
+@pytest.fixture(scope='class')
+def privatekey(request):
+    '''
+    :param request:
+    :return:
+    '''
+    request.cls.mylog.info('privatekey() fixture is being called')
+    request.cls.mylog.info('------------------------------------')
+    privatekey=get_privatekey(request)
+    request.cls.mylog.info('privatekey() fixture : privatekey=' + str(privatekey))
+    request.cls.privatekey=privatekey
+    request.cls.mylog.info('privatekey() fixture - done')
+    request.cls.mylog.info('---------------------------')
+    request.cls.mylog.info('')
+    return request.cls.privatekey
 
 @pytest.fixture(scope='class')
 def clusteros(request):
@@ -134,13 +154,17 @@ def data_nodes_ips(request):
     :return:
     '''
     try:
-        request.cls.mylog.info('FIXTURE data_nodes_ips(): GETTING DATA NODES')
+        request.cls.mylog.info('data_nodes_ips() fixture is being called')
+        request.cls.mylog.info('----------------------------------------')
         data_nodes=get_data_nodes(request)
-        request.cls.mylog.info('FIXTURE data_nodes_ips(): data_nodes=' + str(data_nodes))
+        request.cls.mylog.info('data_nodes_ips() fixture : data_nodes=' + str(data_nodes))
     except:
         data_nodes=None
-    assert data_nodes is not None, request.cls.mylog.info('FIXTURE data_nodes_ips() returned None')
+    assert data_nodes is not None, request.cls.mylog.info('data_nodes_ips() fixture returned None')
     request.cls.data_nodes_ips=[node for node in data_nodes.split(',')]
+    request.cls.mylog.info('data_nodes_ips() fixture - done')
+    request.cls.mylog.info('-------------------------------')
+    request.cls.mylog.info('')
     return request.cls.data_nodes_ips
 
 @pytest.fixture(scope='class')
@@ -153,7 +177,7 @@ def meta_nodes(request):
     port=':8091'
     try:
         request.cls.mylog.info('meta_nodes() fixture is being called')
-        request.cls.mylog.info('---------------------------------------------------------------')
+        request.cls.mylog.info('------------------------------------')
         meta_nodes=get_meta_nodes(request)
         request.cls.mylog.info('meta_nodes() fixture : meta_nodes=' + str(meta_nodes))
     except:
@@ -161,7 +185,7 @@ def meta_nodes(request):
     assert meta_nodes is not None, request.cls.mylog.info('meta_nodes fixture returned None')
     request.cls.meta_nodes=[http+node+port for node in meta_nodes.split(',')]
     request.cls.mylog.info('meta_nodes() fixture - done')
-    request.cls.mylog.info('-------------------------------------------------')
+    request.cls.mylog.info('---------------------------')
     request.cls.mylog.info('')
     return request.cls.meta_nodes
 

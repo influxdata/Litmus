@@ -213,8 +213,8 @@ class InfluxDBInfluxDBRestLib(BaseLib):
     #************************************************ INFLUX-CTL *******************************************************
     def _show_cluster(self, meta_leader_url, auth=None):
         '''
-        :param meta_leader_url:
-        :param auth:
+        :param meta_leader_url: URL of the leader meta node
+        :param auth: if meta node auth enabled: auth=(username,password)
         :return: dictionary of meta and data nodes:
         {u'meta':
             [{u'httpScheme': u'http', u'tcpAddr': u'10.0.150.167:8089', u'id': 2, u'version': u'meta-node version', u'addr': u'10.0.150.167:8091'},
@@ -249,7 +249,7 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         {u'shard-group-id': u'1', u'end-time': u'2018-05-24T00:00:00Z', u'start-time': u'2018-05-23T00:00:00Z', u'owners': [{u'id': u'4', u'tcpAddr': u'10.0.92.185:8088'}], u'database': u'_internal', u'retention-policy': u'monitor', u'expire-time': u'2018-05-31T00:00:00Z', u'replica-n': 1, u'truncated-at': u'0001-01-01T00:00:00Z', u'id': u'2'}
         {u'shard-group-id': u'2', u'end-time': u'2018-05-28T00:00:00Z', u'start-time': u'2018-05-21T00:00:00Z', u'owners': [{u'id': u'4', u'tcpAddr': u'10.0.92.185:8088'}, {u'id': u'5', u'tcpAddr': u'10.0.114.209:8088'}], u'database': u'telegraf', u'retention-policy': u'autogen', u'expire-time': u'0001-01-01T00:00:00Z', u'replica-n': 2, u'truncated-at': u'0001-01-01T00:00:00Z', u'id': u'3'}
         '''
-        self.log.info('InfluxDBInfluxDBRestLib.show_shards() FUNCTION IS CALLED')
+        self.log.info('InfluxDBInfluxDBRestLib._show_shards() FUNCTION IS CALLED')
         self.log.info('=========================================================')
         success=False
         message=''
@@ -260,8 +260,8 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         else:
             message=response.text
             result=None
-        self.log.info('InfluxDBInfluxDBRestLib.show_shards() - result=' + str(result))
-        self.log.info('InfluxDBInfluxDBRestLib.show_shards() FUNCTION IS DONE')
+        self.log.info('InfluxDBInfluxDBRestLib._show_shards() - result=' + str(result))
+        self.log.info('InfluxDBInfluxDBRestLib._show_shards() FUNCTION IS DONE')
         self.log.info('======================================================')
         return (success, result, message)
 
@@ -299,23 +299,64 @@ class InfluxDBInfluxDBRestLib(BaseLib):
         :param auth:
         :return:
         '''
-        self.log.info('InfluxDBInfluxDBRestLib.copy_shard() FUNCTION IS CALLED with PARAMS: SOURCE DATA NODE='
-                      + str(src_data_node) + ', SHARD ID=' + str(shard_id) + ', DESTINATION DATA NODE='
-                      + str(dest_data_node))
-        self.log.info('======================================================================================')
+        pass
+
+    def shard_repair(self, data_node, shard_id, auth=None):
+        '''
+        :param data_node: (str)
+        :param shard_id: (str)
+        :param auth:
+        :return:
+        '''
+        self.log.info('InfluxDBInfluxDBRestLib.shard_repair() FUNCTION IS CALLED')
+        self.log.info('=========================================================')
+        self.log.info('')
         success=False
         message=''
-        data = {'src': src_data_node, 'dest':dest_data_node,'shard': shard_id}
-        response = self.post(meta_leader_url, '/remove-shard', data=data, auth=auth)
-        if response.status_code == 204:  # Successful completion of the shard removal
+        self.log.info('InfluxDBInfluxDBRestLib.shard_repair() - Repairing shard_id \'%s\'' % shard_id)
+        response=self.post(data_node, '/shard-repair/repair?id=%s' % shard_id, auth=auth)
+        if response.status_code == 200:
             success=True
-        else: # response.status_code == 500 or response.status_code == 401 or response.status_code == 400:
-            message=response.json()
-        self.log.info('InfluxDBInfluxDBRestLib.copy_shard() - success=' + str(success))
-        self.log.info('InfluxDBInfluxDBRestLib.copy_shard() - message=' + str(message))
-        self.log.info('InfluxDBInfluxDBRestLib.copy_shard() FUNCTION IS DONE')
+        else:
+            message=response.text
+        self.log.info('InfluxDBInfluxDBRestLib.shard_repair() - success=' + str(success))
+        self.log.info('InfluxDBInfluxDBRestLib.shard_repair() - message=' + str(message))
+        self.log.info('InfluxDBInfluxDBRestLib.shard_repair() FUNCTION IS DONE')
         self.log.info('=======================================================')
+        self.log.info('')
         return (success, message)
+
+    def copy_shard_status(self):
+        pass
+
+    def kill_copy_shard(self):
+        pass
+
+    def truncate_shard(self):
+        pass
+
+    def _show_entropy(self, data_node, auth=None):
+        '''
+        :param data_node:
+        :return:
+        '''
+        self.log.info('InfluxDBInfluxDBRestLib.show_entropy() FUNCTION IS CALLED')
+        self.log.info('=========================================================')
+        self.log.info('')
+        success=False
+        message=''
+        response=self.get(data_node, '/shard-repair/status', auth=auth)
+        if response.status_code == 200:
+            success=True
+            result=response.json()
+        else:
+            message=response.text
+            result=None
+        self.log.info('InfluxDBInfluxDBRestLib.show_entropy() - result=' + str(result))
+        self.log.info('InfluxDBInfluxDBRestLib.show_entropy() FUNCTION IS DONE')
+        self.log.info('=======================================================')
+        self.log.info('')
+        return (success, result, message)
 
     ############################################### SUBSCRIPTIONS ######################################################
 

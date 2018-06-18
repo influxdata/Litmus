@@ -120,8 +120,14 @@ else:
     cluster_os='' # default OS to install the cluster on is ubuntu
     pytest_parameters.append('--clusteros=' + 'ubuntu')
     clusteros='ubuntu'
-if options.privatekey is not None: private_key='--private-key ' + options.privatekey
-else: private_key=''
+if options.privatekey is not None:
+    private_key='--private-key ' + options.privatekey
+    pytest_parameters.append('--privatekey=' + options.privatekey)
+    privatekey=options.privatekey
+else:
+    private_key=''
+    pytest_parameters.append('--privatekey=' + 'gershon-pcl')
+    privatekey='gershon-pcl'
 if options.indexversion is not None: index_version='--index-version ' + options.indexversion
 else: index_version=''
 if options.ldapauth is not False:
@@ -272,6 +278,7 @@ else:
     print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
     meta_node_str=','.join(list_of_meta_nodes)
 # copy writenode_lin to every metanode (for now copy to every meta node, but need to copy to just one - meta node leader)
+
 for meta_node in meta_node_str.split(','):
     print 'COPYING writenode_lin TO ' + str(meta_node)
     print 'scp -i %s -o StrictHostKeyChecking=no writenode_lin %s@%s:/tmp' % (options.privatekey, clusteros, meta_node)
@@ -291,6 +298,7 @@ for meta_node in meta_node_str.split(','):
         print 'FAILED TO CHMOD FOR writenode_lin ON %s NODE' % meta_node
         print w.communicate()
         exit(1)
+
 # get a mapping of private IPs and Public IPs to be used to find leader meta node
 m=subprocess.Popen("pcl list -c \"%s\"| awk '{ if ($1 != \"ID\") print $4, $5 }'" % cluster_name, shell=True,
                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
