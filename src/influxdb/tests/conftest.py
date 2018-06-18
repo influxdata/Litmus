@@ -19,20 +19,32 @@ AD_ADMIN_USER='sal.xu'
 AD_ADMIN_PASS='p@ssw0rd'
 
 @pytest.fixture(scope='class')
-def meta_leader(request, private_public_ip_mapps, meta_nodes):
+def meta_leader(request, private_public_ip_mapps, meta_nodes,
+                http_auth, admin_user, admin_pass, ldap_auth):
     '''
     :param request:
     :param private_public_ip_mapps:
-    :param meta_nodes
-    :return: leader meta node, e.g. http://<ip>:8091
+    :param meta_nodes:
+    :param http_auth:
+    :param admin_user:
+    :param admin_pass:
+    :param ldap_auth:
+    :return:
     '''
     meta_leader_node=None
-    irl = influxdb_rest_lib.InfluxDBInfluxDBRestLib(request.cls.mylog)
+    user, password='',''
+    irl=influxdb_rest_lib.InfluxDBInfluxDBRestLib(request.cls.mylog)
     request.cls.mylog.info('meta_leader fixture is being called')
     request.cls.mylog.info('-----------------------------------')
     meta_url=choice(meta_nodes)
     prv_pub_dic=private_public_ip_mapps
-    (success, meta_leader_url, message)=irl.get_leader_meta_url(meta_url, auth=(AD_ADMIN_USER, AD_ADMIN_PASS))
+    if http_auth:
+        user=admin_user
+        password=admin_pass
+    if ldap_auth:
+        user=AD_ADMIN_USER
+        password=AD_ADMIN_PASS
+    (success, meta_leader_url, message)=irl.get_leader_meta_url(meta_url, auth=(user, password))
     assert success and meta_leader_url != '', \
         request.cls.mylog.info('meta_leader fixture - failed to get leader meta url: ' + str(message))
     private_addresses=prv_pub_dic.keys() # getting private addresses of all of the meta nodes
@@ -104,25 +116,35 @@ def delete_roles(request, meta_leader):
     request.cls.mylog.info('----------------------------')
 
 @pytest.fixture(scope='function', autouse=False)
-def drop_database(request, data_nodes_ips):
+def drop_database(request, data_nodes_ips,http_auth, admin_user, admin_pass, ldap_auth):
     '''
     :param request:
-    :param data_nodes:
-    :param database name:
+    :param data_nodes_ips:
+    :param http_auth:
+    :param admin_user:
+    :param admin_pass:
+    :param ldap_auth:
     :return:
     '''
+    user,password='',''
     data_node=choice(data_nodes_ips)
     database=request.param
     request.cls.mylog.info('drop_database fixture is being called')
     request.cls.mylog.info('-------------------------------------')
-    client=InfluxDBClient(data_node, username=AD_ADMIN_USER, password=AD_ADMIN_PASS)
+    if http_auth:
+        user=admin_user
+        password=admin_pass
+    if ldap_auth:
+        user=AD_ADMIN_USER
+        password=AD_ADMIN_PASS
+    client=InfluxDBClient(data_node, username=user, password=password)
     (success, error)=du.drop_database(request.cls, client, database)
     assert success, request.cls.mylog.info('drop_database fixture failed to drop database' + error)
-    def drop_database_fin():
-        client=InfluxDBClient(data_node, username=AD_ADMIN_USER, password=AD_ADMIN_PASS)
-        (success, error)=du.drop_database(request.cls, client, database)
-        assert success, request.cls.mylog.info('drop_database fixture failed to drop database' + error)
-    request.addfinalizer(drop_database_fin)
+    #def drop_database_fin():
+    #    client=InfluxDBClient(data_node, username=user, password=password)
+    #    (success, error)=du.drop_database(request.cls, client, database)
+    #    assert success, request.cls.mylog.info('drop_database fixture failed to drop database' + error)
+    #request.addfinalizer(drop_database_fin)
     request.cls.mylog.info('drop_database fixture is done')
     request.cls.mylog.info('-----------------------------')
     request.cls.mylog.info('')
