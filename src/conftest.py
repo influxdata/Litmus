@@ -14,6 +14,18 @@ def pytest_addoption(parser):
     parser.addoption('--metaauth', action='store')
     parser.addoption('--clusteros', action='store')
     parser.addoption('--privatekey', action='store')
+    parser.addoption('--gateway', action='store')
+    parser.addoption('--flux', action='store')
+    parser.addoption('--etcd', action='store')
+
+def get_gateway(request):
+    return request.config.getoption('--gateway')
+
+def get_flux(request):
+    return request.config.getoption('--flux')
+
+def get_etcd(request):
+    return request.config.getoption('--etcd')
 
 def get_privatekey(request):
     return request.config.getoption('--privatekey')
@@ -53,6 +65,54 @@ def get_ldap_auth(request):
 
 def get_meta_auth(request):
     return request.config.getoption('--metaauth')
+
+@pytest.fixture(scope='class')
+def gateway(request):
+    '''
+    :param request:
+    :return:
+    '''
+    request.cls.mylog.info('gateway() fixture is being called')
+    request.cls.mylog.info('---------------------------------')
+    gateway=get_gateway(request)
+    request.cls.mylog.info('gateway() fixture : gateway=' + str(gateway))
+    request.cls.gateway=gateway
+    request.cls.mylog.info('gateway() fixture - done')
+    request.cls.mylog.info('------------------------')
+    request.cls.mylog.info('')
+    return request.cls.gateway
+
+@pytest.fixture(scope='class')
+def flux(request):
+    '''
+    :param request:
+    :return:
+    '''
+    request.cls.mylog.info('flux() fixture is being called')
+    request.cls.mylog.info('------------------------------')
+    flux=get_flux(request)
+    request.cls.mylog.info('flux() fixture : flux=' + str(flux))
+    request.cls.flux=flux
+    request.cls.mylog.info('flux() fixture - done')
+    request.cls.mylog.info('---------------------')
+    request.cls.mylog.info('')
+    return request.cls.flux
+
+@pytest.fixture(scope='class')
+def etcd(request):
+    '''
+    :param request:
+    :return:
+    '''
+    request.cls.mylog.info('etcd() fixture is being called')
+    request.cls.mylog.info('------------------------------')
+    etcd=get_etcd(request)
+    request.cls.mylog.info('etcd() fixture : gateway=' + str(etcd))
+    request.cls.etcd=etcd
+    request.cls.mylog.info('etcd() fixture - done')
+    request.cls.mylog.info('---------------------')
+    request.cls.mylog.info('')
+    return request.cls.etcd
 
 @pytest.fixture(scope='class')
 def privatekey(request):
