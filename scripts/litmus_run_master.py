@@ -47,7 +47,16 @@ parser=optparse.OptionParser(usage=usage)
 # pytest options
 parser.add_option('--testsubset', action='store', dest='testsubset', help='LET\'S YOU ONLY RU NTHE TESTS MARKED WITH MARKER')
 
+# version of the influxdata: 1.x (software), 2.0 (cloud)
+parser.add_option('--product-version', dest='productversion' ,action='store', help='VERSION OF THE PRODUCT')
+
+# options for running REST tests on 2.0 platform
+parser.add_option('--gateway', action='store', help='GATEWAY URL THAT HANDLES EXTERNAL REQUESTS, e.g. http://localhost:9999')
+parser.add_option('--flux', action='store', help='QUERY URL THAT HANDLES FLUX REQUESTS, e.g http://localhost:8093')
+parser.add_option('--etcd', action='store', help='ETCD URL FOR DISTRIBUTED KEY-VALUE STORE')
+
 # options for running REST tests (By default these options will be derived from the output o the pcl list command
+# chronograf is supported on both platforms 1.x and 2.0
 parser.add_option('--chronograf', action='store', help='CHRONOGRAF BASE URL, e.g. http://localhost:8888')
 parser.add_option('--datanodes', action='store', help='URL OF THE DATA NODE, e.g. http://datanode:8086')
 parser.add_option('--metanodes', action='store', help='URL OF THE META NODE, e.g. http://metanode:8091')
@@ -90,6 +99,10 @@ parser.add_option('--tests-list',action='store',dest='testslist',help='list cont
 
 (options, args)=parser.parse_args()
 pytest_parameters=[]
+
+# product version
+if options.productversion is None: prod_version='1'
+else: prod_version=options.productversion
 
 # cluster install options
 if options.clustername is not None: cluster_name='--cluster-name ' + options.clustername
@@ -217,13 +230,17 @@ if options.clustername is not None:
     cluster_name=options.clustername
 else: cluster_name='litmus'
 
-##### CLUSTER NAME
+################
+# CLUSTER NAME #
+################
 if options.clustername is not None:
     pytest_parameters.append('--clustername=' + options.clustername)
 else:
     pytest_parameters.append('--clustername=litmus')
 
-##### CHRONOGRAF NODE(S)
+######################
+# CHRONOGRAF NODE(S) #
+######################
 if options.chronograf is not None:
     pytest_parameters.append('--chronograf=' + options.chronograf)
     print 'CHRONOGRAF IP : ' + options.chronograf
@@ -241,99 +258,143 @@ else:
     print 'CHRONOGRAF IP : ' + str(chronograf_name)
     pytest_parameters.append('--chronograf=' + chronograf_name)
 
-######### DATA NODES
-if options.datanodes is not None:
-    data_node_str=options.datanodes
-else: 
-    # get data-node URL from pcl list -c <cluster>s
-    list_of_data_nodes = []
-    for data_node in range(int(num_of_data_nodes)):
-        p = subprocess.Popen('pcl host data-%d -c "%s"' % (data_node, cluster_name), shell=True, stdout=subprocess.PIPE,
+
+# if product version is 2.0 ('2'), then we need to skip DATA NODES, META NODES and KAPACITOR sections
+if prod_version == '1':
+    ##############
+    # DATA NODES #
+    ##############
+    if options.datanodes is not None:
+        data_node_str=options.datanodes
+    else:
+        # get data-node URL from pcl list -c <cluster>s
+        list_of_data_nodes = []
+        for data_node in range(int(num_of_data_nodes)):
+            p = subprocess.Popen('pcl host data-%d -c "%s"' % (data_node, cluster_name), shell=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            if p.wait() != 0:
+                print 'FAILED TO GET DATA NODE. EXITING'
+                print p.communicate()
+                exit(1)
+            list_of_data_nodes.append((p.communicate()[0]).strip('\n'))
+        print '-----------------------------------------------'
+        print 'LIST OF DATA NODES : ' + str(list_of_data_nodes)
+        data_node_str=','.join(list_of_data_nodes)
+    pytest_parameters.append('--datanodes=' + data_node_str)
+
+    ##############
+    # META NODES #
+    ##############
+    if options.metanodes is not None:
+        meta_node_str=options.metanodes
+    else:
+        # get meta-node URL from pcl list -c <cluster>
+        list_of_meta_nodes = []
+        for meta_node in range(int(num_of_meta_nodes)):
+            p = subprocess.Popen('pcl host meta-%d -c "%s"' % (meta_node, cluster_name), shell=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            if p.wait() != 0:
+                print 'FAILED TO GET META NODE. EXITING'
+                print p.communicate()
+                exit(1)
+            list_of_meta_nodes.append((p.communicate()[0]).strip('\n'))
+        print '-----------------------------------------------'
+        print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
+        meta_node_str=','.join(list_of_meta_nodes)
+    # copy writenode_lin to every metanode (for now copy to every meta node, but need to copy to just one - meta node leader)
+
+    for meta_node in meta_node_str.split(','):
+        print 'COPYING writenode_lin TO ' + str(meta_node)
+        print 'scp -i %s -o StrictHostKeyChecking=no writenode_lin %s@%s:/tmp' % (options.privatekey, clusteros, meta_node)
+        w=subprocess.Popen('scp -i %s -o StrictHostKeyChecking=no writenode_lin %s@%s:/tmp' %
+                           (options.privatekey, clusteros, meta_node) , shell=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+        waiting=w.wait()
+        if waiting != 0:
+            print 'FAILED TO COPY writenode_lin TO %s NODE' % meta_node
+            print w.communicate()
+            exit(1)
+        w=subprocess.Popen('ssh -i %s -o StrictHostKeyChecking=no %s@%s \'cd /tmp; sudo chmod +x writenode_lin\'' %
+                           (options.privatekey, clusteros, meta_node), shell=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+        waiting=w.wait()
+        if waiting != 0:
+            print 'FAILED TO CHMOD FOR writenode_lin ON %s NODE' % meta_node
+            print w.communicate()
+            exit(1)
+
+    # get a mapping of private IPs and Public IPs to be used to find leader meta node
+    m=subprocess.Popen("pcl list -c \"%s\"| awk '{ if ($1 != \"ID\") print $4, $5 }'" % cluster_name, shell=True,
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if m.wait() != 0:
+        print 'FAILED TO GET ALL OF THE NODES. EXITING'
+        print m.communicate()
+        exit(1)
+    all_nodes=(m.communicate()[0]).strip('\n') # '52.10.147.183 10.0.207.136\n18.236.77.176 10.0.181.224'
+    all_nodes=','.join(['_'.join(ips.split()) for ips in all_nodes.split('\n')])
+    print '-------------------------------------------------------'
+    print 'LIST OF ALL NODES MAPPINGS : ' + str(all_nodes)
+    pytest_parameters.append('--metanodes=' + meta_node_str)
+    pytest_parameters.append('--nodemap=' + all_nodes)
+
+    ###### KAPACITOR
+    if options.kapacitor is not None:
+        pytest_parameters.append('--kapacitor=' + options.kapacitor)
+        print '-------------------------------------'
+        print 'KAPACITOR IP : ' + options.kapacitor
+        print '-------------------------------------'
+    elif options.nokapacitor is not False:
+        print 'NOT INSTALLING KAPACITOR'
+    else:
+        p = subprocess.Popen('pcl host kapacitor-0 -c %s' % cluster_name, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         if p.wait() != 0:
-            print 'FAILED TO GET DATA NODE. EXITING'
-            print p.communicate()
+            print 'FAILED TO GET kapacitor NODE. EXITING'
+            p.communicate()
             exit(1)
-        list_of_data_nodes.append((p.communicate()[0]).strip('\n'))
-    print '-----------------------------------------------'
-    print 'LIST OF DATA NODES : ' + str(list_of_data_nodes)
-    data_node_str=','.join(list_of_data_nodes)
-pytest_parameters.append('--datanodes=' + data_node_str)
-
-##### META NODES
-if options.metanodes is not None:
-    meta_node_str=options.metanodes
-else: 
-    # get meta-node URL from pcl list -c <cluster>
-    list_of_meta_nodes = []
-    for meta_node in range(int(num_of_meta_nodes)):
-        p = subprocess.Popen('pcl host meta-%d -c "%s"' % (meta_node, cluster_name), shell=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        if p.wait() != 0:
-            print 'FAILED TO GET META NODE. EXITING'
-            print p.communicate()
-            exit(1)
-        list_of_meta_nodes.append((p.communicate()[0]).strip('\n'))
-    print '-----------------------------------------------'
-    print 'LIST OF META NODES : ' + str(list_of_meta_nodes)
-    meta_node_str=','.join(list_of_meta_nodes)
-# copy writenode_lin to every metanode (for now copy to every meta node, but need to copy to just one - meta node leader)
-
-for meta_node in meta_node_str.split(','):
-    print 'COPYING writenode_lin TO ' + str(meta_node)
-    print 'scp -i %s -o StrictHostKeyChecking=no writenode_lin %s@%s:/tmp' % (options.privatekey, clusteros, meta_node)
-    w=subprocess.Popen('scp -i %s -o StrictHostKeyChecking=no writenode_lin %s@%s:/tmp' %
-                       (options.privatekey, clusteros, meta_node) , shell=True, stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    waiting=w.wait()
-    if waiting != 0:
-        print 'FAILED TO COPY writenode_lin TO %s NODE' % meta_node
-        print w.communicate()
-        exit(1)
-    w=subprocess.Popen('ssh -i %s -o StrictHostKeyChecking=no %s@%s \'cd /tmp; sudo chmod +x writenode_lin\'' %
-                       (options.privatekey, clusteros, meta_node), shell=True, stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    waiting=w.wait()
-    if waiting != 0:
-        print 'FAILED TO CHMOD FOR writenode_lin ON %s NODE' % meta_node
-        print w.communicate()
-        exit(1)
-
-# get a mapping of private IPs and Public IPs to be used to find leader meta node
-m=subprocess.Popen("pcl list -c \"%s\"| awk '{ if ($1 != \"ID\") print $4, $5 }'" % cluster_name, shell=True,
-                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-if m.wait() != 0:
-    print 'FAILED TO GET ALL OF THE NODES. EXITING'
-    print m.communicate()
-    exit(1)
-all_nodes=(m.communicate()[0]).strip('\n') # '52.10.147.183 10.0.207.136\n18.236.77.176 10.0.181.224'
-all_nodes=','.join(['_'.join(ips.split()) for ips in all_nodes.split('\n')])
-print '-------------------------------------------------------'
-print 'LIST OF ALL NODES MAPPINGS : ' + str(all_nodes)
-pytest_parameters.append('--metanodes=' + meta_node_str)
-pytest_parameters.append('--nodemap=' + all_nodes)
-
-###### KAPACITOR
-if options.kapacitor is not None:
-    pytest_parameters.append('--kapacitor=' + options.kapacitor)
-    print '-------------------------------------'
-    print 'KAPACITOR IP : ' + options.kapacitor
-    print '-------------------------------------'
-elif options.nokapacitor is not False:
-    print 'NOT INSTALLING KAPACITOR'
+        kapacitor_name = (p.communicate()[0]).strip('\n')
+        print '-------------------------------------'
+        print 'KAPACITOR IP : ' + str(kapacitor_name)
+        print '-------------------------------------'
+        print ''
+        pytest_parameters.append('--kapacitor=' + kapacitor_name)
 else:
-    p = subprocess.Popen('pcl host kapacitor-0 -c %s' % cluster_name, shell=True, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    if p.wait() != 0:
-        print 'FAILED TO GET kapacitor NODE. EXITING'
-        p.communicate()
+    # we are running tests against 2.0 (cloud)
+    ################
+    # GATESWAY URL #
+    ################
+    if options.gateway:
+        pytest_parameters.append('--gateway=' + options.gateway)
+        print 'GATEWAY URL : ' + options.chronograf
+        print '-----------------------------------'
+        print ''
+    else:
+        print 'GATEWAY URL IS NOT SPECIFIED. EXITING'
         exit(1)
-    kapacitor_name = (p.communicate()[0]).strip('\n')
-    print '-------------------------------------'
-    print 'KAPACITOR IP : ' + str(kapacitor_name)
-    print '-------------------------------------'
-    print ''
-    pytest_parameters.append('--kapacitor=' + kapacitor_name)
+
+    ############
+    # FLUX URL #
+    ############
+    if options.flux:
+        pytest_parameters.append('--flux=' + options.flux)
+        print 'FLUX URL : ' + options.flux
+        print '--------------------------'
+        print ''
+    else:
+        print 'FLUX URL IS NOT SPECIFIED. EXITING'
+        exit(1)
+
+    ############
+    # ETCD URL #
+    ############
+    if options.etcd:
+        pytest_parameters.append('--etcd=' + options.etcd)
+        print 'ETCD URL : ' + options.etcd
+        print '--------------------------'
+        print ''
+    else:
+        print 'ETCD URL IS NOT SPECIFIED. EXITING'
+        exit(1)
 
 # passing a file containing the test suite(s)
 if options.tests is not None:
