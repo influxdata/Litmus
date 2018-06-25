@@ -201,7 +201,7 @@ pytest_parameters.append('--disable-pytest-warnings')
 pytest_parameters.append('-rxfX')
 pytest_parameters.append('--html=report.html')
 
-if prod_version == 1:
+if prod_version == '1':
     File=None
     try:
         File = open('qa_install_tick.out','w')
@@ -222,7 +222,7 @@ if prod_version == 1:
                                                         data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg,
                                                         telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os,
                                                         no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth,
-                                                        admin_user, admin_pass, no_install, ldap_auth, meta_auth, private_key),shell=True, stdout=File)
+                                                        admin_user, admin_pass, no_install, ldap_auth, meta_auth, private_key),shell=True, stdout=File, stderr=File)
     if return_code!=0:
         print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
         exit(1)
