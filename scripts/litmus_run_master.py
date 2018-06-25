@@ -201,30 +201,32 @@ pytest_parameters.append('--disable-pytest-warnings')
 pytest_parameters.append('-rxfX')
 pytest_parameters.append('--html=report.html')
 
-File=None
-try:
-    File = open('qa_install_tick.out','w')
-except IOError as e:
-    print 'IO ERROR ({0}): {1}'.format(e.errno,e.strerror)
-    print 'IO ERROR ({0}): '.format(e.message)
-    exit(1)
+if prod_version == 1:
+    # do not install tick stack
+    File=None
+    try:
+        File = open('qa_install_tick.out','w')
+    except IOError as e:
+        print 'IO ERROR ({0}): {1}'.format(e.errno,e.strerror)
+        print 'IO ERROR ({0}): '.format(e.message)
+        exit(1)
 
-#Installation of the TICK stack
-print 'INSTALLING TICK STACK'
-print '---------------------'
-print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
-                                                    meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version,
-                                                    cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf,
-                                                    kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth, admin_user,
-                                                    admin_pass, no_install, ldap_auth, meta_auth, private_key)
-return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
-                                                    data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg,
-                                                    telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os,
-                                                    no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth,
-                                                    admin_user, admin_pass, no_install, ldap_auth, meta_auth, private_key),shell=True, stdout=File, stderr=File)
-if return_code!=0:
-    print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
-    exit(1)
+    #Installation of the TICK stack
+    print 'INSTALLING TICK STACK'
+    print '---------------------'
+    print r'./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name, data_nodes_number,
+                                                        meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg, telegraf_version,
+                                                        cluster_os, chronograf_version, num_chronografs, chronograf_os, no_chronograf,
+                                                        kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth, admin_user,
+                                                        admin_pass, no_install, ldap_auth, meta_auth, private_key)
+    return_code=subprocess.call('./qa_install_tick.sh %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (cluster_name,
+                                                        data_nodes_number, meta_nodes_number, cluster_env, db_version, data_pkg, meta_pkg,
+                                                        telegraf_version, cluster_os,  chronograf_version, num_chronografs, chronograf_os,
+                                                        no_chronograf, kapacitor_version, num_kapacitor, kapacitor_os, no_kapacitor, http_auth,
+                                                        admin_user, admin_pass, no_install, ldap_auth, meta_auth, private_key),shell=True, stdout=File, stderr=File)
+    if return_code!=0:
+        print 'INSTALLATION OF TICK STACK FAILED. SEE qa_install_tick.out FOR DETAILS'
+        exit(1)
 
 if options.clustername is not None:
     cluster_name=options.clustername
@@ -245,7 +247,14 @@ if options.chronograf is not None:
     pytest_parameters.append('--chronograf=' + options.chronograf)
     print 'CHRONOGRAF IP : ' + options.chronograf
 elif options.nochronograf is not False:
-    print 'NOT INSTALLING CHRONOGRAF'
+    if prod_version == 1:
+        print 'NOT INSTALLING CHRONOGRAF'
+        print '-------------------------'
+        print ''
+    else:
+        print 'NOT USING CHRONOGRAF URL'
+        print '------------------------'
+        print ''
 else:
     p=subprocess.Popen('pcl host chronograf-0 -c %s' % cluster_name, shell=True, stdout=subprocess.PIPE,
                       stderr=subprocess.PIPE)
@@ -365,7 +374,7 @@ else:
     ################
     if options.gateway:
         pytest_parameters.append('--gateway=' + options.gateway)
-        print 'GATEWAY URL : ' + options.chronograf
+        print 'GATEWAY URL : ' + options.gateway
         print '-----------------------------------'
         print ''
     else:
