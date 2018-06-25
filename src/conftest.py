@@ -107,7 +107,7 @@ def etcd(request):
     request.cls.mylog.info('etcd() fixture is being called')
     request.cls.mylog.info('------------------------------')
     etcd=get_etcd(request)
-    request.cls.mylog.info('etcd() fixture : gateway=' + str(etcd))
+    request.cls.mylog.info('etcd() fixture : etcd=' + str(etcd))
     request.cls.etcd=etcd
     request.cls.mylog.info('etcd() fixture - done')
     request.cls.mylog.info('---------------------')

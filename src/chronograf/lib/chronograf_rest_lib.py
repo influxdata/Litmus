@@ -27,12 +27,14 @@ class RestLib(BaseLib):
         :param auth
         :return:response object
         '''
-        self.log.info('RestLib.post() is called with parameters: base_url=' + str(base_url) + ', path=' + str(path)
-                      + ', json=' + str(json)+ ', auth=' + str(auth))
+        self.log.info('RestLib.post() is called with parameters: base_url=' + str(base_url) +
+                      ', path=' + str(path) + ', json=' + str(json)+ ', auth=' + str(auth)+
+                      ', data=' + str(data) + ', headers=' + str(headers))
         try:
             response=requests.post(base_url + path, json=json, data=data, headers=headers, auth=auth)
             self.log.info('RestLib.post() response code=' + str(response.status_code))
-            # TODO add more logging
+            self.log.info('RestLib.get() - response headers = ' + str(response.headers))
+            self.log.info('RestLib.get() - response url = ' + str(response.url))
         except requests.ConnectionError, e:
             self.log.info('RestLib.post() - ConnectionError : ' + str(e.message))
             response=None
