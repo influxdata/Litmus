@@ -1,3 +1,4 @@
 src/cloud/test_gateway_create_org.py
 src/cloud/test_gateway_get_org.py
 src/cloud/test_gateway_update_org.py
+src/cloud/test_gateway_get_all_orgs.py
