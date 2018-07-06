@@ -615,7 +615,7 @@ class TestUpdateOrganizationsAPI(object):
         self.footer(test_name)
 
     #@pytest.mark.skip
-    def test_create_orgs_400_char_mix(self):
+    def test_update_orgs_400_char_mix(self):
         '''
         '''
         test_name = 'test_update_orgs_400_char_mix_'
@@ -647,7 +647,7 @@ class TestUpdateOrganizationsAPI(object):
         self.footer(test_name)
 
     #@pytest.mark.skip
-    def test_create_orgs_single_quote_char(self):
+    def test_update_orgs_single_quote_char(self):
         '''
 
         '''
@@ -684,7 +684,7 @@ class TestUpdateOrganizationsAPI(object):
         self.footer(test_name)
 
     #@pytest.mark.skip
-    def test_create_orgs_double_quote_char(self):
+    def test_update_orgs_double_quote_char(self):
         '''
 
         '''
@@ -722,10 +722,9 @@ class TestUpdateOrganizationsAPI(object):
         self.footer(test_name)
 
     #@pytest.mark.skip
-    def test_create_orgs_back_slash_char(self):
+    def test_update_orgs_back_slash_char(self):
         '''
         '''
-        #data = '{"name": "HelloWorld\\"}'
         test_name = 'test_create_orgs_back_slash_char_'
         name_orig = "HelloWorld\\"""
         new_name = name_orig + "_updated_name"
@@ -757,5 +756,10 @@ class TestUpdateOrganizationsAPI(object):
         assert updated_name == actual_org_name, self.mylog.info(
             test_name + ' Expected org name is not equal to actual org name')
         self.footer(test_name)
+
+    def test_update_org_already_exists(self):
+        '''
+        '''
+        #TODO Update to already existing name. Should fail.
 
 

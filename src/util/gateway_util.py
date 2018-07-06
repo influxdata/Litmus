@@ -2,9 +2,10 @@
 import sys
 import traceback
 import ast
+import json
 from src.util import litmus_utils
 
-#============================================= ORGANIZATIONS =====================================================
+#=================================================== ORGANIZATIONS =====================================================
 
 ORG_URL='/v1/orgs'
 
@@ -13,7 +14,7 @@ def create_organization(test_class_instance, url, org_name):
     :param test_class_instance:
     :param url:
     :param org_name:
-    :return: status_code, org_id, created_org_name
+    :return: status_code, org_id, created_org_name, error_message
     '''
     test_class_instance.mylog.info('gateway_util.create_organization() function is being called')
     test_class_instance.mylog.info('-----------------------------------------------------------')
@@ -21,7 +22,7 @@ def create_organization(test_class_instance, url, org_name):
     test_class_instance.mylog.info('gateway_util.create_organization() '
                                    'Creating Organization with \'%s\' name' % org_name)
     data='{"name":"%s"}' % org_name
-    org_id, created_org_name=None,None
+    org_id, created_org_name, error_message=None, None, None
     response=test_class_instance.rl.post(base_url=url, path=ORG_URL, data=data)
     try:
         org_id=response.json().get('id')
@@ -32,7 +33,8 @@ def create_organization(test_class_instance, url, org_name):
         else:
             test_class_instance.mylog.info('gateway_util.create_organization() '
                                            'REQUESTED_ORG_ID AND REQUESTED_ORG_NAME ARE NONE')
-            test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + response.json()['message'])
+            error_message=response.json()['message']
+            test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + error_message)
     except:
         test_class_instance.mylog.info('gateway_util.create_organization() Exception:')
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
@@ -41,7 +43,7 @@ def create_organization(test_class_instance, url, org_name):
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
     test_class_instance.mylog.info('gateway_util.create_organization() function is done')
     test_class_instance.mylog.info('')
-    return response.status_code, org_id, created_org_name
+    return response.status_code, org_id, created_org_name, error_message
 
 def update_organization(test_class_instance, url, org_id, new_org_name):
     '''
@@ -61,12 +63,12 @@ def update_organization(test_class_instance, url, org_id, new_org_name):
         new_org_id=response.json().get('id')
         updated_org_name=response.json().get('name')
         if org_id is not None and updated_org_name is not None:
-            test_class_instance.mylog.info('gateway_util.create_organization() ORG_ID=' + str(new_org_id))
-            test_class_instance.mylog.info('gateway_util.create_organization() ORG_NAME=' + str(updated_org_name))
+            test_class_instance.mylog.info('gateway_util.update_organization() ORG_ID=' + str(new_org_id))
+            test_class_instance.mylog.info('gateway_util.update_organization() ORG_NAME=' + str(updated_org_name))
         else:
-            test_class_instance.mylog.info('gateway_util.create_organization() '
+            test_class_instance.mylog.info('gateway_util.update_organization() '
                                            'REQUESTED_ORG_ID AND REQUESTED_ORG_NAME ARE NONE')
-            test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + response.json()['message'])
+            test_class_instance.mylog.info('gateway_util.update_organization() ERROR=' + response.json()['message'])
     except:
         test_class_instance.mylog.info('gateway_util.update_organization() Exception:')
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
@@ -123,20 +125,21 @@ def get_organization(test_class_instance, url, org_id):
     test_class_instance.mylog.info('')
     test_class_instance.mylog.info('gateway_util.get_organization() '
                                    'Getting Organization with \'%s\' id' % org_id)
-    requested_org_id, requested_org_name=None,None
+    requested_org_id, requested_org_name, error_message=None, None, None
     response=test_class_instance.rl.get(base_url=url, path=ORG_URL+'/'+str(org_id))
     try:
         requested_org_id=response.json().get('id')
         requested_org_name=response.json().get('name')
         if requested_org_id is not None and requested_org_name is not None:
-            test_class_instance.mylog.info('gateway_util.create_organization() REQUESTED_ORG_ID=' +
+            test_class_instance.mylog.info('gateway_util.get_organization() REQUESTED_ORG_ID=' +
                                            str(requested_org_id))
-            test_class_instance.mylog.info('gateway_util.create_organization() REQUESTED_ORG_NAME=' +
+            test_class_instance.mylog.info('gateway_util.get_organization() REQUESTED_ORG_NAME=' +
                                            str(requested_org_name))
         else:
-            test_class_instance.mylog.info('gateway_util.create_organization() '
+            test_class_instance.mylog.info('gateway_util.get_organization() '
                                            'REQUESTED_ORG_ID AND REQUESTED_ORG_NAME ARE NONE')
-            test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + response.json()['message'])
+            error_message = response.json()['message']
+            test_class_instance.mylog.info('gateway_util.get_organization() ERROR=' + error_message)
     except:
         test_class_instance.mylog.info('gateway_util.get_organization() Exception:')
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
@@ -145,7 +148,7 @@ def get_organization(test_class_instance, url, org_id):
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
     test_class_instance.mylog.info('gateway_util.get_organization() function is done')
     test_class_instance.mylog.info('')
-    return response.status_code, requested_org_id, requested_org_name
+    return response.status_code, requested_org_id, requested_org_name, error_message
 
 def get_all_organizations(test_class_instance, url):
     '''
@@ -164,9 +167,9 @@ def get_all_organizations(test_class_instance, url):
             test_class_instance.mylog.info('gateway_util.get_all_organizations() LIST OF OGRANIZATIONS=' +
                                            str(list_of_organizations))
         else:
-            test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + response.json()['message'])
+            test_class_instance.mylog.info('gateway_util.get_all_organizations() ERROR=' + response.json()['message'])
     except:
-        test_class_instance.mylog.info('gateway_util.get_organization() Exception:')
+        test_class_instance.mylog.info('gateway_util.get_all_organizations() Exception:')
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
@@ -225,7 +228,157 @@ def get_count_of_orgs(test_class_instance, list_of_organizations):
     return count
 
 
-#============================================= ETCD =================================================
+#================================================== USERS ==============================================================
+
+USERS_URL='/v1/users'
+
+def create_user(test_class_instance, url, user_name):
+    '''
+    :param test_class_instance:
+    :param url:
+    :param user_name:
+    :return:
+    '''
+    test_class_instance.mylog.info('gateway_util.create_user() function is being called')
+    test_class_instance.mylog.info('---------------------------------------------------')
+    test_class_instance.mylog.info('')
+    test_class_instance.mylog.info('gateway_util.create_user() :'
+                                   'Creating User with \'%s\' name' % user_name)
+    data = '{"name":"%s"}' % user_name
+    user_id, created_user_name, error_message = None, None, None
+    response = test_class_instance.rl.post(base_url=url, path=USERS_URL, data=data)
+    try:
+        user_id = response.json().get('id')
+        created_user_name = response.json().get('name')
+        if user_id is not None and created_user_name is not None:
+            test_class_instance.mylog.info('gateway_util.create_user() USER_ID=' + str(user_id))
+            test_class_instance.mylog.info('gateway_util.create_user() USER_NAME=' + str(created_user_name))
+        else:
+            test_class_instance.mylog.info('gateway_util.create_usee() '
+                                           'REQUESTED_USER_ID AND REQUESTED_USER_NAME ARE NONE')
+            error_message = response.json()['message']
+            test_class_instance.mylog.info('gateway_util.create_user() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.create_user() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.create_organization() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, user_id, created_user_name, error_message
+
+def update_user(test_class_instance, url, user_id, new_user_name):
+    '''
+    :param test_class_instance:
+    :param url:
+    :param user_id:
+    :param new_user_name:
+    :return:
+    '''
+    test_class_instance.mylog.info('gateway_util.update_user() function is being called')
+    test_class_instance.mylog.info('----------------------------------------------------')
+    test_class_instance.mylog.info('')
+    data='{"name":"%s"}' % new_user_name
+    updated_user_name, new_user_id, error_message = None, None, None
+    response=test_class_instance.rl.patch(base_url=url, path=USERS_URL + '/' + str(user_id), data=data)
+    try:
+        new_user_id = response.json().get('id')
+        updated_user_name = response.json().get('name')
+        if new_user_id is not None and updated_user_name is not None:
+            test_class_instance.mylog.info('gateway_util.update_user() USER_ID=' + str(new_user_id))
+            test_class_instance.mylog.info('gateway_util.update_user() USER_NAME=' + str(updated_user_name))
+        else:
+            test_class_instance.mylog.info('gateway_util.update_user() '
+                                           'REQUESTED_USER_ID AND REQUESTED_USER_NAME ARE NONE')
+            test_class_instance.mylog.info('gateway_util.update_user() ERROR=' + response.json()['message'])
+    except:
+        test_class_instance.mylog.info('gateway_util.update_user() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.update_user() function is done')
+    test_class_instance.mylog.info('')
+    return (response.status_code, new_user_id, updated_user_name, error_message)
+
+# THIS IS NOT WORKING YET FROM API STAND POINT. INFLUX TOOL WORKS
+def get_user_by_name(test_class_instance, url, user_name):
+    '''
+    :param test_class_instance:
+    :param url:
+    :param user_name:
+    :return: status_code, requested_user_id, requested_user_name
+    '''
+    test_class_instance.mylog.info('gateway_util.get_user_by_name() function is being called')
+    test_class_instance.mylog.info('-----------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    test_class_instance.mylog.info('gateway_util.get_user_by_name() '
+                                   'Getting User with \'%s\' name' % user_name)
+    requested_user_id, requested_user_name, error_message=None, None, None
+    response=test_class_instance.rl.get(base_url=url, path=USERS_URL+'/'+str(user_name))
+    try:
+        requested_user_id=response.json().get('id')
+        requested_user_name=response.json().get('name')
+        if requested_user_id is not None and requested_user_name is not None:
+            test_class_instance.mylog.info('gateway_util.cget_user_by_name() REQUESTED_USER_ID=' +
+                                           str(requested_user_id))
+            test_class_instance.mylog.info('gateway_util.get_user_by_name() REQUESTED_USER_NAME=' +
+                                           str(requested_user_name))
+        else:
+            test_class_instance.mylog.info('gateway_util.get_user_by_name() '
+                                           'REQUESTED_USER_ID AND REQUESTED_USER_NAME ARE NONE')
+            error_message = response.json()['message']
+            test_class_instance.mylog.info('gateway_util.get_user_by_name() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.get_user_by_name() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.get_user_by_name() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, requested_user_id, requested_user_name, error_message
+
+def get_user_by_id(test_class_instance, url, user_id):
+    '''
+    :param test_class_instance:
+    :param url:
+    :param user_id:
+    :return: status_code, requested_user_id, requested_user_name
+    '''
+    test_class_instance.mylog.info('gateway_util.get_user_by_id() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    test_class_instance.mylog.info('gateway_util.get_user_by_name() '
+                                   'Getting User with \'%s\' id' % user_id)
+    requested_user_id, requested_user_name, error_message=None, None, None
+    response=test_class_instance.rl.get(base_url=url, path=USERS_URL+'/'+str(user_id))
+    try:
+        requested_user_id=response.json().get('id')
+        requested_user_name=response.json().get('name')
+        if requested_user_id is not None and requested_user_name is not None:
+            test_class_instance.mylog.info('gateway_util.cget_user_by_id() REQUESTED_USER_ID=' +
+                                           str(requested_user_id))
+            test_class_instance.mylog.info('gateway_util.get_user_by_id() REQUESTED_USER_NAME=' +
+                                           str(requested_user_name))
+        else:
+            test_class_instance.mylog.info('gateway_util.get_user_by_id() '
+                                           'REQUESTED_USER_ID AND REQUESTED_USER_NAME ARE NONE')
+            error_message = response.json()['message']
+            test_class_instance.mylog.info('gateway_util.get_user_by_id() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.get_user_by_id() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.get_user_by_id() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, requested_user_id, requested_user_name, error_message
+
+
+#========================================================== ETCD =======================================================
 
 def verify_org_etcd(test_class_instance, etcd, org_id, org_name):
     '''
@@ -235,6 +388,9 @@ def verify_org_etcd(test_class_instance, etcd, org_id, org_name):
     :param org_name: organization name
     :return: does not return anything
     '''
+    test_class_instance.mylog.info('gateway_util.verify_org_etcd() function is being called')
+    test_class_instance.mylog.info('-------------------------------------------------------')
+    test_class_instance.mylog.info('')
     cmd='ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "Organizationv1/%s" --print-value-only'\
         % (etcd, org_id)
     out=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
@@ -247,3 +403,30 @@ def verify_org_etcd(test_class_instance, etcd, org_id, org_name):
                            + str(actual_org_name))
     assert org_name == actual_org_name, \
         test_class_instance.mylog.info('Expected org name is not equal to actual org name')
+
+def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
+    '''
+    :param test_class_instance: instance of the test clas, i.e. self
+    :param etcd: url of the etcd service
+    :param user_id: organization id
+    :param user_name: organization name
+    :return: does not return anything
+    '''
+    test_class_instance.mylog.info('gateway_util.verify_user_etcd() function is being called')
+    test_class_instance.mylog.info('--------------------------------------------------------')
+    test_class_instance.mylog.info('gateway_util.verify_user_etcd(): params: %s and %s' %(user_id, user_name))
+    test_class_instance.mylog.info('')
+    cmd='ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "userv1/%s" --print-value-only'\
+        % (etcd, user_id)
+    out=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
+    actual_org_id=ast.literal_eval(out[0]).get('id')
+    test_class_instance.mylog.info('Assert expected user_id ' + str(user_id) + ' equals to actual user_id '
+                                   + str(actual_org_id))
+    assert user_id == actual_org_id, test_class_instance.mylog.info('Expected user id is not equal to actual user id')
+    actual_org_name=ast.literal_eval(out[0]).get('name')
+    if user_name != 'DoubleQuotes\"' and user_name != 'DoubleQuotes\"_updated_name':
+        actual_org_name=json.loads("\"" + actual_org_name + "\"")
+    test_class_instance.mylog.info('Assert expected user_name ' + str(user_name) + ' equals actual to user_name '
+                           + str(actual_org_name))
+    assert user_name == actual_org_name, \
+        test_class_instance.mylog.info('Expected user name is not equal to actual user name')
