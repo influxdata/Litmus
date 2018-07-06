@@ -1,12 +1,13 @@
 
 import pytest
 import src.util.login_util as lu
-from src.chronograf.lib import chronograf_rest_lib as crl
-from random import sample
-from random import shuffle
 import src.util.litmus_utils as litmus_utils
 import ast # for converting string of dictionary into dictionary
 import json
+from src.util import gateway_util
+from src.chronograf.lib import chronograf_rest_lib as crl
+from random import sample
+from random import shuffle
 from string import digits as numbers # 0123456789
 from string import ascii_lowercase  as lc #abcdefghijklmnopqrstuvwxyz
 from string import ascii_uppercase as uc #ABCDEFGHIJKLMNOPQRSTUVWXYZ
@@ -72,42 +73,22 @@ class TestGetOrganizationsAPI(object):
         '''
         
         '''
-        data='{"name": "%s"}' % one_char
-
         test_name='test_get_org_single_char_lower_case_' + one_char + ' '
         self.header(test_name)
         self.mylog.info(test_name + ' STEP 1: Create Organization')
-        response=self.rl.post(self.gateway,self.get_org_path, data=data) #data='{"name":"gershon-test-bucket"}
-        assert response.status_code == 201, \
-            self.mylog.info(test_name + ' Assertion Failed. Status code is not 201' + response.text)
-        self.mylog.info(test_name + ' STEP 2: Get created org\'s ID')
-        org_id=response.json().get('id')
-        org_name=response.json().get('name')
-        assert org_id, self.mylog.info(test_name + ' Assertion Failed. Organization id in None')
-        self.mylog.info(test_name + ' STEP 3: Check the organization data was persisted in etcd')
-        cmd='%s --endpoints %s get --prefix "Organizationv1/%s" --print-value-only' % (self.etcdctl, self.etcd, org_id)
-        out=litmus_utils.execCmd(self, cmd, status='OUT_STATUS')
-        actual_org_id=ast.literal_eval(out[0]).get('id')
+        (status, org_id, org_name, error_message)=gateway_util.create_organization(self, self.gateway, one_char)
+        self.mylog.info(test_name + ' STEP 2: Check the organization data was persisted in etcd')
+        gateway_util.verify_org_etcd(self, self.etcd, org_id, org_name)
+        self.mylog.info(test_name + ' STEP 3: Get Created Organization')
+        (status, actual_org_id, actual_org_name, error_message)=gateway_util.get_organization(self, self.gateway, org_id)
+        assert status == 200, self.mylog.info(test_name + ' Assertion Failed. Status code is not 200:' + error_message)
         self.mylog.info(test_name + 'Assert expected org_id ' + str(org_id) + ' equals actual org id ' + str(actual_org_id))
-        assert org_id == actual_org_id, self.mylog.info(test_name + ' Expected org id is not equal to actual org id')
-        actual_org_name=ast.literal_eval(out[0]).get('name')
-        self.mylog.info(test_name + 'Assert expected org_name ' + str(org_name) + ' equals actual org name ' + str(actual_org_name))
-        assert org_name == actual_org_name, self.mylog.info(test_name + ' Expected org name is not equal to actual org name')
-        self.mylog.info(test_name + ' STEP 4: Get Created Organization')
-        org_path=self.get_org_path + '/' + org_id
-        response=self.rl.get(self.gateway, org_path)
-        assert response.status_code == 200, \
-            self.mylog.info(test_name + ' Assertion Failed. Status code is not 200' + response.text)
-        actual_org_id=response.json().get('id')
-        self.mylog.info(
-            test_name + 'Assert expected org_id ' + str(org_id) + ' equals actual org id ' + str(actual_org_id))
-        assert org_id == actual_org_id, \
-            self.mylog.info(test_name + ' Expected org id is not equal to actual org id' + response.text)
-        actual_org_name=response.json().get('name')
-        self.mylog.info(
-            test_name + 'Assert expected org_name ' + str(org_name) + ' equals actual org name ' + str(actual_org_name))
-        assert org_name == actual_org_name, self.mylog.info(
-            test_name + ' Expected org name is not equal to actual org name' + response.text)
+        assert actual_org_id == org_id, \
+            self.mylog.info(test_name + ' Expected org id is not equal to actual org id' + error_message)
+        self.mylog.info(test_name + 'Assert expected org_name ' + str(org_name) + ' equals actual org name '
+                        + str(actual_org_name))
+        assert actual_org_name == org_name, \
+            self.mylog.info(test_name + ' Expected org name is not equal to actual org name' + error_message)
         self.footer(test_name)
 
     #@pytest.mark.skip
@@ -1001,3 +982,19 @@ class TestGetOrganizationsAPI(object):
         assert org_name == actual_org_name, self.mylog.info(
             test_name + ' Expected org name is not equal to actual org name' + response.text)
         self.footer(test_name)
+
+    def test_get_non_existent_org_id(self):
+        '''
+        '''
+        test_name='test_get_non_existent_org_id '
+        org_id='doesnotexist'
+        expected_status=404
+        expected_error_message='organization not found'
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Get non-existent org id')
+        (status, id, name, error_message)=gateway_util.get_organization(self, self.gateway, org_id)
+        self.mylog.info(test_name + 'Assert expected status %s is equal to actual status %s' % (expected_status, status))
+        assert expected_status == status, pytest.xfail(reason='https://github.com/influxdata/platform/issues/163')
+        self.mylog.info(test_name + 'Assert expected error message % equals actual error message %s'
+                        % (expected_error_message, error_message))
+        assert expected_error_message == error_message, self.mylog.info(test_name + 'Assertion failed')

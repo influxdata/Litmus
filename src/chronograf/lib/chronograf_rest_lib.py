@@ -67,7 +67,7 @@ class RestLib(BaseLib):
         except requests.RequestException, e:
             self.log.info('RestLib.get() - RequestsException : ' + str(e.message))
             response=None
-        assert response is not None, self.log.info('RestLib.get() - ASSERTION ERROR')
+        assert response is not None, self.log.info('RestLib.get() - ASSERTION ERROR: response is None')
         return response
 
     def delete(self, base_url, path, auth=None):
@@ -106,14 +106,15 @@ class RestLib(BaseLib):
                       ', data=' + str(data) + ', headers=' + str(headers) + ', auth=' + str(auth))
         try:
             response=requests.patch(base_url + path, json=json, data=data, headers=headers, auth=auth)
-            self.log.info('RestLib.patch() response code=' + str(response.status_code))
+            self.log.info('RestLib.patch() response status_code = ' + str(response.status_code))
+            self.log.info('RestLib.patch() response headers = ' + str(response.headers))
         except requests.ConnectionError, e:
             self.log.info('RestLib.patch() - ConnectionError : ' + str(e.message))
             response=None
         except requests.RequestException, e:
             self.log.info('RestLib.patch() - ConnectionError : ' + str(e.message))
             response=None
-        assert response is not None, self.log.info('RestLib.patch() response is none')
+        assert response is not None, self.log.info('RestLib.patch() - ASSERTION ERROR: response is None')
         return response
 
     ##############################################################################################################
