@@ -14,20 +14,21 @@ from conftest import ten_char_lc, twenty_char_lc, twenty_char_uc, ten_char_uc, \
 @pytest.mark.usefixtures('remove_users','gateway')
 class TestUpdateUsersAPI(object):
     '''
-    remove created by tests users
+    Test suite to test rest api endpoint for updating users
+    removes created by tests users
     '''
     mylog=lu.log(lu.get_log_path(), 'w', __name__)
     rl=crl.RestLib(mylog)
 
     def header(self, test_name):
-        self.mylog.info('#######################################################')
-        self.mylog.info('<--------------- %s START --------------->' % test_name)
-        self.mylog.info('#######################################################')
+        self.mylog.info('#' * (11+len(test_name)+17))
+        self.mylog.info('<--------- %s START --------->' % test_name)
+        self.mylog.info('#' * (11+len(test_name)+17))
 
     def footer(self, test_name):
-        self.mylog.info('#######################################################')
-        self.mylog.info('<--------------- %s END --------------->' % test_name)
-        self.mylog.info('#######################################################')
+        self.mylog.info('#' * (11+len(test_name)+15))
+        self.mylog.info('<--------- %s END --------->' % test_name)
+        self.mylog.info('#' * (11 + len(test_name) + 15))
         self.mylog.info('')
 
     def run_tests(self, name_of_the_test_to_run, user_name):
@@ -90,7 +91,7 @@ class TestUpdateUsersAPI(object):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: PATCH
-        tests user name containing 10 characters lower case letters can be updated and persisted in the etcd store.
+        tests user name containing 10 random characters lower case letters can be updated and persisted in the etcd store.
         '''
         self.run_tests('test_update_users_10_char_lower_case_', ten_char)
 
@@ -99,7 +100,7 @@ class TestUpdateUsersAPI(object):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: PATCH
-        tests user name containing 20 characters lower case letters can be updated and persisted in the etcd store.
+        tests user name containing 20 random characters lower case letters can be updated and persisted in the etcd store.
         '''
         self.run_tests('test_update_users_20_char_lower_case_', twenty_char)
 
@@ -120,7 +121,7 @@ class TestUpdateUsersAPI(object):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: PATCH
-        tests user name containing 10 upper case character letters can be updated and persisted in the etcd store.
+        tests user name containing 10 random upper case character letters can be updated and persisted in the etcd store.
         '''
         self.run_tests('test_update_users_10_char_upper_case_', ten_char)
 
@@ -129,7 +130,7 @@ class TestUpdateUsersAPI(object):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: PATCH
-        tests user name containing 20 upper case character letters can be updated and persisted in the etcd store.
+        tests user name containing 20 random upper case character letters can be updated and persisted in the etcd store.
         '''
         self.run_tests('test_update_users_20_char_upper_case_', twenty_char)
 
@@ -150,7 +151,7 @@ class TestUpdateUsersAPI(object):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: PATCH
-        tests user name containing 10 non-alphanumeric character letters can be updated and persisted in the etcd store.
+        tests user name containing 10 random non-alphanumeric character letters can be updated and persisted in the etcd store.
         '''
         self.run_tests('test_update_users_10_char_nonalphanumeric_', ten_char_nonalphanumeric)
 
@@ -159,7 +160,7 @@ class TestUpdateUsersAPI(object):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: PATCH
-        tests user name containing 20 non-alphanumeric character letters can be updated and persisted in the etcd store.
+        tests user name containing 20 random non-alphanumeric character letters can be updated and persisted in the etcd store.
         '''
         self.run_tests('twenty_char_nonalphanumeric_', twenty_char_nonalphanumeric)
 
@@ -180,7 +181,7 @@ class TestUpdateUsersAPI(object):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: PATCH
-        tests user name containing 10 digits can be updated and persisted in the etcd store.
+        tests user name containing 10 random digits can be updated and persisted in the etcd store.
         '''
         self.run_tests('test_update_users_10_char_numbers_', ten_char_numbers)
 
@@ -189,7 +190,7 @@ class TestUpdateUsersAPI(object):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: PATCH
-        tests user name containing 5 digits can be updated and persisted in the etcd store.
+        tests user name containing 5 random digits can be updated and persisted in the etcd store.
         '''
         self.run_tests('test_update_users_5_char_numbers_', five_numbers)
 
