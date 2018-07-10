@@ -287,6 +287,8 @@ class TestLdapAdminUser(object):
         client=InfluxDBClient(data_node, username=LDAP_ADMIN_USERS, password=LDAP_ADMIN_PASS, timeout=3, retries=1)
         (success, error)=du.create_database(self, client, database)
         assert success, test_name + 'Failed to create database for admin user=%s' % LDAP_ADMIN_USERS
+        (success, error)=du.drop_database(self, client, database)
+        assert success, test_name + 'Failed to drop database for admin user=%s' % LDAP_ADMIN_USERS
         self.footer(test_name)
 
     @pytest.mark.parametrize('create_database', ['test_admin_creat_retention_policy_db'], ids=[''], indirect=True)
