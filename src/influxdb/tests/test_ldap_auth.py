@@ -770,7 +770,7 @@ class TestLdapAdminUser(object):
         self.mylog.info(test_name + 'STEP 5: Show shards')
         status_, shard_groups_, message_ = self.irl._show_shards(meta_leader_url=self.meta_leader,
                                                                  auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
-        status, shard_groups, message = iu.show_shards(self, shard_groups_)
+        shard_groups=iu.show_shards(self, shard_groups_)
         self.mylog.info(test_name + 'STEP 6: Verify values returned by show-shards command')
         for k,v in shard_groups.items():
             if v['database'] == database and v['retention'] == rp_name:
@@ -820,7 +820,7 @@ class TestLdapAdminUser(object):
         self.mylog.info(test_name + 'STEP 5: Show shards')
         status_, shard_groups_, message_ = self.irl._show_shards(meta_leader_url=self.meta_leader,
                                                                  auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
-        status, shard_groups, message = iu.show_shards(self, shard_groups_)
+        shard_groups =iu.show_shards(self, shard_groups_)
         self.mylog.info(test_name + 'STEP 6: Get data nodes')
         for k, v in shard_groups.items():
             if v['database'] == database and v['retention'] == rp_name:
@@ -840,7 +840,7 @@ class TestLdapAdminUser(object):
                         + str(data_node_to_remove_shard_from))
         status_, shard_groups_, message_ = self.irl._show_shards(meta_leader_url=self.meta_leader,
                                                                  auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
-        status, shard_groups, message = iu.show_shards(self, shard_groups_)
+        shard_groups=iu.show_shards(self, shard_groups_)
         for k, v in shard_groups.items():
             if v['database'] == database and v['retention'] == rp_name:
                 data_nodes=v['data_nodes']
@@ -1723,7 +1723,7 @@ class TestLdapUser(object):
         self.mylog.info(test_name + 'STEP 5: Show shards')
         status_, shard_groups_, message_ = self.irl._show_shards(meta_leader_url=self.meta_leader,
                                                                  auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
-        status, shard_groups, message = iu.show_shards(self, shard_groups_)
+        shard_groups=iu.show_shards(self, shard_groups_)
         if role == 'g_first':
             self.mylog.info(test_name + 'STEP 6: Verify values returned by show-shards command')
             for k, v in shard_groups.items():
@@ -1777,7 +1777,7 @@ class TestLdapUser(object):
         self.mylog.info(test_name + 'STEP 5: Show shards')
         status_, shard_groups_, message_=self.irl._show_shards(meta_leader_url=self.meta_leader,
                                                             auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
-        status, shard_groups, message=iu.show_shards(self, shard_groups_)
+        shard_groups=iu.show_shards(self, shard_groups_)
         self.mylog.info(test_name + 'STEP 6: Get data nodes')
         for k, v in shard_groups.items():
             if v['database'] == database and v['retention'] == rp_name:
@@ -1798,7 +1798,7 @@ class TestLdapUser(object):
                             + str(data_node_to_remove_shard_from))
             status_, shard_groups_, message_ = self.irl._show_shards(meta_leader_url=self.meta_leader,
                                                                      auth=(LDAP_ADMIN_USERS, LDAP_ADMIN_PASS))
-            status, shard_groups, message = iu.show_shards(self, shard_groups_)
+            shard_groups=iu.show_shards(self, shard_groups_)
             for k, v in shard_groups.items():
                 if v['database'] == database and v['retention'] == rp_name:
                     data_nodes = v['data_nodes']

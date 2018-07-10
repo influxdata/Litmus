@@ -6,7 +6,7 @@ import src.util.gateway_util as gateway_util
 from string import ascii_lowercase
 from string import ascii_uppercase
 from string import digits
-from conftest import ten_char_lc, twenty_char_lc, twenty_char_uc, ten_char_uc, \
+from src.cloud.rest_api.conftest import ten_char_lc, twenty_char_lc, twenty_char_uc, ten_char_uc, \
     ten_char_numbers, five_char_numbers, nonalphanumeric, ten_char_nonalphanumeric, \
     twenty_char_nonalphanumeric, twenty_char_names_list, fourty_char_names_list, \
     four_hundred_char_name_list, two_hundred_char_name_list, special_char
