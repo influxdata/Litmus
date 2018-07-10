@@ -113,17 +113,17 @@ def delete_organization(test_class_instance, url, org_id_to_delete):
     test_class_instance.mylog.info('')
     return response.status_code, deleted_org_id, deleted_org_name
 
-def get_organization(test_class_instance, url, org_id):
+def get_organization_by_id(test_class_instance, url, org_id):
     '''
     :param test_class_instance:
     :param url:
     :param org_id:
-    :return: status_code, org_id, created_org_name
+    :return: status_code, requested_org_id, requested__org_name
     '''
-    test_class_instance.mylog.info('gateway_util.get_organization() function is being called')
-    test_class_instance.mylog.info('-----------------------------------------------------------')
+    test_class_instance.mylog.info('gateway_util.get_organization_by_id() function is being called')
+    test_class_instance.mylog.info('--------------------------------------------------------------')
     test_class_instance.mylog.info('')
-    test_class_instance.mylog.info('gateway_util.get_organization() '
+    test_class_instance.mylog.info('gateway_util.get_organization_by_id() '
                                    'Getting Organization with \'%s\' id' % org_id)
     requested_org_id, requested_org_name, error_message=None, None, None
     response=test_class_instance.rl.get(base_url=url, path=ORG_URL+'/'+str(org_id))
@@ -131,22 +131,22 @@ def get_organization(test_class_instance, url, org_id):
         requested_org_id=response.json().get('id')
         requested_org_name=response.json().get('name')
         if requested_org_id is not None and requested_org_name is not None:
-            test_class_instance.mylog.info('gateway_util.get_organization() REQUESTED_ORG_ID=' +
+            test_class_instance.mylog.info('gateway_util.get_organization_by_id() REQUESTED_ORG_ID=' +
                                            str(requested_org_id))
-            test_class_instance.mylog.info('gateway_util.get_organization() REQUESTED_ORG_NAME=' +
+            test_class_instance.mylog.info('gateway_util.get_organization_by_id() REQUESTED_ORG_NAME=' +
                                            str(requested_org_name))
         else:
-            test_class_instance.mylog.info('gateway_util.get_organization() '
+            test_class_instance.mylog.info('gateway_util.get_organization_by_id() '
                                            'REQUESTED_ORG_ID AND REQUESTED_ORG_NAME ARE NONE')
             error_message = response.json()['message']
-            test_class_instance.mylog.info('gateway_util.get_organization() ERROR=' + error_message)
+            test_class_instance.mylog.info('gateway_util.get_organization_by_id() ERROR=' + error_message)
     except:
-        test_class_instance.mylog.info('gateway_util.get_organization() Exception:')
+        test_class_instance.mylog.info('gateway_util.get_organization_by_id() Exception:')
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-    test_class_instance.mylog.info('gateway_util.get_organization() function is done')
+    test_class_instance.mylog.info('gateway_util.get_organization_by_id() function is done')
     test_class_instance.mylog.info('')
     return response.status_code, requested_org_id, requested_org_name, error_message
 
@@ -350,7 +350,7 @@ def get_user_by_id(test_class_instance, url, user_id):
     test_class_instance.mylog.info('gateway_util.get_user_by_id() function is being called')
     test_class_instance.mylog.info('------------------------------------------------------')
     test_class_instance.mylog.info('')
-    test_class_instance.mylog.info('gateway_util.get_user_by_name() '
+    test_class_instance.mylog.info('gateway_util.get_user_by_id() '
                                    'Getting User with \'%s\' id' % user_id)
     requested_user_id, requested_user_name, error_message=None, None, None
     response=test_class_instance.rl.get(base_url=url, path=USERS_URL+'/'+str(user_id))
@@ -399,7 +399,9 @@ def verify_org_etcd(test_class_instance, etcd, org_id, org_name):
                                    + str(actual_org_id))
     assert org_id == actual_org_id, test_class_instance.mylog.info('Expected org id is not equal to actual org id')
     actual_org_name = ast.literal_eval(out[0]).get('name')
-    test_class_instance.mylog.info('Assert expected org_name ' + str(org_name) + ' equals actual to org_name '
+    if org_name != 'DoubleQuotes\"' and org_name != 'DoubleQuotes\"_updated_name':
+        actual_org_name=json.loads("\"" + actual_org_name + "\"")
+    test_class_instance.mylog.info('Assert expected user_name ' + str(org_name) + ' equals actual to user_name '
                            + str(actual_org_name))
     assert org_name == actual_org_name, \
         test_class_instance.mylog.info('Expected org name is not equal to actual org name')
@@ -419,14 +421,14 @@ def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
     cmd='ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "userv1/%s" --print-value-only'\
         % (etcd, user_id)
     out=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
-    actual_org_id=ast.literal_eval(out[0]).get('id')
+    actual_user_id=ast.literal_eval(out[0]).get('id')
     test_class_instance.mylog.info('Assert expected user_id ' + str(user_id) + ' equals to actual user_id '
-                                   + str(actual_org_id))
-    assert user_id == actual_org_id, test_class_instance.mylog.info('Expected user id is not equal to actual user id')
-    actual_org_name=ast.literal_eval(out[0]).get('name')
+                                   + str(actual_user_id))
+    assert user_id == actual_user_id, test_class_instance.mylog.info('Expected user id is not equal to actual user id')
+    actual_user_name=ast.literal_eval(out[0]).get('name')
     if user_name != 'DoubleQuotes\"' and user_name != 'DoubleQuotes\"_updated_name':
-        actual_org_name=json.loads("\"" + actual_org_name + "\"")
+        actual_user_name=json.loads("\"" + actual_user_name + "\"")
     test_class_instance.mylog.info('Assert expected user_name ' + str(user_name) + ' equals actual to user_name '
-                           + str(actual_org_name))
-    assert user_name == actual_org_name, \
+                           + str(actual_user_name))
+    assert user_name == actual_user_name, \
         test_class_instance.mylog.info('Expected user name is not equal to actual user name')
