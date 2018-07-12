@@ -57,7 +57,7 @@ def update_organization(test_class_instance, url, org_id, new_org_name):
     test_class_instance.mylog.info('-----------------------------------------------------------')
     test_class_instance.mylog.info('')
     data = '{"name":"%s"}' % new_org_name
-    updated_org_name, new_org_id=None,None
+    updated_org_name, new_org_id, error_message=None, None, None
     response=test_class_instance.rl.patch(base_url=url, path=ORG_URL+'/'+ str(org_id), data=data)
     try:
         new_org_id=response.json().get('id')
@@ -68,7 +68,8 @@ def update_organization(test_class_instance, url, org_id, new_org_name):
         else:
             test_class_instance.mylog.info('gateway_util.update_organization() '
                                            'REQUESTED_ORG_ID AND REQUESTED_ORG_NAME ARE NONE')
-            test_class_instance.mylog.info('gateway_util.update_organization() ERROR=' + response.json()['message'])
+            error_message=response.json()['message']
+            test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + error_message)
     except:
         test_class_instance.mylog.info('gateway_util.update_organization() Exception:')
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
@@ -77,7 +78,7 @@ def update_organization(test_class_instance, url, org_id, new_org_name):
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
     test_class_instance.mylog.info('gateway_util.update_organization() function is done')
     test_class_instance.mylog.info('')
-    return (response.status_code, new_org_id, updated_org_name)
+    return response.status_code, new_org_id, updated_org_name, error_message
 
 def delete_organization(test_class_instance, url, org_id_to_delete):
     '''
@@ -402,7 +403,8 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod, organi
                                    'Creating Bucket with \'%s\' name' % bucket_name)
     # hardcoding retention period to 1, anything below 1h, will default to 1h,
     # https://github.com/influxdata/platform/issues/143
-    data = '{"name":"%s", "retentionPeriod": 1, "organizationID": "%s"}' % (bucket_name, organizationID)
+    data = '{"name":"%s", "retentionPeriod": %d, "organizationID": "%s"}' \
+           % (bucket_name, organizationID, retentionPeriod)
 
     organization_id, created_bucket_id, created_bucket_name, \
     retention_period, error_message=None, None, None, None, None
