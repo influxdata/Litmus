@@ -11,9 +11,9 @@ ORG_URL='/v1/orgs'
 
 def create_organization(test_class_instance, url, org_name):
     '''
-    :param test_class_instance:
-    :param url:
-    :param org_name:
+    :param test_class_instance: instance of the test class
+    :param url: gateway url,for example: http://localhost:9999
+    :param org_name: name of the organization to create
     :return: status_code, org_id, created_org_name, error_message
     '''
     test_class_instance.mylog.info('gateway_util.create_organization() function is being called')
@@ -254,7 +254,7 @@ def create_user(test_class_instance, url, user_name):
             test_class_instance.mylog.info('gateway_util.create_user() USER_ID=' + str(user_id))
             test_class_instance.mylog.info('gateway_util.create_user() USER_NAME=' + str(created_user_name))
         else:
-            test_class_instance.mylog.info('gateway_util.create_usee() '
+            test_class_instance.mylog.info('gateway_util.create_user() '
                                            'REQUESTED_USER_ID AND REQUESTED_USER_NAME ARE NONE')
             error_message = response.json()['message']
             test_class_instance.mylog.info('gateway_util.create_user() ERROR=' + error_message)
@@ -378,6 +378,60 @@ def get_user_by_id(test_class_instance, url, user_id):
     return response.status_code, requested_user_id, requested_user_name, error_message
 
 
+#=================================================== BUCKETS ===========================================================
+
+BUCKETS_URL='/v1/buckets'
+
+# Currently retention periods are only numbers and not durations:
+# https://github.com/influxdata/platform/issues/144
+def create_bucket(test_class_instance, url, bucket_name, retentionPeriod, organizationID):
+    '''
+    Create a bucket for an organization with a certain retention period
+    :param test_class_instance: instance of the test class
+    :param url (str): gateway url
+    :param bucket_name (str): name of the bucket to be created
+    :param retentionPeriod (str): retention Period of the bucket, one of h,m,s,m,ns
+    :param organizationID (str): ID of the organization this bucket would belong to
+    :return:
+    '''
+    # do not use retention period for now, use a hardcoded value:
+    test_class_instance.mylog.info('gateway_util.create_bucket() function is being called')
+    test_class_instance.mylog.info('-----------------------------------------------------')
+    test_class_instance.mylog.info('')
+    test_class_instance.mylog.info('gateway_util.create_function() :'
+                                   'Creating Bucket with \'%s\' name' % bucket_name)
+    # hardcoding retention period to 1, anything below 1h, will default to 1h,
+    # https://github.com/influxdata/platform/issues/143
+    data = '{"name":"%s", "retentionPeriod": 1, "organizationID": "%s"}' % (bucket_name, organizationID)
+
+    organization_id, created_bucket_id, created_bucket_name, \
+    retention_period, error_message=None, None, None, None, None
+    response=test_class_instance.rl.post(base_url=url, path=BUCKETS_URL, data=data)
+    try:
+        organization_id=response.json().get('organizationID')
+        created_bucket_name=response.json().get('name')
+        created_bucket_id=response.json().get('id')
+        retention_period=response.json().get('retentionPeriod')
+        if created_bucket_id is not None and created_bucket_name is not None:
+            test_class_instance.mylog.info('gateway_util.create_bucket() BUCKET_ID=' + str(created_bucket_id))
+            test_class_instance.mylog.info('gateway_util.create_user() BUCKET_NAME=' + str(created_bucket_name))
+        else:
+            test_class_instance.mylog.info('gateway_util.create_bucket() '
+                                           'REQUESTED_BUCKET_ID AND REQUESTED_BUCKET_NAME ARE NONE')
+            error_message=response.json()['message']
+            test_class_instance.mylog.info('gateway_util.create_bucket() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.create_bucket() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.create_organization() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, created_bucket_id, created_bucket_name, \
+           organization_id, retention_period, error_message
+
+
 #========================================================== ETCD =======================================================
 
 def verify_org_etcd(test_class_instance, etcd, org_id, org_name):
@@ -432,3 +486,31 @@ def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
                            + str(actual_user_name))
     assert user_name == actual_user_name, \
         test_class_instance.mylog.info('Expected user name is not equal to actual user name')
+
+def verify_bucket_etcd(test_class_instance, etcd, bucket_id, bucket_name):
+    '''
+    :param test_class_instance: instance of the test clas, i.e. self
+    :param etcd: url of the etcd service
+    :param bucket_id: bucket id
+    :param bucket_name: bucket name
+    :return:
+    '''
+    test_class_instance.mylog.info('gateway_util.verify_bucket_etcd() function is being called')
+    test_class_instance.mylog.info('----------------------------------------------------------')
+    test_class_instance.mylog.info('gateway_util.verify_bucket_etcd(): params: %s and %s' %(bucket_id, bucket_name))
+    test_class_instance.mylog.info('')
+    cmd='ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "bucketv1/%s" --print-value-only'\
+        % (etcd, bucket_id)
+    out=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
+    actual_bucket_id=ast.literal_eval(out[0]).get('id')
+    test_class_instance.mylog.info('Assert expected bucket_id ' + str(bucket_id) + ' equals to actual bucket_id '
+                                   + str(actual_bucket_id))
+    assert bucket_id == actual_bucket_id, \
+        test_class_instance.mylog.info('Expected bucket id is not equal to actual bucket id')
+    actual_bucket_name=ast.literal_eval(out[0]).get('name')
+    if bucket_name != 'DoubleQuotes\"' and bucket_name != 'DoubleQuotes\"_updated_name':
+        actual_bucket_name=json.loads("\"" + actual_bucket_name + "\"")
+    test_class_instance.mylog.info('Assert expected bucket_name ' + str(bucket_name) + ' equals actual to bucket_name '
+                           + str(actual_bucket_name))
+    assert bucket_name == actual_bucket_name, \
+        test_class_instance.mylog.info('Expected bucket name is not equal to actual bucket name')

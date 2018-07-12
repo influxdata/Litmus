@@ -233,7 +233,6 @@ class TestGetOrganizationsAPI(object):
         '''
         self.run_tests('test_get_orgs_400_char_mix ', four_hundred_char_name)
 
-    @pytest.mark.special_chars
     @pytest.mark.parametrize('special_char', special_char)
     def test_get_orgs_special_chars(self, special_char):
         '''
