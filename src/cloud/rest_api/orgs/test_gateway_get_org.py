@@ -42,7 +42,6 @@ class TestGetOrganizationsAPI(object):
         self.header(test_name)
         self.mylog.info(test_name + ' STEP 1: Create Organization "%s"' % org_name)
         (status, created_org_id, created_org_name, error_message)=gateway_util.create_organization(self, self.gateway, org_name)
-        print org_name
         if org_name == '':
             assert status == 404, \
                 pytest.xfail(reason='https://github.com/influxdata/platform/issues/188')
@@ -233,7 +232,6 @@ class TestGetOrganizationsAPI(object):
         '''
         self.run_tests('test_get_orgs_400_char_mix ', four_hundred_char_name)
 
-    @pytest.mark.special_chars
     @pytest.mark.parametrize('special_char', special_char)
     def test_get_orgs_special_chars(self, special_char):
         '''

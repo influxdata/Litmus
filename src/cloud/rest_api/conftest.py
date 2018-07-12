@@ -94,7 +94,7 @@ def create_orgs(request, gateway, etcd):
     request.cls.mylog.info('-------------------------------------')
     for org_name in org_names:
         request.cls.mylog.info('create_orgs() fixture : Creating an org \'%s\''% org_name)
-        (status, org_id, name) = gateway_util.create_organization(request.cls, gateway, org_name)
+        (status, org_id, name, error) = gateway_util.create_organization(request.cls, gateway, org_name)
         assert status == 201, request.cls.mylog.info('Failed to create an org \'%s\'' % org_name)
         gateway_util.verify_org_etcd(request.cls, etcd, org_id, org_name)
     request.cls.mylog.info('remove_orgs() fixture is done')
