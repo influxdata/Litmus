@@ -404,7 +404,7 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod, organi
     # hardcoding retention period to 1, anything below 1h, will default to 1h,
     # https://github.com/influxdata/platform/issues/143
     data = '{"name":"%s", "retentionPeriod": %d, "organizationID": "%s"}' \
-           % (bucket_name, organizationID, retentionPeriod)
+           % (bucket_name, retentionPeriod, organizationID)
 
     organization_id, created_bucket_id, created_bucket_name, \
     retention_period, error_message=None, None, None, None, None

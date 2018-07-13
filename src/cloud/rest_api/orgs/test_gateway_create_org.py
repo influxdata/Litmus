@@ -67,7 +67,7 @@ class TestCreateOrganizationsAPI(object):
         METHOD: POST
         tests org name containing single character lower case letters can be created and persisted in the etcd store.
         '''
-        self.run_tests('test_create_orgs_single_char_lower_case', one_char)
+        self.run_tests('test_create_orgs_single_char_lower_case ', one_char)
 
     @pytest.mark.parametrize('ten_char_lc', ten_char_lc)
     def test_create_orgs_10_char_lower_case(self, ten_char_lc):
@@ -76,7 +76,7 @@ class TestCreateOrganizationsAPI(object):
         METHOD: POST
         tests org name containing random 10 lower case letters can be created and persisted in the etcd store.
         '''
-        self.run_tests('test_create_orgs_10_char_lower_case', ten_char_lc)
+        self.run_tests('test_create_orgs_10_char_lower_case ', ten_char_lc)
 
     @pytest.mark.parametrize('twenty_char_lc', twenty_char_lc)
     def test_create_orgs_20_char_lower_case(self, twenty_char_lc):
