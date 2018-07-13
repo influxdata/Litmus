@@ -83,6 +83,22 @@ def remove_orgs(request, etcd):
     assert exit == 0, request.cls.mylog('remove_orgs() fixture exit status is not 0')
 
 @pytest.fixture(scope='class')
+def remove_buckets(request, etcd):
+    '''
+    :param request:
+    :param etcd:
+    :return:
+    '''
+    request.cls.mylog.info('remove_buckets() fixture is being called')
+    request.cls.mylog.info('----------------------------------------')
+    cmd='%s --endpoints %s del --prefix "bucketv1"' % (etcdctl, etcd)
+    exit=litmus_utils.execCmd(request.cls, cmd)
+    request.cls.mylog.info('remove_buckets() fixture is done')
+    request.cls.mylog.info('--------------------------------')
+    request.cls.mylog.info('')
+    assert exit == 0, request.cls.mylog('remove_buckets() fixture exit status is not 0')
+
+@pytest.fixture(scope='class')
 def create_orgs(request, gateway, etcd):
     '''
     :param request:
