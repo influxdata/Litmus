@@ -122,16 +122,48 @@ def get_all_setup_orgs(request, create_orgs, gateway):
     '''
     :param request:
     :param create_orgs:
+    :param gateway
     :return:
     '''
     request.cls.mylog.info('get_all_setup_orgs() fixture is being called')
     request.cls.mylog.info('--------------------------------------------')
+    request.cls.mylog.info('')
     request.cls.mylog.info('get_all_setup_orgs() fixture: Get all of the created organizations')
     (status, created_orgs_list)=gateway_util.get_all_organizations(request.cls, gateway)
     assert status == 200, \
         request.cls.mylog.info('get_all_setup_orgs() fixture: response status is ' + str(status))
     request.cls.get_all_setup_orgs=created_orgs_list
     request.cls.mylog.info('get_all_setup_orgs() fixture is done')
-    request.cls.mylog.info('-----------------------------------')
+    request.cls.mylog.info('------------------------------------')
     request.cls.mylog.info('')
     return request.cls.get_all_setup_orgs
+
+# Since retention period is not working for rest api, it is hardcoded to 1 for  now
+@pytest.fixture(scope='class')
+def get_all_setup_buckets(request, gateway):
+    '''
+    :param request:
+    :param gateway
+    :return:
+    '''
+    request.cls.mylog.info('get_all_setup_buckets() fixture is being called')
+    request.cls.mylog.info('-----------------------------------------------')
+    request.cls.mylog.info('')
+    for org_name in org_names:
+        request.cls.mylog.info('get_all_setup_buckets() fixture : Creating an org \'%s\'' % org_name)
+        request.cls.mylog.info('-' * (51+len(org_name)+1))
+        (status, org_id, name, error) = gateway_util.create_organization(request.cls, gateway, org_name)
+        assert status == 201, request.cls.mylog.info('Failed to create an org \'%s\'' % org_name)
+        for bucket_name in ascii_uppercase:
+            request.cls.mylog.info('get_all_setup_buckets() fixture : Creating a bucket \'%s\'' % bucket_name)
+            response=gateway_util.create_bucket(request.cls, gateway, bucket_name, 1, org_id)
+            # status = response[0]
+            assert response[0] == 201, request.cls.mylog.info('Failed to create a bucket \'%s\'' % bucket_name)
+    (status, created_buckets_list)=gateway_util.get_all_buckets(request.cls, gateway)
+    assert status == 200, \
+        request.cls.mylog.info('get_all_setup_buckets() fixture: response status is ' + str(status))
+    request.cls.get_all_setup_buckets=created_buckets_list
+    request.cls.mylog.info('get_all_setup_buckets() fixture is done')
+    request.cls.mylog.info('--------------------------------------')
+    request.cls.mylog.info('')
+    return request.cls.get_all_setup_buckets

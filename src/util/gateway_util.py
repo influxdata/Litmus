@@ -119,9 +119,12 @@ def get_organization_by_id(test_class_instance, url, org_id):
 
 def get_all_organizations(test_class_instance, url):
     '''
+    Gets all of the created organizations.
     :param test_class_instance:
     :param url:
-    :return: status_code, org_id, created_org_name
+    :return: status_code, list of organization's dictionaries:
+            {u'id': u'0255285f6ef3c000', u'name': u'n_same_bucket_name'},
+            {u'id': u'0255286dae73c000', u'name': u'u_same_bucket_name'}
     '''
     test_class_instance.mylog.info('gateway_util.get_all_organizations() function is being called')
     test_class_instance.mylog.info('-------------------------------------------------------------')
@@ -344,6 +347,41 @@ def get_user_by_id(test_class_instance, url, user_id):
     test_class_instance.mylog.info('')
     return response.status_code, requested_user_id, requested_user_name, error_message
 
+def get_count_of_buckets(test_class_instance, list_of_buckets):
+    '''
+    :param test_class_instance:
+    :param list_of_buckets:
+    :return: count of buckets
+    '''
+    test_class_instance.mylog.info('gateway_util.get_count_of_buckets() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    count=len(list_of_buckets)
+    test_class_instance.mylog.info('gateway_util.get_count_of_buckets() : COUNT=' + str(count))
+    return count
+
+def find_bucket_by_name(test_class_instance, list_of_buckets, bucket_name, org_name):
+    '''
+    :param test_class_instance:
+    :param list_of_buckets:
+    :param bucket_name:
+    :param org_name:
+    :return: true/false
+    '''
+    success=False
+    test_class_instance.mylog.info('gateway_util.find_bucket_by_name_by_org() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    for buckets_info in list_of_buckets:
+        test_class_instance.mylog.info('gateway_util.find_bucket_by_name_by_org() '
+                                       'Finding Bucket with \'%s\' name and Org \'%s\' in %s' %
+                                       (bucket_name, org_name, str(buckets_info)))
+        if buckets_info['organization'] == org_name and buckets_info['name'] == bucket_name:
+            success=True
+            break
+    return success
+
+
 
 #=================================================== BUCKETS ===========================================================
 
@@ -435,6 +473,39 @@ def get_bucket_by_id(test_class_instance, url, bucket_id):
     test_class_instance.mylog.info('gateway_util.get_bucket_by_id() function is done')
     test_class_instance.mylog.info('')
     return response.status_code, requested_bucket_id, requested_bucket_name, error_message
+
+def get_all_buckets(test_class_instance, url):
+    '''
+    Gets all of the created buckets.
+    :param test_class_instance: instance of the test class
+    :param url: gateway url
+    :return: status code and list of all of the bucket's dictionaries:
+             {u'organizationID': u'0255286dae73c000', u'organization': u'u_same_bucket_name', u'id': u'0255286eb833c000',
+                    u'retentionPeriod': 1, u'name': u'one_for_all'}
+             {u'organizationID': u'0255284939b3c000', u'organization': u'c_same_bucket_name', u'id': u'0255284a3d33c000',
+                    u'retentionPeriod': 1, u'name': u'one_for_all'}
+    '''
+    test_class_instance.mylog.info('gateway_util.get_all_buckets() function is being called')
+    test_class_instance.mylog.info('-------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    list_of_buckets=[]
+    response=test_class_instance.rl.get(base_url=url, path=BUCKETS_URL)
+    try:
+        list_of_buckets=response.json()
+        if type(list_of_buckets) == list:
+            test_class_instance.mylog.info('gateway_util.get_all_buckets() LIST OF BUCKETS=' +
+                                           str(list_of_buckets))
+        else:
+            test_class_instance.mylog.info('gateway_util.get_all_buckets() ERROR=' + response.json()['message'])
+    except:
+        test_class_instance.mylog.info('gateway_util.get_all_buckets() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.get_all_buckets() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, list_of_buckets
 
 #========================================================== ETCD =======================================================
 
