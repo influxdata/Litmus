@@ -95,7 +95,8 @@ parser.add_option('--no-kapacitor', action='store_true', dest='nokapacitor', def
 
 
 parser.add_option('--tests', action='append', dest='tests', help='path to test suite(s) to be run')
-parser.add_option('--tests-list',action='store',dest='testslist',help='list containing the test suites to be run')
+parser.add_option('--tests-list', action='store',dest='testslist',help='list containing the test suites to be run')
+parser.add_option('--mark-test', action='store', dest='marktest', help='mark a test function with custom metadata')
 
 (options, args)=parser.parse_args()
 pytest_parameters=[]
@@ -192,6 +193,8 @@ else: kapacitor_os=''
 if options.nokapacitor is not False: no_kapacitor='--no-kapacitor '
 else: no_kapacitor=''
 
+if options.marktest is not None:
+    pytest_parameters.append('-m ' + options.marktest)
 pytest_parameters.append('-v')
 pytest_parameters.append('--junitxml=result.xml')
 if options.testsubset is not None: pytest_parameters.append(options.testsubset)
