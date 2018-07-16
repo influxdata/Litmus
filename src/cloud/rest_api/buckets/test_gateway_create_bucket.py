@@ -280,3 +280,55 @@ class TestCreateBucketsAPI(object):
         '''
         self.run_tests('test_create_buckets_400_char_mix ', four_hundred_char_names, four_hundred_char_names, 1)
 
+    def test_create_many_buckets_same_org(self):
+        '''
+        REST API: http://<gateway>/v1/buckets
+        METHOD: POST
+        tests many buckets with different names can be created for the same organization.
+        '''
+        org_name='one_for_all'
+        test_name='test_create_many_buckets_same_org '
+        self.header(test_name)
+        self.mylog.info(test_name + ' STEP 1: Create Organization "%s"' % org_name)
+        (status, created_org_id, created_org_name, error_message) = \
+            gateway_util.create_organization(self, self.gateway, org_name)
+        assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
+
+        self.mylog.info(test_name + 'STEP 2: Verify org data was persisted in the etcd store')
+        gateway_util.verify_org_etcd(self, self.etcd, created_org_id, created_org_name)
+
+        self.mylog.info(test_name + 'STEP 3: Create Multiple Buckets for "%s" name' % org_name)
+        for bucket_name in ascii_lowercase:
+            self.mylog.info(test_name + 'Creating bucket "%s" name' % bucket_name)
+            status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message=\
+                gateway_util.create_bucket(self, self.gateway, bucket_name, 1, created_org_id)
+            assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
+            self.mylog.info(test_name + 'Verify bucket data was persisted in the etcd store')
+            gateway_util.verify_bucket_etcd(self, self.etcd, created_bucket_id, created_bucket_name)
+        self.footer(test_name)
+
+    @pytest.mark.sbdo
+    def test_create_same_bucket_different_orgs(self):
+        '''
+        REST API: http://<gateway>/v1/buckets
+        METHOD: POST
+        tests bucket with the same name can be created for different organizations
+        '''
+        bucket_name='one_for_all'
+        test_name='test_create_same_bucket_different_orgs '
+        self.header(test_name)
+        for org_name in ascii_lowercase:
+            org_name=org_name + '_same_bucket_name'
+            self.mylog.info(test_name + 'Create Organization "%s"' % org_name)
+            (status, created_org_id, created_org_name, error_message) = \
+                gateway_util.create_organization(self, self.gateway, org_name)
+            assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
+            self.mylog.info(test_name + 'Verify org data was persisted in the etcd store')
+            gateway_util.verify_org_etcd(self, self.etcd, created_org_id, created_org_name)
+            self.mylog.info(test_name + 'Create Bucket "%s" name for "%s" name' % (bucket_name, org_name))
+            status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
+                gateway_util.create_bucket(self, self.gateway, bucket_name, 1, created_org_id)
+            assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
+            self.mylog.info(test_name + 'Verify bucket data was persisted in the etcd store')
+            gateway_util.verify_bucket_etcd(self, self.etcd, created_bucket_id, created_bucket_name)
+        self.footer(test_name)

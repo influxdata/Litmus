@@ -80,40 +80,6 @@ def update_organization(test_class_instance, url, org_id, new_org_name):
     test_class_instance.mylog.info('')
     return response.status_code, new_org_id, updated_org_name, error_message
 
-def delete_organization(test_class_instance, url, org_id_to_delete):
-    '''
-    :param test_class_instance:
-    :param url:
-    :param org_id_to_delete:
-    :return:
-    '''
-    test_class_instance.mylog.info('gateway_util.delete_organization() function is being called')
-    test_class_instance.mylog.info('-----------------------------------------------------------')
-    test_class_instance.mylog.info('')
-    test_class_instance.mylog.info('gateway_util.delete_organization() '
-                                   'Deleting Organization with \'%s\' id' % org_id_to_delete)
-    response=test_class_instance.rl.delete(base_url=url, path=ORG_URL + '/' + str(org_id_to_delete))
-    try:
-        # for now assuming that delete returns id and org name as in `influx` tool
-        deleted_org_id=response.json().get('id')
-        deleted_org_name=response.json().get('name')
-        if deleted_org_id is not None and deleted_org_name is not None:
-            test_class_instance.mylog.info('gateway_util.delete_organization() ORG_ID=' + str(deleted_org_id))
-            test_class_instance.mylog.info('gateway_util.delete_organization() ORG_NAME=' + str(deleted_org_name))
-        else:
-            test_class_instance.mylog.info('gateway_util.delete_organization() '
-                                           'REQUESTED_ORG_ID AND REQUESTED_ORG_NAME ARE NONE')
-            test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + response.json()['message'])
-    except:
-        test_class_instance.mylog.info('gateway_util.create_organization() Exception:')
-        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-    test_class_instance.mylog.info('gateway_util.create_organization() function is done')
-    test_class_instance.mylog.info('')
-    return response.status_code, deleted_org_id, deleted_org_name
-
 def get_organization_by_id(test_class_instance, url, org_id):
     '''
     :param test_class_instance:
@@ -433,6 +399,42 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod, organi
     return response.status_code, created_bucket_id, created_bucket_name, \
            organization_id, retention_period, error_message
 
+def get_bucket_by_id(test_class_instance, url, bucket_id):
+    '''
+    :param test_class_instance:
+    :param url:
+    :param org_id:
+    :return: status_code, requested_org_id, requested__org_name
+    '''
+    test_class_instance.mylog.info('gateway_util.get_bucket_by_id() function is being called')
+    test_class_instance.mylog.info('--------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    test_class_instance.mylog.info('gateway_util.get_bucket_by_id() '
+                                   'Getting Bucket with \'%s\' id' % bucket_id)
+    requested_bucket_id, requested_bucket_name, error_message=None, None, None
+    response=test_class_instance.rl.get(base_url=url, path=BUCKETS_URL+'/'+str(bucket_id))
+    try:
+        requested_bucket_id=response.json().get('id')
+        requested_bucket_name=response.json().get('name')
+        if requested_bucket_id is not None and requested_bucket_name is not None:
+            test_class_instance.mylog.info('gateway_util.get_bucket_by_id() REQUESTED_BUCKET_ID=' +
+                                           str(requested_bucket_id))
+            test_class_instance.mylog.info('gateway_util.get_bucket_by_id() REQUESTED_BUCKET_NAME=' +
+                                           str(requested_bucket_name))
+        else:
+            test_class_instance.mylog.info('gateway_util.get_bucket_by_id() '
+                                           'REQUESTED_BUCKET_ID AND REQUESTED_BUCKET_NAME ARE NONE')
+            error_message = response.json()['message']
+            test_class_instance.mylog.info('gateway_util.get_bucket_by_id() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.get_bucket_by_id() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.get_bucket_by_id() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, requested_bucket_id, requested_bucket_name, error_message
 
 #========================================================== ETCD =======================================================
 
