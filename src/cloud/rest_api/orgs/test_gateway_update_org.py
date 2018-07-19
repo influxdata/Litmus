@@ -272,7 +272,7 @@ class TestUpdateOrganizationsAPI(object):
         gateway_util.verify_org_etcd(self, self.etcd, updated_org_id, updated_org_name)
         self.footer(test_name)
 
-    def test_update_users_empty_name(self):
+    def test_update_orgs_empty_name(self):
         '''
         REST API: http://<gateway>/v1/orgs
         METHOD: PATCH
