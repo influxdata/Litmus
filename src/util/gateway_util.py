@@ -347,49 +347,13 @@ def get_user_by_id(test_class_instance, url, user_id):
     test_class_instance.mylog.info('')
     return response.status_code, requested_user_id, requested_user_name, error_message
 
-def get_count_of_buckets(test_class_instance, list_of_buckets):
-    '''
-    :param test_class_instance:
-    :param list_of_buckets:
-    :return: count of buckets
-    '''
-    test_class_instance.mylog.info('gateway_util.get_count_of_buckets() function is being called')
-    test_class_instance.mylog.info('------------------------------------------------------------')
-    test_class_instance.mylog.info('')
-    count=len(list_of_buckets)
-    test_class_instance.mylog.info('gateway_util.get_count_of_buckets() : COUNT=' + str(count))
-    return count
-
-def find_bucket_by_name(test_class_instance, list_of_buckets, bucket_name, org_name):
-    '''
-    :param test_class_instance:
-    :param list_of_buckets:
-    :param bucket_name:
-    :param org_name:
-    :return: true/false
-    '''
-    success=False
-    test_class_instance.mylog.info('gateway_util.find_bucket_by_name_by_org() function is being called')
-    test_class_instance.mylog.info('------------------------------------------------------------------')
-    test_class_instance.mylog.info('')
-    for buckets_info in list_of_buckets:
-        test_class_instance.mylog.info('gateway_util.find_bucket_by_name_by_org() '
-                                       'Finding Bucket with \'%s\' name and Org \'%s\' in %s' %
-                                       (bucket_name, org_name, str(buckets_info)))
-        if buckets_info['organization'] == org_name and buckets_info['name'] == bucket_name:
-            success=True
-            break
-    return success
-
-
-
 #=================================================== BUCKETS ===========================================================
 
 BUCKETS_URL='/v1/buckets'
 
 # Currently retention periods are only numbers and not durations:
 # https://github.com/influxdata/platform/issues/144
-def create_bucket(test_class_instance, url, bucket_name, retentionPeriod, organizationID):
+def create_bucket(test_class_instance, url, bucket_name, retentionPeriod=None, organizationID=None):
     '''
     Create a bucket for an organization with a certain retention period
     :param test_class_instance: instance of the test class
@@ -407,8 +371,13 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod, organi
                                    'Creating Bucket with \'%s\' name' % bucket_name)
     # hardcoding retention period to 1, anything below 1h, will default to 1h,
     # https://github.com/influxdata/platform/issues/143
-    data = '{"name":"%s", "retentionPeriod": %d, "organizationID": "%s"}' \
-           % (bucket_name, retentionPeriod, organizationID)
+    if retentionPeriod is None:
+        data = '{"name":"%s", "organizationID": "%s"}' % (bucket_name, organizationID)
+    elif organizationID is None:
+        data = '{"name":"%s", "retentionPeriod": %d}' % (bucket_name, retentionPeriod)
+    else:
+        data = '{"name":"%s", "retentionPeriod": %d, "organizationID": "%s"}' \
+               % (bucket_name, retentionPeriod, organizationID)
 
     organization_id, created_bucket_id, created_bucket_name, \
     retention_period, error_message=None, None, None, None, None
@@ -436,6 +405,57 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod, organi
     test_class_instance.mylog.info('')
     return response.status_code, created_bucket_id, created_bucket_name, \
            organization_id, retention_period, error_message
+
+def update_bucket(test_class_instance, url, bucket_id, new_bucket_name=None, new_retention=None):
+    '''
+    :param test_class_instance:
+    :param url: gateway
+    :param bucket_id:
+    :param new_bucket_name:
+    :param new_retention:
+    :return:
+    '''
+    test_class_instance.mylog.info('gateway_util.update_bucket() function is being called')
+    test_class_instance.mylog.info('-----------------------------------------------------')
+    test_class_instance.mylog.info('')
+    if new_retention is None and new_bucket_name is None:
+        data='{}'
+    elif new_retention is None:
+        data='{"name":"%s"}' % new_bucket_name
+    elif new_bucket_name is None:
+        data='{"retentionPeriod":"%d"}' % new_retention
+    else:
+        data='{"name":"%s", "retentionPeriod":"%d"}' % (new_bucket_name, new_retention)
+    updated_bucket_name, updated_bucket_id, updated_retention, org_id, org_name, error_message=\
+        None, None, None, None, None, None
+    response=test_class_instance.rl.patch(base_url=url, path=BUCKETS_URL+'/'+ str(bucket_id), data=data)
+    try:
+        updated_bucket_id=response.json().get('id')
+        updated_bucket_name=response.json().get('name')
+        updated_retention=response.json().get('retentionPeriod')
+        org_id=response.json().get('organizationID')
+        org_name=response.json().get('organization')
+        if updated_bucket_id is not None and updated_bucket_name is not None and updated_retention is not None \
+                and org_id is not None and org_name is not None:
+            test_class_instance.mylog.info('gateway_util.update_bucket() UPDATED_BUCKET_ID=' + str(updated_bucket_id))
+            test_class_instance.mylog.info('gateway_util.update_bucket() UPDATED_BUCKET_NAME=' + str(updated_bucket_name))
+            test_class_instance.mylog.info('gateway_util.update_bucket() UPDATED_RETENTION=' + str(updated_retention))
+            test_class_instance.mylog.info('gateway_util.update_bucket() ORG_ID=' + str(org_id))
+            test_class_instance.mylog.info('gateway_util.update_bucket() ORG_NAME=' + str(org_name))
+        else:
+            test_class_instance.mylog.info('gateway_util.update_bucket() SOME OF THE VALUES ARE NONE')
+            error_message=response.json()['message']
+            test_class_instance.mylog.info('gateway_util.create_bucket() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.update_bucket() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.update_obucket() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, updated_bucket_id, updated_bucket_name, updated_retention, org_id, \
+           org_name, error_message
 
 def get_bucket_by_id(test_class_instance, url, bucket_id):
     '''
@@ -506,6 +526,40 @@ def get_all_buckets(test_class_instance, url):
     test_class_instance.mylog.info('gateway_util.get_all_buckets() function is done')
     test_class_instance.mylog.info('')
     return response.status_code, list_of_buckets
+
+def get_count_of_buckets(test_class_instance, list_of_buckets):
+    '''
+    :param test_class_instance:
+    :param list_of_buckets:
+    :return: count of buckets
+    '''
+    test_class_instance.mylog.info('gateway_util.get_count_of_buckets() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    count=len(list_of_buckets)
+    test_class_instance.mylog.info('gateway_util.get_count_of_buckets() : COUNT=' + str(count))
+    return count
+
+def find_bucket_by_name(test_class_instance, list_of_buckets, bucket_name, org_name):
+    '''
+    :param test_class_instance:
+    :param list_of_buckets:
+    :param bucket_name:
+    :param org_name:
+    :return: true/false
+    '''
+    success=False
+    test_class_instance.mylog.info('gateway_util.find_bucket_by_name_by_org() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    for buckets_info in list_of_buckets:
+        test_class_instance.mylog.info('gateway_util.find_bucket_by_name_by_org() '
+                                       'Finding Bucket with \'%s\' name and Org \'%s\' in %s' %
+                                       (bucket_name, org_name, str(buckets_info)))
+        if buckets_info['organization'] == org_name and buckets_info['name'] == bucket_name:
+            success=True
+            break
+    return success
 
 #========================================================== ETCD =======================================================
 
@@ -583,7 +637,8 @@ def verify_bucket_etcd(test_class_instance, etcd, bucket_id, bucket_name):
     assert bucket_id == actual_bucket_id, \
         test_class_instance.mylog.info('Expected bucket id is not equal to actual bucket id')
     actual_bucket_name=ast.literal_eval(out[0]).get('name')
-    if bucket_name != 'DoubleQuotes\"' and bucket_name != 'DoubleQuotes\"_updated_name':
+    if bucket_name != 'DoubleQuotes\"' and bucket_name != 'DoubleQuotes\"_updated_name' \
+            and bucket_name != 'DoubleQuotes\"_updated':
         actual_bucket_name=json.loads("\"" + actual_bucket_name + "\"")
     test_class_instance.mylog.info('Assert expected bucket_name ' + str(bucket_name) + ' equals actual to bucket_name '
                            + str(actual_bucket_name))

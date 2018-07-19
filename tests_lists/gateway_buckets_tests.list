@@ -1,3 +1,4 @@
 src/cloud/rest_api/buckets/test_gateway_create_bucket.py
 src/cloud/rest_api/buckets/test_gateway_get_bucket.py
 src/cloud/rest_api/buckets/test_gateway_get_all_buckets.py
+src/cloud/rest_api/buckets/test_gateway_update_buckets.py

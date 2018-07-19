@@ -76,7 +76,7 @@ class TestCreateBucketsAPI(object):
         self.footer(test_name)
 
     ############################################
-    #       Lower Case Character Org Names     #
+    #       Lower Case Character Bucket Names  #
     ############################################
     @pytest.mark.parametrize('one_char', ascii_lowercase)
     def test_create_buckets_single_char_lower_case(self, one_char):
@@ -106,9 +106,9 @@ class TestCreateBucketsAPI(object):
         '''
         self.run_tests('test_create_orgs_20_char_lower_case ', twenty_char_lc, twenty_char_lc, 1)
 
-    ###################################################
-    #          Upper Case Character Org Names         #
-    ###################################################
+    ######################################################
+    #          Upper Case Character Bucket Names         #
+    ######################################################
     @pytest.mark.parametrize('one_char', ascii_uppercase)
     def test_create_buckets_single_char_upper_case(self, one_char):
         '''
@@ -136,9 +136,9 @@ class TestCreateBucketsAPI(object):
         '''
         self.run_tests('test_create_orgs_20_char_upper_case ', twenty_char_uc, twenty_char_uc, 1)
 
-    #########################################################
-    #          Non-alphanumeric Character Org Names         #
-    #########################################################
+    ############################################################
+    #          Non-alphanumeric Character Bucket Names         #
+    ############################################################
     @pytest.mark.parametrize('one_char', nonalphanumeric)
     def test_create_buckets_single_char_nonalphanumeric_case(self, one_char):
         '''
@@ -168,9 +168,9 @@ class TestCreateBucketsAPI(object):
         self.run_tests('test_create_buckets_20_char_nonalphanumeric_case ',
                        twenty_char_nonalphanumeric, twenty_char_nonalphanumeric, 1)
 
-    #################################################
-    #          Number Characters Org Names          #
-    #################################################
+    ####################################################
+    #          Number Characters Bucket Names          #
+    ####################################################
     @pytest.mark.parametrize('one_char', digits)
     def test_create_buckets_single_char_numbers(self, one_char):
         '''
@@ -198,9 +198,9 @@ class TestCreateBucketsAPI(object):
         '''
         self.run_tests('test_create_buckets_5_char_numbers', five_chars, five_chars, 1)
 
-    ####################################
-    #     Mix Characters Org Names     #
-    ####################################
+    #######################################
+    #     Mix Characters Bucket Names     #
+    #######################################
     @pytest.mark.parametrize('twenty_char_names', twenty_char_names_list)
     def test_create_buckets_20_char_mix(self, twenty_char_names):
         '''
@@ -227,40 +227,6 @@ class TestCreateBucketsAPI(object):
         tests bucket name containing special characters can be created and persisted in the etcd store.
         '''
         self.run_tests('test_create_buckets_special_chars ', special_char, special_char, 1)
-
-    def test_create_duplicate_bucket(self):
-        '''
-        REST API: http://<gateway>/v1/buckets
-        METHOD: POST
-        tests cannot create bucket with already existing name with the same org.
-        '''
-        test_name='test_create_duplicate_bucket '
-        org_name='orgname'
-        bucket_name='dupbucketname'
-        retentionPeriod=1
-        expected_error_message='bucket with name dupbucketname already exists'
-        self.header(test_name)
-        self.mylog.info(test_name + ' STEP 1: Create Organization "%s"' % org_name)
-        (status, created_org_id, created_org_name, error_message) = \
-            gateway_util.create_organization(self, self.gateway, org_name)
-        assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
-
-        self.mylog.info(test_name + 'STEP 2: Verify org data was persisted in the etcd store')
-        gateway_util.verify_org_etcd(self, self.etcd, created_org_id, created_org_name)
-
-        self.mylog.info(test_name + 'STEP 3: Create Bucket "%s"' % bucket_name)
-        status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-            gateway_util.create_bucket(self, self.gateway, bucket_name, retentionPeriod, created_org_id)
-        assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
-
-        self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
-        gateway_util.verify_bucket_etcd(self, self.etcd, created_bucket_id, created_bucket_name)
-        self.footer(test_name)
-
-        self.mylog.info(test_name + 'STEP 5: Create Bucket with already existing name for the same org')
-        status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-            gateway_util.create_bucket(self, self.gateway, bucket_name, retentionPeriod, created_org_id)
-        assert error_message == expected_error_message, pytest.xfail(reason='error message is empty')
 
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
     def test_create_buckets_200_char_mix(self, two_hundred_char_names):
@@ -307,7 +273,6 @@ class TestCreateBucketsAPI(object):
             gateway_util.verify_bucket_etcd(self, self.etcd, created_bucket_id, created_bucket_name)
         self.footer(test_name)
 
-    @pytest.mark.sbdo
     def test_create_same_bucket_different_orgs(self):
         '''
         REST API: http://<gateway>/v1/buckets
@@ -331,4 +296,82 @@ class TestCreateBucketsAPI(object):
             assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
             self.mylog.info(test_name + 'Verify bucket data was persisted in the etcd store')
             gateway_util.verify_bucket_etcd(self, self.etcd, created_bucket_id, created_bucket_name)
+        self.footer(test_name)
+
+    def test_create_duplicate_bucket(self):
+        '''
+        REST API: http://<gateway>/v1/buckets
+        METHOD: POST
+        tests cannot create bucket with already existing name with the same org.
+        '''
+        test_name='test_create_duplicate_bucket '
+        org_name='orgname'
+        bucket_name='dupbucketname'
+        retentionPeriod=1
+        expected_error_message='bucket with name dupbucketname already exists'
+        self.header(test_name)
+        self.mylog.info(test_name + ' STEP 1: Create Organization "%s"' % org_name)
+        (status, created_org_id, created_org_name, error_message) = \
+            gateway_util.create_organization(self, self.gateway, org_name)
+        assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
+
+        self.mylog.info(test_name + 'STEP 2: Verify org data was persisted in the etcd store')
+        gateway_util.verify_org_etcd(self, self.etcd, created_org_id, created_org_name)
+
+        self.mylog.info(test_name + 'STEP 3: Create Bucket "%s"' % bucket_name)
+        status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
+            gateway_util.create_bucket(self, self.gateway, bucket_name, retentionPeriod, created_org_id)
+        assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
+
+        self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
+        gateway_util.verify_bucket_etcd(self, self.etcd, created_bucket_id, created_bucket_name)
+
+        self.mylog.info(test_name + 'STEP 5: Create Bucket with already existing name for the same org')
+        status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
+            gateway_util.create_bucket(self, self.gateway, bucket_name, retentionPeriod, created_org_id)
+        assert error_message == expected_error_message, pytest.xfail(reason='error message is empty')
+        self.footer(test_name)
+
+    def test_create_bucket_no_org_id(self):
+        '''
+        REST API: http://<gateway>/v1/buckets
+        METHOD: POST
+        tests cannot create bucket if organization id is not provided
+        '''
+        test_name='test_create_bucket_no_org_id'
+        bucket_name='bucket_no_org_id'
+        retentionPeriod=1
+        self.header(test_name)
+        self.mylog.info(test_name + 'STEP 1: Create Bucket "%s" without ORG ID' % bucket_name)
+        status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
+            gateway_util.create_bucket(self, self.gateway, bucket_name, retentionPeriod)
+        assert status == 404, pytest.xfail(reason='status=%s' % status)
+
+    def test_create_bucket_default_rp(self):
+        '''
+        REST API: http://<gateway>/v1/buckets
+        METHOD: POST
+        tests bucket can be created if retention policy is not provided, use default one (what is the default one???)
+        '''
+        test_name='test_create_bucket_default_rp'
+        org_name='org_default_rp'
+        bucket_name='bucket_default_rp'
+        self.header(test_name)
+        self.mylog.info(test_name + ' STEP 1: Create Organization "%s"' % org_name)
+        (status, created_org_id, created_org_name, error_message) = \
+            gateway_util.create_organization(self, self.gateway, org_name)
+        assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
+
+        self.mylog.info(test_name + 'STEP 2: Verify org data was persisted in the etcd store')
+        gateway_util.verify_org_etcd(self, self.etcd, created_org_id, created_org_name)
+
+        self.mylog.info(test_name + 'STEP 3: Create Bucket "%s"' % bucket_name)
+        status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
+            gateway_util.create_bucket(self, self.gateway, bucket_name,
+                                       retentionPeriod=None, organizationID=created_org_id)
+        assert status == 201, self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
+        assert retention_period == "1h", pytest.xfail(reason='https://github.com/influxdata/platform/issues/419')
+
+        self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
+        gateway_util.verify_bucket_etcd(self, self.etcd, created_bucket_id, created_bucket_name)
         self.footer(test_name)
