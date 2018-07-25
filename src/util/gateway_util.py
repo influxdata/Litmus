@@ -197,7 +197,6 @@ def get_count_of_orgs(test_class_instance, list_of_organizations):
     test_class_instance.mylog.info('gateway_util.get_count_of_orgs() : COUNT=' + str(count))
     return count
 
-
 #================================================== USERS ==============================================================
 
 USERS_URL='/v1/users'
@@ -346,6 +345,67 @@ def get_user_by_id(test_class_instance, url, user_id):
     test_class_instance.mylog.info('gateway_util.get_user_by_id() function is done')
     test_class_instance.mylog.info('')
     return response.status_code, requested_user_id, requested_user_name, error_message
+
+def get_all_users(test_class_instance, url):
+    '''
+    Gets all of the created users.
+    :param test_class_instance: instance of the test class
+    :param url: gateway url
+    :return: status code and list of all of the users's dictionaries:
+             {u'id': u'025e2102a017d000', u'name': u'test-user'}
+    '''
+    test_class_instance.mylog.info('gateway_util.get_all_users() function is being called')
+    test_class_instance.mylog.info('-----------------------------------------------------')
+    test_class_instance.mylog.info('')
+    list_of_users=[]
+    response=test_class_instance.rl.get(base_url=url, path=USERS_URL)
+    try:
+        list_of_users=response.json()
+        if type(list_of_users) == list:
+            test_class_instance.mylog.info('gateway_util.get_all_users() LIST OF USERS=' +
+                                           str(list_of_users))
+        else:
+            test_class_instance.mylog.info('gateway_util.get_all_users() ERROR=' + response.json()['message'])
+    except:
+        test_class_instance.mylog.info('gateway_util.get_all_users() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.get_all_buckets() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, list_of_users
+
+def get_count_of_users(test_class_instance, list_of_users):
+    '''
+    :param test_class_instance:
+    :param list_of_users:
+    :return: count of users
+    '''
+    test_class_instance.mylog.info('gateway_util.get_count_of_users() function is being called')
+    test_class_instance.mylog.info('----------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    count=len(list_of_users)
+    test_class_instance.mylog.info('gateway_util.get_count_of_users() : COUNT=' + str(count))
+    return count
+
+def find_user_by_name(test_class_instance, user_name, list_of_users):
+    '''
+    :param test_class_instance:
+    :param list_of_buckets:
+    :param user_name:
+    :return: true/false
+    '''
+    success=False
+    test_class_instance.mylog.info('gateway_util.find_user_by_name() function is being called')
+    test_class_instance.mylog.info('---------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    for user_info in list_of_users:
+        test_class_instance.mylog.info('gateway_util.find_user_by_name() Finding User with \'%s\' name' % user_name)
+        if user_info['name'] == user_name:
+            success=True
+            break
+    return success
 
 #=================================================== BUCKETS ===========================================================
 

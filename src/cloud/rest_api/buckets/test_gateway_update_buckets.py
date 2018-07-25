@@ -136,17 +136,6 @@ class TestUpdateBucketsNameAPI(object):
         self.mylog.info('')
         self.mylog.info(test_name + 'STEP 6: Verify updated bucket info was persisted in the etcd store')
         gateway_util.verify_bucket_etcd(self, self.etcd, bucket_id, updated_bucket_name)
-        '''
-        if org_name == 'DoubleQuotes\\"':
-            assert updated_org_name == org_name_to_assert, self.mylog.info(
-                test_name + 'Assertion Failed. Updated org name is not equal expected org name')
-        else:
-            assert updated_org_name == new_org_name, self.mylog.info(
-                test_name + 'Assertion Failed. Updated org name is not equal expected org name')
-
-        self.mylog.info(test_name + 'STEP 3: Verify updated name was persisted in the etcd store')
-        gateway_util.verify_org_etcd(self, self.etcd, new_org_id, updated_org_name)
-        '''
         self.footer(test_name)
 
     ###############################################
@@ -325,7 +314,7 @@ class TestUpdateBucketsNameAPI(object):
         '''
         self.run_tests('test_update_buckets_name_400_char_mix ', four_hundred_char_name, four_hundred_char_name, 1,
                        four_hundred_char_name + '_updated', None)
-    @pytest.mark.special
+
     @pytest.mark.parametrize('special_char', special_char)
     def test_update_buckets_name_special_chars(self, special_char):
         '''
@@ -335,62 +324,26 @@ class TestUpdateBucketsNameAPI(object):
         '''
         self.run_tests('test_update_buckets_name_special_chars ', special_char, special_char, 1,
                        special_char + '_updated', None)
-    """
+
     def test_update_buckets_name_already_exist(self):
         '''
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/v1/buckets
         METHOD: PATCH
-        tests bucket name can be updated and persisted in the etcd store if name already exists.
+        tests buckets name can be updated and persisted in the etcd store if name already exists.
         '''
-        test_name='test_update_bucket_name_already_exist'
-        org_name='test_org'
-        self.header(test_name)
-        self.mylog.info(test_name + ' STEP 1: Create Organization')
-        (status, created_org_id, created_org_name, error_message) = \
-            gateway_util.create_organization(self, self.gateway, org_name)
-        assert status == 201, \
-            self.mylog.info(test_name + 'Assertion failed. status=%d, error message %s' % (status, error_message))
+        org_name='test_org_name_already_exists'
+        bucket_name='test_bucket_name_already_exists'
+        self.run_tests('test_update_buckets_name_already_exist', org_name, bucket_name, 1, bucket_name, None)
 
-        self.mylog.info(test_name + ' STEP 2: Update created bucket with the \'%s\' name' % bucket_name)
-        (status, updated_bucket_id, updated_bucket_name, error_message) = \
-            gateway_util.update_bucketanization(self, self.gateway, created_bucket_id, bucket_name)
-        assert status == 200, \
-            self.mylog.info(test_name + 'Assertion Failed. status=%d, error message %s' % (status, error_message))
-        assert updated_bucket_id == created_bucket_id, \
-            self.mylog.info(test_name + 'Assertion Failed. New user id is not equal original user id')
-        assert updated_bucket_name == bucket_name, self.mylog.info(
-            test_name + 'Assertion Failed. Updated name is not equal expected name')
-
-        self.mylog.info(test_name + 'STEP 3: Verify created user was persisted in the etcd store')
-        gateway_util.verify_bucket_etcd(self, self.etcd, updated_bucket_id, updated_bucket_name)
-        self.footer(test_name)
-
-    def test_update_orgs_empty_name(self):
+    def test_update_buckets_to_empty_name(self):
         '''
         REST API: http://<gateway>/v1/buckets
         METHOD: PATCH
         tests bucket name can not be updated and persisted in the etcd store if name is empty
         '''
-        test_name='test_update_buckets_empy_name'
-        bucket_name='bucket_to_be_updated'
-        bucket_name_to_update=''
-        self.header(test_name)
-        self.mylog.info(test_name + ' STEP 1: Create bucketanization')
-        (status, created_bucket_id, created_bucket_name, error_message) = \
-            gateway_util.create_organization(self, self.gateway, org_name)
-        assert status == 201, \
-            self.mylog.info(test_name + 'Assertion failed. status=%d, error message %s' % (status, error_message))
-
-        self.mylog.info(test_name + 'STEP 2: Verify created bucketanization was persisted in the etcd store')
-        gateway_util.verify_bucket_etcd(self, self.etcd, created_bucket_id, created_bucket_name)
-
-        self.mylog.info(test_name + ' STEP 3: Update created user with the \'%s\' name' % bucket_name_to_update)
-        (status, updated_user_id, updated_user_name, error_message) = \
-            gateway_util.update_bucketanization(self, self.gateway, created_bucket_id, bucket_name_to_update)
-        assert status == 404, \
-            pytest.xfail(reason='https://github.com/influxdata/platform/issues/188')
-        self.footer(test_name)
-    """
+        org_name='test_org_name_empty_name'
+        bucket_name='test_bucket_name'
+        self.run_tests('test_update_buckets_to_empty_name', org_name, bucket_name, 1, '', None)
 
 
 
