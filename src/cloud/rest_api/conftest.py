@@ -10,6 +10,8 @@ from string import digits
 
 # organization names will have 5 letters length and will be of ascii type
 org_names=[''.join(sample(ascii_lowercase, 5)) for i in range(5)]
+# user names will have 5 letters length
+user_names=[''.join(sample(ascii_uppercase, 5)) for i in range(10)]
 
 special_char=["", "\'", 'DoubleQuotes\\"', 'BackSlash\\']
 ten_char_lc=[''.join(sample(ascii_lowercase, 10)) for i in range(10)]
@@ -99,26 +101,32 @@ def remove_buckets(request, etcd):
     assert exit == 0, request.cls.mylog('remove_buckets() fixture exit status is not 0')
 
 @pytest.fixture(scope='class')
-def create_orgs(request, gateway, etcd):
+def get_all_setup_users(request, gateway):
     '''
     :param request:
-    :param gateway:
-    :param etcd:
+    :param create_orgs:
+    :param gateway
     :return:
     '''
-    request.cls.mylog.info('create_orgs() fixture is being called')
-    request.cls.mylog.info('-------------------------------------')
-    for org_name in org_names:
-        request.cls.mylog.info('create_orgs() fixture : Creating an org \'%s\''% org_name)
-        (status, org_id, name, error) = gateway_util.create_organization(request.cls, gateway, org_name)
-        assert status == 201, request.cls.mylog.info('Failed to create an org \'%s\'' % org_name)
-        gateway_util.verify_org_etcd(request.cls, etcd, org_id, org_name)
-    request.cls.mylog.info('remove_orgs() fixture is done')
-    request.cls.mylog.info('-----------------------------')
+    request.cls.mylog.info('get_all_setup_users() fixture is being called')
+    request.cls.mylog.info('---------------------------------------------')
     request.cls.mylog.info('')
+    for user_name in user_names:
+        request.cls.mylog.info('get_all_setup_users() fixture : Creating user \'%s\'' % user_name)
+        (status, user_id, name, error) = gateway_util.create_user(request.cls, gateway, user_name)
+        assert status == 201, request.cls.mylog.info('Failed to create user \'%s\'' % user_name)
+    request.cls.mylog.info('get_all_setup_users() fixture: Get all of the created users')
+    (status, created_users_list)=gateway_util.get_all_users(request.cls, gateway)
+    assert status == 200, \
+        request.cls.mylog.info('get_all_setup_users() fixture: response status is ' + str(status))
+    request.cls.get_all_setup_users=created_users_list
+    request.cls.mylog.info('get_all_setup_users() fixture is done')
+    request.cls.mylog.info('-------------------------------------')
+    request.cls.mylog.info('')
+    return request.cls.get_all_setup_users
 
 @pytest.fixture(scope='class')
-def get_all_setup_orgs(request, create_orgs, gateway):
+def get_all_setup_orgs(request, gateway):
     '''
     :param request:
     :param create_orgs:
@@ -128,6 +136,10 @@ def get_all_setup_orgs(request, create_orgs, gateway):
     request.cls.mylog.info('get_all_setup_orgs() fixture is being called')
     request.cls.mylog.info('--------------------------------------------')
     request.cls.mylog.info('')
+    for org_name in org_names:
+        request.cls.mylog.info('get_all_setup_orgs() fixture : Creating an org \'%s\'' % org_name)
+        (status, org_id, name, error) = gateway_util.create_organization(request.cls, gateway, org_name)
+        assert status == 201, request.cls.mylog.info('Failed to create an org \'%s\'' % org_name)
     request.cls.mylog.info('get_all_setup_orgs() fixture: Get all of the created organizations')
     (status, created_orgs_list)=gateway_util.get_all_organizations(request.cls, gateway)
     assert status == 200, \
@@ -138,7 +150,7 @@ def get_all_setup_orgs(request, create_orgs, gateway):
     request.cls.mylog.info('')
     return request.cls.get_all_setup_orgs
 
-# Since retention period is not working for rest api, it is hardcoded to 1 for  now
+# Since retention period is not working for rest api, it is hardcoded to 1 for now
 @pytest.fixture(scope='class')
 def get_all_setup_buckets(request, gateway):
     '''
