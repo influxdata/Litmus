@@ -1,3 +1,4 @@
 src/cloud/rest_api/users/test_gateway_create_user.py
 src/cloud/rest_api/users/test_gateway_get_user.py
 src/cloud/rest_api/users/test_gateway_update_user.py
+src/cloud/rest_api/users/test_gateway_get_all_users.py
