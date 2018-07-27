@@ -1,4 +1,5 @@
-#!/bin/bash -x
+#!/bin/bash
+set -x
 ETCD_HOST=$ETCD_HOST
 GATEWAY_HOST=$GATEWAY_HOST
 QUERYD_HOST=$QUERYD_HOST
@@ -19,16 +20,23 @@ elif [ "X$ONE_TEST" != "X" ]; then
 	echo ""
 	python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST --flux $QUERYD_HOST --tests $ONE_TEST --product-version 2
 fi
+# Return success or failure ( 0 - success )
+EXIT_STATUS=$?
 if [ -f report.html ]; then
 	echo "COPYING report.html TO result DIRECTORY"
 	cp report.html result
 fi
 if [ -f result.xml ]; then
 	echo "COPYING result.xml TO result DIRECTORY"
+	cp result.xml result
 fi
 if [ -d assets ]; then
 	echo "COPYING assets DIRECTORY TO result DIRECTORY"
 	cp -r assets result
 fi
-# Return success or failure ( 0 - success)
-SUCCESS=$?
+if [ "$EXIT_STATUS" -eq 0 ]; then
+	PASSED=true
+else
+	PASSED=false
+fi
+$PASSED
