@@ -22,7 +22,7 @@ LItmus is based on pytest open source framework and uses Python for writing test
 - In order to create an image use Litmus.Dockerfile from Litmus repo:
   - `cd` to a directory where you will clone a Litmus repo
   - git clone git@github.com:influxdata/Litmus.git
-  > docker build -f Litmus.Dockerfile -t image_name
+  > docker build -f Litmus.Dockerfile -t image_name .
 - To run tests from the test list (when 2.0 deployed locally suing skaffold). In the example below all of the test results and 
 artifact will be copied to `/Users/gershonshif/Pictures` directory. 
   > docker run --rm -e ETCD_HOST=http://host.docker.internal:2379 -e GATEWAY_HOST=http://host.docker.internal:9999 -e QUERYD_HOST=http://host.docker.internal:8093 -e TEST_LIST=tests_lists/gateway_users_tests.list -v /Users/gershonshif/Pictures:/Litmus/result litmus_tests
