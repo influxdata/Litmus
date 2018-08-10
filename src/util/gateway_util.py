@@ -5,6 +5,72 @@ import ast
 import json
 from src.util import litmus_utils
 
+#=================================================== TASKS =============================================================
+
+TASKS_URL='/v1/tasks'
+
+def create_task(test_class_instance, url, org_id, task_name, flux, status='enabled', owners=None, last=None):
+    '''
+    Creates a new task, i.e. Flux script that runs in background
+    :param test_class_instance: instance of the test calss,i.e. self
+    :param url: (string) Gateway URL, e.g. http://localhost:9999
+    :param org_id: ID of the organization that owns this task
+    :param task_name: name of the task
+    :param flux: The Flux script to run for the task
+    :param status: current status of the task (enabled/disabled), default is enabled
+    :param owners: ???
+    :param last: ???
+    :return:
+    '''
+    test_class_instance.mylog.info('gateway_util.create_task() function is being called')
+    test_class_instance.mylog.info('---------------------------------------------------')
+    test_class_instance.mylog.info('')
+    test_class_instance.mylog.info('gateway_util.create_task() Creating Task with Organization ID : \'%s\','
+                                   ' Task Name : \'%s\', Flux Script: \'%s\', Status : \'%s\', owners : \'%s\' '
+                                   'and Last : \'%s\'') % (org_id, task_name, flux, status, owners, last)
+    data='{"organization":"%s", "name":"%s", "flux":"%s", "status":"%s", "owners":"%s", "last":"%s"}' % org_id, \
+         task_name, flux, status, owners, last
+    task_id, org_id, task_name, task_status, task_owners, flux, every, cron, last=None, None, None, None, None, \
+                                                                                  None, None, None, None
+    response=test_class_instance.rl.post(base_url=url, path=TASKS_URL, data=data)
+    try:
+        task_id=response.json().get('id')
+        org_id=response.json().get('organization')
+        task_name=response.json().get('name')
+        task_status=response.json().get('status')
+        task_owners=response.json().get('owners')
+        flux=response.json().get('flux')
+        every=response.json().get('every')
+        cron=response.json().get('cron')
+        last=response.json().get('last')
+        # based on current swagger doc the required keys in response schema are: organization, name and flux
+        # may change!!!!
+        if task_id and org_id and task_name and task_status and flux:
+            test_class_instance.mylog.info('gateway_util.create_task() : TASK_ID=' + str(task_id))
+            test_class_instance.mylog.info('gateway_util.create_task() : ORG_ID=' + str(org_id))
+            test_class_instance.mylog.info('gateway_util.create_task() : TASK_NAME=' + str(task_name))
+            test_class_instance.mylog.info('gateway_util.create_task() : TASK_STATUS=' + str(task_status))
+            test_class_instance.mylog.info('gateway_util.create_task() : TASK_OWNER=' + str(task_owners))
+            test_class_instance.mylog.info('gateway_util.create_task() : FLUX_SCRIPT=' + str(flux))
+            test_class_instance.mylog.info('gateway_util.create_task() : EVERY=' + str(every))
+            test_class_instance.mylog.info('gateway_util.create_task() : CRON=' + str(cron))
+            test_class_instance.mylog.info('gateway_util.create_task() : LAST=' + str(last))
+        else:
+            test_class_instance.mylog.info('gateway_util.create_task() : One of the requested params are None: '
+                                           'TASK_ID=\'%s\', ORG_ID=\'%s\', TASK_NAME=\'%s\', FLUX=\'%s\'')
+            error_message = response.json()['message']
+            test_class_instance.mylog.info('gateway_util.create_task() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.create_task() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.create_task() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, task_id, org_id, task_name, task_status, task_owners, flux, every, cron, last
+
+
 #=================================================== ORGANIZATIONS =====================================================
 
 ORG_URL='/v1/orgs'

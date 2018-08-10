@@ -41,7 +41,8 @@ class TestGetOrganizationsAPI(object):
         test_name=name_of_the_test_to_run + org_name + ' '
         self.header(test_name)
         self.mylog.info(test_name + ' STEP 1: Create Organization "%s"' % org_name)
-        (status, created_org_id, created_org_name, error_message)=gateway_util.create_organization(self, self.gateway, org_name)
+        (status, created_org_id, created_org_name, error_message)=\
+            gateway_util.create_organization(self, self.gateway, org_name)
         if org_name == '':
             assert status == 404, \
                 pytest.xfail(reason='https://github.com/influxdata/platform/issues/188')
@@ -49,10 +50,8 @@ class TestGetOrganizationsAPI(object):
             assert status == 201, \
                 pytest.xfail(reason='https://github.com/influxdata/platform/issues/163')
         else:
-            assert status == 201,\
+            assert status == 201, \
                 self.mylog.info(test_name + 'Assertion Failed, status=%s' % status)
-        assert status == 201, \
-            self.mylog.info(test_name + 'Assertion failed. status=%d, error message %s' % (status, error_message))
 
         self.mylog.info(test_name + ' STEP 2: Check the organization data was persisted in etcd')
         gateway_util.verify_org_etcd(self, self.etcd, created_org_id, created_org_name)
