@@ -5,6 +5,7 @@ src/cloud/rest_api/orgs/test_gateway_get_all_orgs.py
 src/cloud/rest_api/users/test_gateway_create_user.py
 src/cloud/rest_api/users/test_gateway_get_user.py
 src/cloud/rest_api/users/test_gateway_update_user.py
+src/cloud/rest_api/users/test_gateway_get_all_users.py
 src/cloud/rest_api/buckets/test_gateway_create_bucket.py
 src/cloud/rest_api/buckets/test_gateway_get_all_buckets.py
 src/cloud/rest_api/buckets/test_gateway_get_bucket.py
