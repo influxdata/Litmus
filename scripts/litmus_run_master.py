@@ -7,31 +7,6 @@
 
 import pkgutil, subprocess, os, sys, optparse
 
-'''
-PIP_CMD = 'sudo -H pip install --no-cache-dir'
-MODULES = ['pytest','requests','python-dateutil','pytest-html','pytest-metadata', 'influxdb']
-for module in MODULES:
-    if None == pkgutil.find_loader(module):
-        if module == 'requests':
-            proc = subprocess.call('%s %s[security]==2.17.3' % (PIP_CMD, module), shell=True)
-            assert proc == 0, 'FAILED TO INSTALL %s' % module
-        elif module == 'pytest':
-            proc = subprocess.call('%s %s==3.0.7' % (PIP_CMD, module), shell=True)
-            assert proc == 0, 'FAILED TO INSTALL %s' % module
-        elif module == 'python-dateutil':
-            proc = subprocess.call('%s %s==2.6.1' % (PIP_CMD, module), shell=True)
-            assert proc == 0, 'FAILED TO INSTALL %s' % module
-        elif module == 'pytest-html':
-            proc = subprocess.call('%s %s==1.16.0' % (PIP_CMD, module), shell=True)
-            assert proc == 0, 'FAILED TO INSTALL %s' % module
-        elif module == 'pytest-metadata':
-            proc = subprocess.call('%s %s==1.5.0' % (PIP_CMD, module), shell=True)
-            assert proc == 0, 'FAILED TO INSTALL %s' % module
-        elif module == 'influxdb':
-            proc = subprocess.call('%s %s' % (PIP_CMD, module), shell=True)
-            assert proc == 0, 'FAILED TO INSTALL %s' % module
-'''
-
 MasterScriptDir=os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(MasterScriptDir, 'src'))
 
