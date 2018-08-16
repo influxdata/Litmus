@@ -5,10 +5,9 @@
 #3. Collect all relevant product logs (if any)
 #4. Call pytest to run tests
 
-import pkgutil
-import subprocess
-import time
+import pkgutil, subprocess, os, sys, optparse
 
+'''
 PIP_CMD = 'sudo -H pip install --no-cache-dir'
 MODULES = ['pytest','requests','python-dateutil','pytest-html','pytest-metadata', 'influxdb']
 for module in MODULES:
@@ -31,15 +30,13 @@ for module in MODULES:
         elif module == 'influxdb':
             proc = subprocess.call('%s %s' % (PIP_CMD, module), shell=True)
             assert proc == 0, 'FAILED TO INSTALL %s' % module
-
-import os, sys
+'''
 
 MasterScriptDir=os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(MasterScriptDir, 'src'))
 
 print 'SYSTEM PATH : ' + str(sys.path)
 
-import optparse,  pytest
 # add script options
 usage='%prog[options]'
 parser=optparse.OptionParser(usage=usage)
@@ -422,10 +419,35 @@ else:
 
 print pytest_parameters
 
+if prod_version == '1':
+    PIP_CMD = 'sudo -H pip install --no-cache-dir'
+    MODULES = ['pytest', 'requests', 'python-dateutil', 'pytest-html', 'pytest-metadata', 'influxdb']
+    for module in MODULES:
+        if None == pkgutil.find_loader(module):
+            if module == 'requests':
+                proc = subprocess.call('%s %s[security]==2.17.3' % (PIP_CMD, module), shell=True)
+                assert proc == 0, 'FAILED TO INSTALL %s' % module
+            elif module == 'pytest':
+                proc = subprocess.call('%s %s==3.0.7' % (PIP_CMD, module), shell=True)
+                assert proc == 0, 'FAILED TO INSTALL %s' % module
+            elif module == 'python-dateutil':
+                proc = subprocess.call('%s %s==2.6.1' % (PIP_CMD, module), shell=True)
+                assert proc == 0, 'FAILED TO INSTALL %s' % module
+            elif module == 'pytest-html':
+                proc = subprocess.call('%s %s==1.16.0' % (PIP_CMD, module), shell=True)
+                assert proc == 0, 'FAILED TO INSTALL %s' % module
+            elif module == 'pytest-metadata':
+                proc = subprocess.call('%s %s==1.5.0' % (PIP_CMD, module), shell=True)
+                assert proc == 0, 'FAILED TO INSTALL %s' % module
+            elif module == 'influxdb':
+                proc = subprocess.call('%s %s' % (PIP_CMD, module), shell=True)
+                assert proc == 0, 'FAILED TO INSTALL %s' % module
+import pytest
+
 print ''
 print '#############################'
 print '####### RUNNING TESTS #######'
 print ''
 exit_code=pytest.main(pytest_parameters)
-#get log files
+#TODO : get log files
 exit(exit_code)

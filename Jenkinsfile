@@ -16,7 +16,7 @@ node('dind') {
 				try {
 					sh '''
         					docker login -u="${QUAYUSER}" -p="${QUAYPASS}" quay.io
-                				docker run --rm -e ETCD_HOST=http://etcd.cpg.svc.cluster.local:2379 -e GATEWAY_HOST=http://gateway.cpg.svc.cluster.local:9999 -e QUERYD_HOST=http://queryd.cpg.svc.cluster.local:8093 -e ONE_TEST=src/cloud/rest_api/users/test_gateway_get_all_users.py -v $PWD:/Litmus/result quay.io/influxdb/litmus:latest
+                				docker run --rm -e ETCD_HOST=http://etcd.cpg.svc.cluster.local:2379 -e GATEWAY_HOST=http://gateway.cpg.svc.cluster.local:9999 -e QUERYD_HOST=http://queryd.cpg.svc.cluster.local:8093 -e TEST_LIST=tests_lists/gateway_api_tests.list -v $PWD:/Litmus/result quay.io/influxdb/litmus:latest
 					'''
     				} catch (err) {
 					currentBuild.result = "FAILURE" // sets the ordinal as 4 and boolean to false
