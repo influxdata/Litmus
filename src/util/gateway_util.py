@@ -5,13 +5,16 @@ import ast
 import json
 from src.util import litmus_utils
 
-#=================================================== TASKS =============================================================
-
+BUCKETS_URL='/v1/buckets'
 TASKS_URL='/v1/tasks'
+ORG_URL='/v1/orgs'
+USERS_URL='/v1/users'
+
+#=================================================== TASKS =============================================================
 
 def create_task(test_class_instance, url, org_id, task_name, flux, status='enabled', owners=None, last=None):
     '''
-    Creates a new task, i.e. Flux script that runs in background
+    Wrapper function to create a new task, i.e. Flux script that runs in background
     :param test_class_instance: instance of the test calss,i.e. self
     :param url: (string) Gateway URL, e.g. http://localhost:9999
     :param org_id: ID of the organization that owns this task
@@ -20,7 +23,7 @@ def create_task(test_class_instance, url, org_id, task_name, flux, status='enabl
     :param status: current status of the task (enabled/disabled), default is enabled
     :param owners: ???
     :param last: ???
-    :return:
+    :return: returns status_code, task_id, org_id, task_name, task_status, task_owners, flux, every, cron, last tuple
     '''
     test_class_instance.mylog.info('gateway_util.create_task() function is being called')
     test_class_instance.mylog.info('---------------------------------------------------')
@@ -70,10 +73,7 @@ def create_task(test_class_instance, url, org_id, task_name, flux, status='enabl
     test_class_instance.mylog.info('')
     return response.status_code, task_id, org_id, task_name, task_status, task_owners, flux, every, cron, last
 
-
 #=================================================== ORGANIZATIONS =====================================================
-
-ORG_URL='/v1/orgs'
 
 def create_organization(test_class_instance, url, org_name):
     '''
@@ -264,8 +264,6 @@ def get_count_of_orgs(test_class_instance, list_of_organizations):
     return count
 
 #================================================== USERS ==============================================================
-
-USERS_URL='/v1/users'
 
 def create_user(test_class_instance, url, user_name):
     '''
@@ -474,8 +472,6 @@ def find_user_by_name(test_class_instance, user_name, list_of_users):
     return success
 
 #=================================================== BUCKETS ===========================================================
-
-BUCKETS_URL='/v1/buckets'
 
 # Currently retention periods are only numbers and not durations:
 # https://github.com/influxdata/platform/issues/144
@@ -691,18 +687,23 @@ def find_bucket_by_name(test_class_instance, list_of_buckets, bucket_name, org_n
 
 def verify_org_etcd(test_class_instance, etcd, org_id, org_name):
     '''
-    :param test_class_instance: instance of the test clas, i.e. self
+    Function asserts that organization_id and organization_name exist in etcd store
+    :param test_class_instance: instance of the test class, i.e. self
     :param etcd: url of the etcd service
     :param org_id: organization id
     :param org_name: organization name
-    :return: does not return anything
+    :return: does not return a value
     '''
     test_class_instance.mylog.info('gateway_util.verify_org_etcd() function is being called')
     test_class_instance.mylog.info('-------------------------------------------------------')
     test_class_instance.mylog.info('')
     cmd='ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "Organizationv1/%s" --print-value-only'\
         % (etcd, org_id)
-    out=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
+
+    (out, error)=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
+    # make sure there is not error before proceeding further
+    assert error == '', \
+        test_class_instance.mylog.info('Executing %s command returned an error %s' % (cmd, str(error)))
     actual_org_id=ast.literal_eval(out[0]).get('id')
     test_class_instance.mylog.info('Assert expected org_id ' + str(org_id) + ' equals to actual org_id '
                                    + str(actual_org_id))
@@ -717,11 +718,12 @@ def verify_org_etcd(test_class_instance, etcd, org_id, org_name):
 
 def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
     '''
-    :param test_class_instance: instance of the test clas, i.e. self
+    Function asserts that user_id and user_name exist in the etcd store.
+    :param test_class_instance: instance of the test class, i.e. self
     :param etcd: url of the etcd service
-    :param user_id: organization id
-    :param user_name: organization name
-    :return: does not return anything
+    :param user_id: id of the user
+    :param user_name: name of the user
+    :return: does not return a value
     '''
     test_class_instance.mylog.info('gateway_util.verify_user_etcd() function is being called')
     test_class_instance.mylog.info('--------------------------------------------------------')
@@ -729,7 +731,10 @@ def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
     test_class_instance.mylog.info('')
     cmd='ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "userv1/%s" --print-value-only'\
         % (etcd, user_id)
-    out=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
+    (out, error)=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
+    # make sure there is not error before proceeding further
+    assert error == '', \
+        test_class_instance.mylog.info('Executing %s command returned an error %s' % (cmd, str(error)))
     actual_user_id=ast.literal_eval(out[0]).get('id')
     test_class_instance.mylog.info('Assert expected user_id ' + str(user_id) + ' equals to actual user_id '
                                    + str(actual_user_id))
@@ -744,11 +749,12 @@ def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
 
 def verify_bucket_etcd(test_class_instance, etcd, bucket_id, bucket_name):
     '''
+    Function asserts that bucket_id and bucket_name exist in the etcd store.
     :param test_class_instance: instance of the test clas, i.e. self
     :param etcd: url of the etcd service
-    :param bucket_id: bucket id
-    :param bucket_name: bucket name
-    :return:
+    :param bucket_id: id of the bucket
+    :param bucket_name: name of the bucket
+    :return: does not return a value
     '''
     test_class_instance.mylog.info('gateway_util.verify_bucket_etcd() function is being called')
     test_class_instance.mylog.info('----------------------------------------------------------')
@@ -756,7 +762,10 @@ def verify_bucket_etcd(test_class_instance, etcd, bucket_id, bucket_name):
     test_class_instance.mylog.info('')
     cmd='ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "bucketv1/%s" --print-value-only'\
         % (etcd, bucket_id)
-    out=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
+    (out, error)=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
+    # make sure there is not error before proceeding further
+    assert error == '', \
+        test_class_instance.mylog.info('Executing %s command returned an error %s' % (cmd, str(error)))
     actual_bucket_id=ast.literal_eval(out[0]).get('id')
     test_class_instance.mylog.info('Assert expected bucket_id ' + str(bucket_id) + ' equals to actual bucket_id '
                                    + str(actual_bucket_id))
