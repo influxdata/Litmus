@@ -125,7 +125,7 @@ class TestGetUsersAPI(object):
         self.run_tests('est_get_users_10_char_upper_case_',ten_char_uc)
 
     @pytest.mark.parametrize('twenty_char_uc', twenty_char_uc)
-    def test_get_orgs_20_char_upper_case(self, twenty_char_uc):
+    def test_get_users_20_char_upper_case(self, twenty_char_uc):
         '''
         REST API: http://<gateway>/v1/users
         METHOD: GET
