@@ -699,22 +699,32 @@ def verify_org_etcd(test_class_instance, etcd, org_id, org_name):
     test_class_instance.mylog.info('')
     cmd='ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "Organizationv1/%s" --print-value-only'\
         % (etcd, org_id)
-
     out, error=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
-    # make sure there is not error before proceeding further
-    assert error == '', \
-        test_class_instance.mylog.info('Executing command \'%s\' returned an error \'%s\'' % (cmd, error))
+    # make sure there is no error message and output of the command is not empty
+    try:
+        assert error == '' and out != '', 'Executing command \'%s\' returned an error \'%s\' ' \
+                                          'or output of the command is empty' % (cmd, error)
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
     actual_org_id=ast.literal_eval(out).get('id')
     test_class_instance.mylog.info('Assert expected org_id ' + str(org_id) + ' equals to actual org_id '
                                    + str(actual_org_id))
-    assert org_id == actual_org_id, test_class_instance.mylog.info('Expected org id is not equal to actual org id')
+    try:
+        assert org_id == actual_org_id, 'Expected org id is not equal to actual org id'
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
     actual_org_name = ast.literal_eval(out).get('name')
     if org_name != 'DoubleQuotes\"' and org_name != 'DoubleQuotes\"_updated_name':
         actual_org_name=json.loads("\"" + actual_org_name + "\"")
     test_class_instance.mylog.info('Assert expected user_name ' + str(org_name) + ' equals actual to user_name '
                            + str(actual_org_name))
-    assert org_name == actual_org_name, \
-        test_class_instance.mylog.info('Expected org name is not equal to actual org name')
+    try:
+        assert org_name == actual_org_name, 'Expected org name is not equal to actual org name'
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
 
 def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
     '''
@@ -733,19 +743,29 @@ def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
         % (etcd, user_id)
     out, error=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
     # make sure there is not error before proceeding further
-    assert error == '', \
-        test_class_instance.mylog.info('Executing \'%s\' command returned an error \'%s\'' % (cmd, error))
+    try:
+        assert error == '' and out != '', 'Executing \'%s\' command returned an error \'%s\'' % (cmd, error)
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
     actual_user_id=ast.literal_eval(out).get('id')
     test_class_instance.mylog.info('Assert expected user_id ' + str(user_id) + ' equals to actual user_id '
                                    + str(actual_user_id))
-    assert user_id == actual_user_id, test_class_instance.mylog.info('Expected user id is not equal to actual user id')
+    try:
+        assert user_id == actual_user_id, 'Expected user id is not equal to actual user id'
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
     actual_user_name=ast.literal_eval(out).get('name')
     if user_name != 'DoubleQuotes\"' and user_name != 'DoubleQuotes\"_updated_name':
         actual_user_name=json.loads("\"" + actual_user_name + "\"")
     test_class_instance.mylog.info('Assert expected user_name ' + str(user_name) + ' equals actual to user_name '
                            + str(actual_user_name))
-    assert user_name == actual_user_name, \
-        test_class_instance.mylog.info('Expected user name is not equal to actual user name')
+    try:
+        assert user_name == actual_user_name, 'Expected user name is not equal to actual user name'
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
 
 def verify_bucket_etcd(test_class_instance, etcd, bucket_id, bucket_name):
     '''
@@ -764,18 +784,27 @@ def verify_bucket_etcd(test_class_instance, etcd, bucket_id, bucket_name):
         % (etcd, bucket_id)
     out, error=litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
     # make sure there is not error before proceeding further
-    assert str(error) == '', \
-        test_class_instance.mylog.info('Executing \'%s\' command returned an error \'%s\'' % (cmd, error))
+    try:
+        assert error == '' and out != '', 'Executing \'%s\' command returned an error \'%s\'' % (cmd, error)
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
     actual_bucket_id=ast.literal_eval(out).get('id')
     test_class_instance.mylog.info('Assert expected bucket_id ' + str(bucket_id) + ' equals to actual bucket_id '
                                    + str(actual_bucket_id))
-    assert bucket_id == actual_bucket_id, \
-        test_class_instance.mylog.info('Expected bucket id is not equal to actual bucket id')
+    try:
+        assert bucket_id == actual_bucket_id, 'Expected bucket id is not equal to actual bucket id'
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
     actual_bucket_name=ast.literal_eval(out).get('name')
     if bucket_name != 'DoubleQuotes\"' and bucket_name != 'DoubleQuotes\"_updated_name' \
             and bucket_name != 'DoubleQuotes\"_updated':
         actual_bucket_name=json.loads("\"" + actual_bucket_name + "\"")
     test_class_instance.mylog.info('Assert expected bucket_name ' + str(bucket_name) + ' equals actual to bucket_name '
                            + str(actual_bucket_name))
-    assert bucket_name == actual_bucket_name, \
-        test_class_instance.mylog.info('Expected bucket name is not equal to actual bucket name')
+    try:
+        assert bucket_name == actual_bucket_name, 'Expected bucket name is not equal to actual bucket name'
+    except AssertionError, e:
+        test_class_instance.mylog.info(e)
+        raise
