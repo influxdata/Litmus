@@ -84,6 +84,11 @@ class TestCreateBucketsAPI(object):
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
         tests bucket name containing single character lower case letters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing a single lower case ascii character [abcdefghijklmnopqrstuvwxyz] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same lower case ascii character as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_bucket_single_char_lower_case ', one_char, one_char, 1)
 
@@ -94,6 +99,12 @@ class TestCreateBucketsAPI(object):
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
         tests bucket name containing random 10 lower case letters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing 10 random lower case ascii characters from the
+           [abcdefghijklmnopqrstuvwxyz] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same lower case ascii characters as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_orgs_10_char_lower_case ', ten_char_lc, twenty_char_lc, 1)
 
@@ -103,6 +114,12 @@ class TestCreateBucketsAPI(object):
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
         tests bucket name containing random 20 lower case letters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing 20 random lower case ascii characters from the
+           [abcdefghijklmnopqrstuvwxyz] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same lower case ascii characters as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_orgs_20_char_lower_case ', twenty_char_lc, twenty_char_lc, 1)
 
@@ -115,7 +132,13 @@ class TestCreateBucketsAPI(object):
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
         tests bucket name containing single character upper case letters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing a single upper case ascii character [ABCDEFGHIJKLMNOPQRSTUVWXYZ] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same upper case ascii character as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
+
         self.run_tests('test_create_buckets_single_char_upper_case ', one_char, one_char, 1)
 
     @pytest.mark.parametrize('ten_char_uc', ten_char_uc)
@@ -124,6 +147,12 @@ class TestCreateBucketsAPI(object):
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
         tests bucket name containing random 10 upper case letters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing 10 random upper case ascii characters from the
+           [ABCDEFGHIJKLMNOPQRSTUVWXYZ] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same upper case ascii characters as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_buckets_10_char_upper_case ', ten_char_uc, ten_char_uc, 1)
 
@@ -133,6 +162,12 @@ class TestCreateBucketsAPI(object):
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
         tests bucket name containing random 20 upper case letters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing 20 random upper case ascii characters from the
+           [ABCDEFGHIJKLMNOPQRSTUVWXYZ] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same upper case ascii characters as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_orgs_20_char_upper_case ', twenty_char_uc, twenty_char_uc, 1)
 
@@ -145,6 +180,12 @@ class TestCreateBucketsAPI(object):
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
         tests bucket name containing single non-alphanumeric characters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing single non-alphanumeric character from the
+           [!@#$%^*><&()_+{}[]|,.~/`?] list. (",\ and ' is a separate test case)
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same non-alphanumeric character as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_buckets_single_char_nonalphanumeric_case ', one_char, one_char, 1)
 
@@ -153,7 +194,13 @@ class TestCreateBucketsAPI(object):
         '''
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
-        tests bucket name containing 10 random non-alphanumeric charactersd can be created and persisted in the etcd store.
+        tests bucket name containing 10 random non-alphanumeric characters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing 10 random non-alphanumeric characters from the
+           [!@#$%^*><&()_+{}[]|,.~/`?] list. (",\ and ' is a separate test case)
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same non-alphanumeric characters as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_buckets_10_char_nonalphanumeric_case ',
                        ten_char_nonalphanumeric, ten_char_nonalphanumeric, 1)
@@ -163,7 +210,13 @@ class TestCreateBucketsAPI(object):
         '''
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
-        tests bucket name containing 20 random non-alphanumeric charactersd can be created and persisted in the etcd store.
+        tests bucket name containing 20 random non-alphanumeric characters can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing 20 random non-alphanumeric characters from the
+           [!@#$%^*><&()_+{}[]|,.~/`?] list. (",\ and ' is a separate test case)
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same non-alphanumeric characters as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_buckets_20_char_nonalphanumeric_case ',
                        twenty_char_nonalphanumeric, twenty_char_nonalphanumeric, 1)
@@ -177,6 +230,11 @@ class TestCreateBucketsAPI(object):
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
         tests bucket name containing single digits can be created and persisted in the etcd store
+        Test Steps:
+        1. Create an org with the name containing single digit from the [0123456789] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same single digit as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_buckets_single_char_numbers ', one_char, one_char, 1)
 
@@ -185,7 +243,12 @@ class TestCreateBucketsAPI(object):
         '''
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
-        tests bucket name containing 10 random digits can be created and persisted in the etcd store
+        tests bucket name containing 10 random digits can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing 10 random digits from the [0123456789] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same 10 random digits as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_buckets_10_char_numbers', ten_char_numbers, ten_char_numbers, 1)
 
@@ -194,7 +257,12 @@ class TestCreateBucketsAPI(object):
         '''
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
-        tests bucket name containing 5 random digits can be created and persisted in the etcd store
+        tests bucket name containing 5 random digits can be created and persisted in the etcd store.
+        Test Steps:
+        1. Create an org with the name containing 20 random digits from the [0123456789] list.
+        2. Verify org name and org id persisted in the etcd store.
+        3. Create a bucket with the name containing the same 20 random digits as the organization name.
+        4. Verify bucket name and bucket id persisted in the etcd store.
         '''
         self.run_tests('test_create_buckets_5_char_numbers', five_chars, five_chars, 1)
 
