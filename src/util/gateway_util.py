@@ -77,6 +77,7 @@ def create_task(test_class_instance, url, org_id, task_name, flux, status='enabl
 
 def create_organization(test_class_instance, url, org_name):
     '''
+    create_organization() function creates an organization
     :param test_class_instance: instance of the test class
     :param url: gateway url,for example: http://localhost:9999
     :param org_name: name of the organization to create
@@ -99,7 +100,7 @@ def create_organization(test_class_instance, url, org_name):
         else:
             test_class_instance.mylog.info('gateway_util.create_organization() '
                                            'REQUESTED_ORG_ID AND REQUESTED_ORG_NAME ARE NONE')
-            error_message=response.json()['message']
+            error_message=response.headers['X-Influx-Error']
             test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + error_message)
     except:
         test_class_instance.mylog.info('gateway_util.create_organization() Exception:')
@@ -107,6 +108,8 @@ def create_organization(test_class_instance, url, org_name):
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        error_message = response.headers['X-Influx-Error']
+        test_class_instance.mylog.info('gateway_util.create_organization() ERROR=' + error_message)
     test_class_instance.mylog.info('gateway_util.create_organization() function is done')
     test_class_instance.mylog.info('')
     return response.status_code, org_id, created_org_name, error_message
@@ -213,6 +216,38 @@ def get_all_organizations(test_class_instance, url):
     test_class_instance.mylog.info('gateway_util.get_all_organizations() function is done')
     test_class_instance.mylog.info('')
     return response.status_code, list_of_organizations
+
+def delete_organization(test_class_instance, url, org_id):
+    '''
+    delete_organization() function removes an organization from etcd store, from index/org/id, index/org/name and
+    removes the key Organizationv1
+    :param test_class_instance: instance of the test class
+    :param url: gateway url,for example: http://localhost:9999
+    :param org_id: id of the organization to delete
+    :return: status_code, org_id, created_org_name, error_message
+    '''
+    test_class_instance.mylog.info('gateway_util.delete_organization() function is being called')
+    test_class_instance.mylog.info('-----------------------------------------------------------')
+    test_class_instance.mylog.info('')
+    test_class_instance.mylog.info('gateway_util.delete_organization() '
+                                   'Deleting Organization with \'%s\' id' % org_id)
+    #TODO This error is coming from headers,
+    #TODO I would need to handle it differently when both JSON error and headers errors are in place.
+    error = ''
+    if org_id == '': # org id is missing:
+        path=ORG_URL + '/'
+    else:
+        path = ORG_URL + '/' + org_id
+    response = test_class_instance.rl.delete(base_url=url, path=path)
+    #TODO Currently status for successful deletion is 202, but needs to be 204,
+    #TODO 404 will be returned if org id is missing.
+    if response.status_code in range (405, 501):
+        error = response.headers['X-Influx-Error']
+    if error != '':
+        test_class_instance.mylog.info('gateway_util.delete_organization() ERROR: ' + error)
+    test_class_instance.mylog.info('gateway_util.delete_organization() function is done')
+    test_class_instance.mylog.info('')
+    return response.status_code, error
 
 def find_org_by_name(test_class_instance, org_name_to_find, list_of_organizations):
     '''

@@ -41,7 +41,7 @@ class RestLib(BaseLib):
         except requests.RequestException, e:
             self.log.info('RestLib.post() - RequestsException : ' + str(e.message))
             response=None
-        assert response is not None, self.log.info('SOME ERROR MESSAGE FOR POST')
+        assert response is not None, self.log.info('RestLib.post() : Response object is None')
         return response
 
     def get(self, base_url, path, params=None, headers=None, auth=None):

@@ -207,6 +207,7 @@ class TestCreateOrganizationsAPI(object):
         '''
         self.run_tests('test_create_users_special_chars ', special_char)
 
+    #TODO modify test: should be able to create duplicate org
     def test_create_duplicate_org(self):
         '''
         REST API: http://<gateway>/v1/orgs
@@ -229,6 +230,7 @@ class TestCreateOrganizationsAPI(object):
         (status, created_org_id, created_org_name, error_message) = \
             gateway_util.create_organization(self, self.gateway, org_name)
         assert status == 404, pytest.xfail(reason='status code is 500')
+        #TODO: add validation of the error message
         self.footer(test_name)
 
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
@@ -249,4 +251,24 @@ class TestCreateOrganizationsAPI(object):
         '''
         self.run_tests('test_create_orgs_400_char_mix ', four_hundred_char_names)
 
-
+    #TODO modify test: should be able to create an empty org
+    def test_create_org_empty_name(self):
+        '''
+        REST API: http://<gateway>/v1/orgs
+        METHOD: POST
+        tests that organization cannot be created without organization name
+        '''
+        test_name='test_create_org_missing_name '
+        expected_error_message = 'an organization name must be specified'
+        expected_status_code = 404
+        self.header(test_name)
+        self.mylog.info(test_name + ' STEP 1: Create Organization with its name missing')
+        (status, created_org_id, created_org_name, error_message) = \
+            gateway_util.create_organization(self, self.gateway, '')
+        assert error_message == expected_error_message, \
+            self.mylog.info(test_name + 'Actual Error Message \'%s\' is different from expected \'%s\''
+                            % (error_message, expected_error_message))
+        assert status == expected_status_code, pytest.xfail(reason='status code is 500')
+        #    self.mylog.info(test_name + 'Actual Status \'%s\' is different from expected \'%s\''
+        #                    % (status, expected_status_code))
+        self.footer(test_name)

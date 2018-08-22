@@ -42,8 +42,8 @@ class TestGetAllBucketsAPI(object):
         self.mylog.info(test_name + 'Actual count of created buckets is ' + str(actual_count))
         self.mylog.info(test_name + 'Assert expected_count ' + str(expected_buckets_count) +
                         ' equals to actual count ' + str(actual_count))
-        assert expected_buckets_count == actual_count, self.mylog.info(test_name + 'Assertion failed')
         self.footer(test_name)
+        assert expected_buckets_count == actual_count, self.mylog.info(test_name + 'Assertion failed')
 
     def test_verify_created_buckets(self):
         '''
