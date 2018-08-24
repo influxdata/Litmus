@@ -47,7 +47,7 @@ def execCmd(test_class_instance, cmd, status='EXIT_STATUS', timeout=600):
     if status == 'EXIT_STATUS':
         return EXIT_STATUS
     else:
-        return (OUT_STATUS, ERR_STATUS)
+        return OUT_STATUS, ERR_STATUS
 
 def shard_layout(test_class_instance, privatekey, install_dir, database_name, retention_policy, shards_id, user, host):
     '''
