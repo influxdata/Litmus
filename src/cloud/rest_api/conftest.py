@@ -11,10 +11,13 @@ from string import digits
 # organization names will have 5 letters length and will be of ascii type
 org_names=[''.join(sample(ascii_lowercase, 5)) for i in range(5)]
 # user names will have 5 letters length
+# noinspection PyRedeclaration
 user_names=[''.join(sample(ascii_uppercase, 5)) for i in range(10)]
 
 special_char=["", "\'", 'DoubleQuotes\\"', 'BackSlash\\']
+# noinspection PyRedeclaration
 ten_char_lc=[''.join(sample(ascii_lowercase, 10)) for i in range(10)]
+# noinspection PyRedeclaration
 twenty_char_lc=[''.join(sample(ascii_lowercase, 20)) for i in range(10)]
 ten_char_uc=[''.join(sample(ascii_uppercase, 10)) for i in range(10)]
 twenty_char_uc=[''.join(sample(ascii_uppercase, 20)) for i in range(10)]
@@ -25,6 +28,7 @@ ten_char_nonalphanumeric=[''.join(sample(nonalphanumeric, 10)) for i in range(10
 twenty_char_nonalphanumeric=[''.join(sample(nonalphanumeric, 20)) for i in range(10)]
 twenty_char_names_list=[]
 two_hundred_char_name_list=[]
+# noinspection PyRedeclaration
 for i in range(10):
     twenty_char_names=sample(nonalphanumeric, 5) + sample(ascii_lowercase, 5) + \
                       sample(ascii_uppercase, 5) + sample(digits, 5)
@@ -35,6 +39,7 @@ for i in range(10):
     two_hundred_char_name_list.append(''.join(two_hundred_char_names))
 fourty_char_names_list=[]
 four_hundred_char_name_list=[]
+# noinspection PyRedeclaration
 for i in range(10):
     fourty_char_names=sample(nonalphanumeric, 10) + sample(ascii_lowercase, 10) + \
                       sample(ascii_uppercase, 10) + sample(digits, 10)
@@ -44,6 +49,47 @@ for i in range(10):
     fourty_char_names_list.append(''.join(fourty_char_names))
     four_hundred_char_name_list.append(''.join(four_hundred_char_name))
 
+
+def _assert(request, actual, expected, expected_var, xfail=False, reason=''):
+    """
+    :param request: (object): request object, e.g. 'self'
+    :param actual (str): actual value
+    :param expected (str): expected value
+    :param expected_var (str): kind of value, e.g. 'status code'
+    :return: Pass/Fail/XFail
+    """
+    try:
+        if xfail:
+            assert actual == expected, pytest.xfail(reason=reason)
+        else:
+            assert actual == expected, \
+                'Actual \'%s\' \'%s\' does not equal to expected \'%s\' \'%s\'' \
+                % (actual, expected_var, expected, expected_var)
+    except AssertionError, e:
+        request.mylog.info(e)
+        raise
+
+
+def verify_org_etcd_entries(request, test_name, created_org_id, created_org_name):
+    """
+    Function verifies id and name of the organization
+    :param request (object): request object, e.g. self
+    :param test_name (str): name of the calling test
+    :param created_org_id (str): id of the created organization
+    :param created_org_name (str): name of the created organization
+    :return: Pass/Fail
+    """
+    # actual_org_id, actual_org_name, error, name_by_index_id, error_by_index_id, id_by_index_name, error_by_index_name
+    result = gateway_util.get_org_etcd(request, request.etcd, created_org_id)
+    request.mylog.info(test_name + 'Assert actual org_id \'%s\' equals to expected org_id \'%s\''
+                    % (result[0], created_org_id))
+    _assert(request, result[0], created_org_id, 'org_id')
+    request.mylog.info(test_name + 'Assert actual org_name \'%s\' equals to expected org_name \'%s\''
+                    % (result[1], created_org_name))
+    _assert(request, result[1], created_org_name, 'org_name')
+    request.mylog.info(test_name + 'Assert actual error \'%s\' equals to expected \'%s\''
+                    % (result[2], ''))
+    _assert(request, result[2], '', 'error')
 
 # to install etcdctl tool on mac we need to install etcd : brew install etcd
 # for ubuntu run :
