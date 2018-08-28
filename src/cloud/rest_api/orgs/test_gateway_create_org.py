@@ -8,7 +8,7 @@ import src.util.login_util as lu
 from src.chronograf.lib import chronograf_rest_lib as crl
 from src.cloud.rest_api.conftest import ten_char_lc, twenty_char_lc, twenty_char_uc, ten_char_uc, \
     ten_char_numbers, five_char_numbers, nonalphanumeric, ten_char_nonalphanumeric, \
-    twenty_char_nonalphanumeric, twenty_char_names_list, fourty_char_names_list, \
+    twenty_char_nonalphanumeric, twenty_char_names_list, forty_char_names_list, \
     four_hundred_char_name_list, two_hundred_char_name_list, special_char, _assert, verify_org_etcd_entries
 from src.util import gateway_util
 
@@ -200,14 +200,14 @@ class TestCreateOrganizationsAPI(object):
         """
         self.run_tests('test_create_orgs_20_char_mix ', twenty_char_names)
 
-    @pytest.mark.parametrize('fourty_char_names', fourty_char_names_list)
-    def test_create_orgs_40_char_mix(self, fourty_char_names):
+    @pytest.mark.parametrize('forty_char_names', forty_char_names_list)
+    def test_create_orgs_40_char_mix(self, forty_char_names):
         """
         REST API: http://<gateway>/v1/orgs
         METHOD: POST
         tests org name containing 40 mix characters can be created and persisted in the etcd store.
         """
-        self.run_tests('test_create_orgs_40_char_mix ', fourty_char_names)
+        self.run_tests('test_create_orgs_40_char_mix ', forty_char_names)
 
     @pytest.mark.parametrize('special_char', special_char)
     def test_create_orgs_special_chars(self, special_char):

@@ -37,16 +37,16 @@ for i in range(10):
     shuffle(two_hundred_char_names)
     twenty_char_names_list.append(''.join(twenty_char_names))
     two_hundred_char_name_list.append(''.join(two_hundred_char_names))
-fourty_char_names_list=[]
+forty_char_names_list=[]
 four_hundred_char_name_list=[]
 # noinspection PyRedeclaration
 for i in range(10):
-    fourty_char_names=sample(nonalphanumeric, 10) + sample(ascii_lowercase, 10) + \
+    forty_char_names=sample(nonalphanumeric, 10) + sample(ascii_lowercase, 10) + \
                       sample(ascii_uppercase, 10) + sample(digits, 10)
-    four_hundred_char_name=fourty_char_names * 10
-    shuffle(fourty_char_names)
+    four_hundred_char_name=forty_char_names * 10
+    shuffle(forty_char_names)
     shuffle(four_hundred_char_name)
-    fourty_char_names_list.append(''.join(fourty_char_names))
+    forty_char_names_list.append(''.join(forty_char_names))
     four_hundred_char_name_list.append(''.join(four_hundred_char_name))
 
 
