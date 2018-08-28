@@ -99,18 +99,20 @@ def verify_org_etcd_entries(request, test_name, created_org_id, created_org_name
                     % (result[2], error))
     _assert(request, result[2], error, 'error')
     if get_index_values:
-        request.mylog.info(test_name + 'Assert actual name_by_index_id \'%s\' equals to expected name_by_index_id \'%s\''
-                           % (result[3], name_by_index_id))
-        _assert(request, result[3], name_by_index_id, 'name_by_index_id')
-        request.mylog.info(test_name + 'Assert actual error_by_index_id \'%s\' equals to expected error_by_index_id \'%s\''
-                           % (result[4], error_by_index_id))
-        _assert(request, result[4], error_by_index_id, 'error_by_index_id')
-        request.mylog.info(test_name + 'Assert actual id_by_index_name \'%s\' equals to expected id_by_index_name \'%s\''
-                           % (result[5], id_by_index_name))
-        _assert(request, result[5], id_by_index_name, 'id_by_index_name')
-        request.mylog.info(test_name + 'Assert actual error_by_index_name \'%s\' equals to expected error_by_index_name \'%s\''
-                          % (result[5], error_by_index_name))
-        _assert(request, result[5], error_by_index_name, 'error_by_index_name')
+        if name_by_index_id:
+            request.mylog.info(test_name + 'Assert actual name_by_index_id \'%s\' equals to expected name_by_index_id \'%s\''
+                               % (result[3], name_by_index_id))
+            _assert(request, result[3], name_by_index_id, 'name_by_index_id')
+            request.mylog.info(test_name + 'Assert actual error_by_index_id \'%s\' equals to expected error_by_index_id \'%s\''
+                               % (result[4], error_by_index_id))
+            _assert(request, result[4], error_by_index_id, 'error_by_index_id')
+        if id_by_index_name:
+            request.mylog.info(test_name + 'Assert actual id_by_index_name \'%s\' equals to expected id_by_index_name \'%s\''
+                               % (result[5], id_by_index_name))
+            _assert(request, result[5], id_by_index_name, 'id_by_index_name')
+            request.mylog.info(test_name + 'Assert actual error_by_index_name \'%s\' equals to expected error_by_index_name \'%s\''
+                               % (result[6], error_by_index_name))
+            _assert(request, result[6], error_by_index_name, 'error_by_index_name')
 
 
 def verify_bucket_etcd_entries(request, test_name, expected_bucket_id, expected_bucket_name, expected_retention_period,
@@ -125,6 +127,8 @@ def verify_bucket_etcd_entries(request, test_name, expected_bucket_id, expected_
     :param expected_error (str):
     :return: Pass/Fail
     """
+    request.mylog.info(test_name + 'Parameters: expected_bucket_id = \'%s\', expected_bucket_name = \'%s\', expected_retention_period = \'%s\', expected_error = \'%s\''
+                       % (expected_bucket_id, expected_bucket_name, expected_retention_period, expected_error))
     actual_bucket_id, actual_bucket_name, actual_retention_period, actual_error = \
         gateway_util.get_bucket_etcd(request, request.etcd, expected_bucket_id)
     request.mylog.info(test_name + 'Assert actual bucket_id \'%s\' equals to expected bucket_id \'%s\''

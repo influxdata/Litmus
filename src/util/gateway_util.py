@@ -787,6 +787,8 @@ def get_org_etcd(test_class_instance, etcd, org_id, get_index_values=False):
                             '--print-value-only' % (etcd, name_by_index_id.strip())
         id_by_index_name, error_by_index_name = \
             litmus_utils.execCmd(test_class_instance, cmd_index_by_name, status='OUT_STATUS')
+        name_by_index_id = name_by_index_id.strip()
+        id_by_index_name = id_by_index_name.strip()
     # If organization id and name exist (assuming no error)
     if out != '':
         actual_org_id = ast.literal_eval(out).get('id')
@@ -796,7 +798,8 @@ def get_org_etcd(test_class_instance, etcd, org_id, get_index_values=False):
         if actual_org_name != 'DoubleQuotes\"' and actual_org_name != 'DoubleQuotes\"_updated_name':
             actual_org_name = json.loads("\"" + actual_org_name + "\"")
         test_class_instance.mylog.info('gateway_util.get_org_etcd() : actual_org_name = \'%s\'' % actual_org_name)
-    return actual_org_id, actual_org_name, error, name_by_index_id, error_by_index_id, id_by_index_name, error_by_index_name
+    return actual_org_id, actual_org_name, error, name_by_index_id, error_by_index_id, id_by_index_name, \
+           error_by_index_name
 
 
 def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
