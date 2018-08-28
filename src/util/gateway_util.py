@@ -556,7 +556,7 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod=None, o
                % (bucket_name, retentionPeriod, organizationID)
 
     organization_id, created_bucket_id, created_bucket_name, \
-    retention_period, error_message = None, None, None, None, None
+    retention_period, error_message = '', '', '', '', ''
     response = test_class_instance.rl.post(base_url=url, path=BUCKETS_URL, data=data)
     try:
         organization_id = response.json().get('organizationID')
@@ -577,7 +577,12 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod=None, o
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-    test_class_instance.mylog.info('gateway_util.create_organization() function is done')
+    test_class_instance.mylog.info('gateway_util.create_bucket() function returned : status = \'%s\', '
+                                   'bucket_id = \'%s\', bucket_name = \'%s\', org_id = \'%s\', rp = \'%s\', '
+                                   'error_message = \'%s\'' % (response.status_code, created_bucket_id,
+                                                               created_bucket_name, organization_id, retention_period,
+                                                               error_message))
+    test_class_instance.mylog.info('gateway_util.create_bucket() function is done')
     test_class_instance.mylog.info('')
     return response.status_code, created_bucket_id, created_bucket_name, \
            organization_id, retention_period, error_message
@@ -836,44 +841,32 @@ def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
         raise
 
 
-def verify_bucket_etcd(test_class_instance, etcd, bucket_id, bucket_name):
+def get_bucket_etcd(test_class_instance, etcd, bucket_id):
     """
-    Function asserts that bucket_id and bucket_name exist in the etcd store.
+    Function gets
     :param test_class_instance: instance of the test clas, i.e. self
     :param etcd: url of the etcd service
     :param bucket_id: id of the bucket
-    :param bucket_name: name of the bucket
-    :return: does not return a value
+    :return: actual_bucket_id =>
+             actual_bucket_name =>
+             error =>
     """
-    test_class_instance.mylog.info('gateway_util.verify_bucket_etcd() function is being called')
-    test_class_instance.mylog.info('----------------------------------------------------------')
-    test_class_instance.mylog.info('gateway_util.verify_bucket_etcd(): params: %s and %s' % (bucket_id, bucket_name))
+    actual_bucket_id, actual_bucket_name, actual_rp, error = '', '', '', ''
+    test_class_instance.mylog.info('gateway_util.get_bucket_etcd() function is being called')
+    test_class_instance.mylog.info('-------------------------------------------------------')
+    test_class_instance.mylog.info('gateway_util.get_bucket_etcd(): params: bucket_id \'%s\'' % bucket_id)
     test_class_instance.mylog.info('')
     cmd = 'ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "bucketv1/%s" --print-value-only' \
           % (etcd, bucket_id)
     out, error = litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
-    # make sure there is not error before proceeding further
-    try:
-        assert error == '' and out != '', 'Executing \'%s\' command returned an error \'%s\'' % (cmd, error)
-    except AssertionError, e:
-        test_class_instance.mylog.info(e)
-        raise
-    actual_bucket_id = ast.literal_eval(out).get('id')
-    test_class_instance.mylog.info('Assert expected bucket_id ' + str(bucket_id) + ' equals to actual bucket_id '
-                                   + str(actual_bucket_id))
-    try:
-        assert bucket_id == actual_bucket_id, 'Expected bucket id is not equal to actual bucket id'
-    except AssertionError, e:
-        test_class_instance.mylog.info(e)
-        raise
-    actual_bucket_name = ast.literal_eval(out).get('name')
-    if bucket_name != 'DoubleQuotes\"' and bucket_name != 'DoubleQuotes\"_updated_name' \
-            and bucket_name != 'DoubleQuotes\"_updated':
-        actual_bucket_name = json.loads("\"" + actual_bucket_name + "\"")
-    test_class_instance.mylog.info('Assert expected bucket_name ' + str(bucket_name) + ' equals actual to bucket_name '
-                                   + str(actual_bucket_name))
-    try:
-        assert bucket_name == actual_bucket_name, 'Expected bucket name is not equal to actual bucket name'
-    except AssertionError, e:
-        test_class_instance.mylog.info(e)
-        raise
+    if out != '':
+        actual_rp = ast.literal_eval(out).get('retentionPeriod')
+        test_class_instance.mylog.info('gateway_util.get_bucket_etcd() : actual_retention_period = \'%s\'' % actual_rp)
+        actual_bucket_id = ast.literal_eval(out).get('id')
+        test_class_instance.mylog.info('gateway_util.get_bucket_etcd() : actual_bucket_id = \'%s\'' % actual_bucket_id)
+        actual_bucket_name = ast.literal_eval(out).get('name')
+        if actual_bucket_name != 'DoubleQuotes\"' and actual_bucket_name != 'DoubleQuotes\"_updated_name' \
+            and actual_bucket_name != 'DoubleQuotes\"_updated':
+            actual_bucket_name = json.loads("\"" + actual_bucket_name + "\"")
+        test_class_instance.mylog.info('gateway_util.get_bucket_etcd() : actual_bucket_name = \'%s\'' % actual_bucket_name)
+    return actual_bucket_id, actual_bucket_name, actual_rp, error

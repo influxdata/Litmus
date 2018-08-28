@@ -51,7 +51,7 @@ class TestCreateOrganizationsAPI(object):
         test_name = name_of_the_test_to_run + org_name + ' '
         self.header(test_name)
         self.mylog.info(test_name + ' STEP 1: Create Organization "%s"' % org_name)
-        (status, created_org_id, created_org_name, error_message) = \
+        status, created_org_id, created_org_name, error_message = \
             gateway_util.create_organization(self, self.gateway, org_name)
         if org_name == '':
             # TODO: According to @goller organization with empty name can be created. Currently there is a bug.
@@ -65,7 +65,7 @@ class TestCreateOrganizationsAPI(object):
             _assert(self, status, 201, 'status code')
 
         self.mylog.info(test_name + 'STEP 2: Verify data was persisted in the etcd store')
-        verify_org_etcd_entries(self, test_name, created_org_id, created_org_name)
+        verify_org_etcd_entries(self, test_name, created_org_id, created_org_name, error='')
         self.footer(test_name)
 
     ############################################
@@ -234,7 +234,7 @@ class TestCreateOrganizationsAPI(object):
         _assert(self, status, 201, 'status code')
 
         self.mylog.info(test_name + 'STEP 2: Verify data was persisted in the etcd store')
-        verify_org_etcd_entries(self, test_name, created_org_id, created_org_name)
+        verify_org_etcd_entries(self, test_name, created_org_id, created_org_name, '')
 
         self.mylog.info(test_name + 'STEP 3: Creating org with the same name')
         #TODO: According to @goller multiple organizations with the same name could be created,
