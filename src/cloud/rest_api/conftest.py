@@ -118,7 +118,7 @@ def verify_org_etcd_entries(request, test_name, created_org_id, created_org_name
 def verify_bucket_etcd_entries(request, test_name, expected_bucket_id, expected_bucket_name, expected_retention_period,
                                expected_error):
     """
-    Function verifies bucket is and name
+    Function verifies bucket id, name and errors, if any
     :param request:
     :param test_name (str):
     :param expected_bucket_id (str):
@@ -127,7 +127,8 @@ def verify_bucket_etcd_entries(request, test_name, expected_bucket_id, expected_
     :param expected_error (str):
     :return: Pass/Fail
     """
-    request.mylog.info(test_name + 'Parameters: expected_bucket_id = \'%s\', expected_bucket_name = \'%s\', expected_retention_period = \'%s\', expected_error = \'%s\''
+    request.mylog.info(test_name + 'Parameters: expected_bucket_id = \'%s\', expected_bucket_name = \'%s\', '
+                                   'expected_retention_period = \'%s\', expected_error = \'%s\''
                        % (expected_bucket_id, expected_bucket_name, expected_retention_period, expected_error))
     actual_bucket_id, actual_bucket_name, actual_retention_period, actual_error = \
         gateway_util.get_bucket_etcd(request, request.etcd, expected_bucket_id)
@@ -140,6 +141,32 @@ def verify_bucket_etcd_entries(request, test_name, expected_bucket_id, expected_
     request.mylog.info(test_name + 'Assert actual retention_period \'%s\' equals to expected retention_period \'%s\''
                        % (actual_retention_period, expected_retention_period))
     _assert(request, actual_retention_period, expected_retention_period, 'retention_period')
+    request.mylog.info(test_name + 'Assert actual error \'%s\' equals to expected error \'%s\''
+                       % (actual_error, expected_error))
+    _assert(request, actual_error, expected_error, 'error')
+
+
+def verify_user_etcd_entries(request, test_name, expected_user_id, expected_user_name, expected_error):
+    """
+    Function verifies user id, name and errors, if any
+    :param request:
+    :param test_name (str):
+    :param expected_user_id (str):
+    :param expected_user_name (str):
+    :param expected_error (str):
+    :return: Pass/Fail
+    """
+    request.mylog.info(test_name + 'Parameters: expected_user_id = \'%s\', expected_user_name = \'%s\', '
+                                   'expected_error = \'%s\''
+                       % (expected_user_id, expected_user_name, expected_error))
+    actual_user_id, actual_user_name, actual_error = \
+        gateway_util.get_user_etcd(request, request.etcd, expected_user_id)
+    request.mylog.info(test_name + 'Assert actual user_id \'%s\' equals to expected user_id \'%s\''
+                      % (actual_user_id, expected_user_id))
+    _assert(request, actual_user_id, expected_user_id, 'user_id')
+    request.mylog.info(test_name + 'Assert actual user_name \'%s\' equals to expected user_name \'%s\''
+                       % (actual_user_name, expected_user_name))
+    _assert(request, actual_user_name, expected_user_name, 'bucket_name')
     request.mylog.info(test_name + 'Assert actual error \'%s\' equals to expected error \'%s\''
                        % (actual_error, expected_error))
     _assert(request, actual_error, expected_error, 'error')

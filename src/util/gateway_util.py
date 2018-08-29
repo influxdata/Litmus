@@ -802,52 +802,37 @@ def get_org_etcd(test_class_instance, etcd, org_id, get_index_values=False):
            error_by_index_name
 
 
-def verify_user_etcd(test_class_instance, etcd, user_id, user_name):
+def get_user_etcd(test_class_instance, etcd, user_id):
     """
-    Function asserts that user_id and user_name exist in the etcd store.
+    Function gets user_id and user_name from etcd store.
     :param test_class_instance: instance of the test class, i.e. self
     :param etcd: url of the etcd service
-    :param user_id: id of the user
-    :param user_name: name of the user
-    :return: does not return a value
+    :return: actual_user_id =>
+             actual_user_name =>
+             error =>
     """
-    test_class_instance.mylog.info('gateway_util.verify_user_etcd() function is being called')
+    actual_user_id, actual_user_name, error = '', '', ''
+    test_class_instance.mylog.info('gateway_util.get_user_etcd() function is being called')
     test_class_instance.mylog.info('--------------------------------------------------------')
-    test_class_instance.mylog.info('gateway_util.verify_user_etcd(): params: %s and %s' % (user_id, user_name))
+    test_class_instance.mylog.info('gateway_util.get_user_etcd(): params: user_id \'%s\'' % (user_id))
     test_class_instance.mylog.info('')
     cmd = 'ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "userv1/%s" --print-value-only' \
           % (etcd, user_id)
     out, error = litmus_utils.execCmd(test_class_instance, cmd, status='OUT_STATUS')
-    # make sure there is not error before proceeding further
-    try:
-        assert error == '' and out != '', 'Executing \'%s\' command returned an error \'%s\'' % (cmd, error)
-    except AssertionError, e:
-        test_class_instance.mylog.info(e)
-        raise
-    actual_user_id = ast.literal_eval(out).get('id')
-    test_class_instance.mylog.info('Assert expected user_id ' + str(user_id) + ' equals to actual user_id '
-                                   + str(actual_user_id))
-    try:
-        assert user_id == actual_user_id, 'Expected user id is not equal to actual user id'
-    except AssertionError, e:
-        test_class_instance.mylog.info(e)
-        raise
-    actual_user_name = ast.literal_eval(out).get('name')
-    if user_name != 'DoubleQuotes\"' and user_name != 'DoubleQuotes\"_updated_name':
-        actual_user_name = json.loads("\"" + actual_user_name + "\"")
-    test_class_instance.mylog.info('Assert expected user_name ' + str(user_name) + ' equals actual to user_name '
-                                   + str(actual_user_name))
-    try:
-        assert user_name == actual_user_name, 'Expected user name is not equal to actual user name'
-    except AssertionError, e:
-        test_class_instance.mylog.info(e)
-        raise
+    if out != '':
+        actual_user_id = ast.literal_eval(out).get('id')
+        test_class_instance.mylog.info('gateway_util.get_user_etcd() : actual_user_id = \'%s\'' % actual_user_id)
+        actual_user_name = ast.literal_eval(out).get('name')
+        if actual_user_name != 'DoubleQuotes\"' and actual_user_name != 'DoubleQuotes\"_updated_name':
+            actual_user_name = json.loads("\"" + actual_user_name + "\"")
+        test_class_instance.mylog.info('gateway_util.get_user_etcd() : actual_user_name = \'%s\'' % actual_user_name)
+    return actual_user_id, actual_user_name, error
 
 
 def get_bucket_etcd(test_class_instance, etcd, bucket_id):
     """
     Function gets
-    :param test_class_instance: instance of the test clas, i.e. self
+    :param test_class_instance: instance of the test class, i.e. self
     :param etcd: url of the etcd service
     :param bucket_id: id of the bucket
     :return: actual_bucket_id =>
