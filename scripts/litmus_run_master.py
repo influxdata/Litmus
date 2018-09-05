@@ -5,7 +5,7 @@
 #3. Collect all relevant product logs (if any)
 #4. Call pytest to run tests
 
-import pkgutil, subprocess, os, sys, optparse
+import pkgutil, subprocess, os, sys, optparse, json, time
 
 MasterScriptDir=os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(MasterScriptDir, 'src'))
@@ -15,9 +15,6 @@ print 'SYSTEM PATH : ' + str(sys.path)
 # add script options
 usage='%prog[options]'
 parser=optparse.OptionParser(usage=usage)
-
-# pytest options
-parser.add_option('--testsubset', action='store', dest='testsubset', help='LET\'S YOU ONLY RU NTHE TESTS MARKED WITH MARKER')
 
 # version of the influxdata: 1.x (software), 2.0 (cloud)
 parser.add_option('--product-version', dest='productversion' ,action='store', help='VERSION OF THE PRODUCT')
@@ -169,7 +166,6 @@ if options.marktest is not None:
     pytest_parameters.append('-m ' + options.marktest)
 pytest_parameters.append('-v')
 pytest_parameters.append('--junitxml=result.xml')
-if options.testsubset is not None: pytest_parameters.append(options.testsubset)
 pytest_parameters.append('-s')
 pytest_parameters.append('--tb=short')
 pytest_parameters.append('--disable-pytest-warnings')
@@ -325,7 +321,7 @@ if prod_version == '1':
         pytest_parameters.append('--kapacitor=' + options.kapacitor)
         print '-------------------------------------'
         print 'KAPACITOR IP : ' + options.kapacitor
-        print '-------------------------------------'
+        print '-------------------------------------\n'
     elif options.nokapacitor is not False:
         print 'NOT INSTALLING KAPACITOR'
     else:
@@ -338,8 +334,7 @@ if prod_version == '1':
         kapacitor_name = (p.communicate()[0]).strip('\n')
         print '-------------------------------------'
         print 'KAPACITOR IP : ' + str(kapacitor_name)
-        print '-------------------------------------'
-        print ''
+        print '-------------------------------------\n'
         pytest_parameters.append('--kapacitor=' + kapacitor_name)
 else:
     # we are running tests against 2.0 (cloud)
@@ -349,8 +344,7 @@ else:
     if options.gateway:
         pytest_parameters.append('--gateway=' + options.gateway)
         print 'GATEWAY URL : ' + options.gateway
-        print '-----------------------------------'
-        print ''
+        print '-----------------------------------\n'
     else:
         print 'GATEWAY URL IS NOT SPECIFIED. EXITING'
         exit(1)
@@ -361,8 +355,7 @@ else:
     if options.flux:
         pytest_parameters.append('--flux=' + options.flux)
         print 'FLUX URL : ' + options.flux
-        print '--------------------------'
-        print ''
+        print '--------------------------\n'
     else:
         print 'FLUX URL IS NOT SPECIFIED. EXITING'
         exit(1)
@@ -373,10 +366,91 @@ else:
     if options.etcd:
         pytest_parameters.append('--etcd=' + options.etcd)
         print 'ETCD URL : ' + options.etcd
-        print '--------------------------'
-        print ''
+        print '--------------------------\n'
     else:
         print 'ETCD URL IS NOT SPECIFIED. EXITING'
+        exit(1)
+
+    ################
+    # HEALTH CHECK #
+    ################
+
+    # Need to check the health status of the different services
+    # get the JSON output of curl -GET http://<gateway>:9999/healthz
+    """
+    {
+      "status": "unhealthy",
+      "checks": [
+        {
+          "name": "internal",
+          "status": "healthy"
+        },
+        {
+          "status": "unhealthy",
+          "checks": [
+            {
+              "name": "internal",
+              "status": "healthy"
+            },
+            {
+              "name": "kafka",
+              "status": "healthy"
+            },
+            {
+              "name": "etcd",
+              "status": "unhealthy",
+              "message": "dial tcp: lookup etcd on 10.96.0.10:53: no such host"
+            }
+          ]
+        }
+      ]
+    }
+    """
+    general_status, out = '', ''
+    cmd = 'curl -s -GET %s/healthz' % options.gateway
+    time_end = time.time() + 60 # wait up to 60 sec for services to start
+    print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
+    print '-----------------------------------------------------------------\n'
+    while time.time() <= time_end:
+        g_health = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # wait for up to 10 sec for curl command to return
+        cmd_time_end = time.time() + 10
+        while time.time() <= cmd_time_end:
+            if g_health.poll() == None:
+                #print 'Waiting for \'%s\' command to return' % cmd
+                time.sleep(1)
+                continue
+            else:
+                break
+        if g_health.poll() != 0:
+            print '\'%s\' command returned non-zero status. Exiting' % cmd
+            exit(1)
+        # get output and error (if any) of the command
+        out, err = g_health.communicate()
+        if err != '':
+            print '\'%s\' command returned an error \'%s\'. Exiting' % (cmd, err)
+            exit(1)
+        # remove new line characters from output of the command, which is a JSON string
+        out = out.replace('\n','')
+        """
+        <gateway>:<port>/healthz command returns the health status for gateway, kafka and etcd.
+        if status of kafka or/and etcd or/and gateway is 'unhealthy', then the general status is unhealthy
+        """
+        # load JSON string to be able to access it
+        out = json.loads(out)
+        # get the status
+        general_status = out.get('status')
+        if general_status != 'healthy':
+            print 'Waiting for services to start up'
+            time.sleep(1)
+            continue
+        else:
+            print 'SERVICES ARE UP AND RUNNING'
+            print '---------------------------\n'
+            break
+    if general_status != 'healthy':
+        print 'SERVICES ARE NOT UP AND RUNNING AFTER 1 MINUTE. EXITING.'
+        print 'STATUS OF THE SERVICES \'%s\'' % out
         exit(1)
 
 # passing a file containing the test suite(s)
