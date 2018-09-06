@@ -407,14 +407,16 @@ else:
     }
     """
     general_status, out = '', ''
-    cmd = 'curl -s -GET %s/healthz' % options.gateway
-    time_end = time.time() + 60 # wait up to 60 sec for services to start
+    # let the whole curl operation to run for no more than 10 seconds
+    cmd = 'curl -s --max-time 10 -GET %s/healthz' % options.gateway
+    time_end = time.time() + 120 # wait up to 120 sec for services to start
     print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
     print '-----------------------------------------------------------------\n'
     while time.time() <= time_end:
         g_health = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # wait for up to 10 sec for curl command to return
         cmd_time_end = time.time() + 10
+        """
         while time.time() <= cmd_time_end:
             if g_health.poll() == None:
                 #print 'Waiting for \'%s\' command to return' % cmd
@@ -425,6 +427,7 @@ else:
         if g_health.poll() != 0:
             print '\'%s\' command returned non-zero status. Exiting' % cmd
             exit(1)
+        """
         # get output and error (if any) of the command
         out, err = g_health.communicate()
         if err != '':
