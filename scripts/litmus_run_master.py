@@ -23,6 +23,7 @@ parser.add_option('--product-version', dest='productversion' ,action='store', he
 parser.add_option('--gateway', action='store', help='GATEWAY URL THAT HANDLES EXTERNAL REQUESTS, e.g. http://localhost:9999')
 parser.add_option('--flux', action='store', help='QUERY URL THAT HANDLES FLUX REQUESTS, e.g http://localhost:8093')
 parser.add_option('--etcd', action='store', help='ETCD URL FOR DISTRIBUTED KEY-VALUE STORE')
+parser.add_option('--transpilerde', action='store', help='TRANSPILERDE URL THAT HANDLES REQUESTS TO TRANSLATE INFLUXQL QUERIES TO FLUX')
 
 # options for running REST tests (By default these options will be derived from the output o the pcl list command
 # chronograf is supported on both platforms 1.x and 2.0
@@ -371,12 +372,24 @@ else:
         print 'ETCD URL IS NOT SPECIFIED. EXITING'
         exit(1)
 
+    ####################
+    # TRANSPILERDE URL #
+    ####################
+    if options.transpilerde:
+        pytest_parameters.append('--transpilerde=' + options.transpilerde)
+        print 'TRANSPILERDE URL : ' + options.transpilerde
+        print '------------------------------------------\n'
+    else:
+        print 'TRANSPILERDE URL IS NOT SPECIFIED. EXITING'
+        exit(1)
+
     ################
     # HEALTH CHECK #
     ################
 
-    # Need to check the health status of the different services
+    # Need to check the health status of the different services, e.g.
     # get the JSON output of curl -GET http://<gateway>:9999/healthz
+    # see https://github.com/influxdata/Litmus/issues/87
     """
     {
       "status": "unhealthy",
@@ -406,59 +419,71 @@ else:
       ]
     }
     """
-    general_status, out = '', ''
-    # let the whole curl operation to run for no more than 10 seconds
-    cmd = 'curl -s --max-time 10 -GET %s/healthz' % options.gateway
-    time_end = time.time() + 180 # wait up to 120 sec for services to start
-    print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
-    print '-----------------------------------------------------------------\n'
-    while time.time() <= time_end:
-	print 'RUNNING \'%s\' COMMAND\n' % cmd
-        # wait for up to a minute for curl command to return
-        cmd_time_end = time.time() + 60
-        while time.time() <= cmd_time_end:
-            g_health = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if g_health.poll() == None:
-                print 'Waiting for \'%s\' command to return' % cmd
+    # gateway checks for etcd, kafka and gateway services,
+    # queryd checks for queryd and storage services
+    # transpilerde checks for transpilerde service
+    # TODO: tasks and etcd-tasks services
+    services = {'gateway':options.gateway, 'queryd': options.flux, 'transpilerde': options.transpilerde}
+    general_status, out = 'unhealthy', ''
+    i = 0
+    for service in services:
+        # let the whole curl operation to run for no more than 10 seconds
+        cmd_command = 'curl -s --max-time 10 -GET %s/healthz' % services[service]
+        time_end = time.time() + 180 # wait up to 120 sec for services to start
+        if service == 'gateway': print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
+        if service == 'queryd': print 'GETTING THE HEALTH STATUS OF THE QUERYD AND STORAGE SERVICES'
+        if service == 'transpilerde': print 'GETTING THE HEALTH STATUS OF THE TRANSPILERDE SERVICE'
+        print '-----------------------------------------------------------------\n'
+        while time.time() <= time_end:
+            print 'RUNNING \'%s\' COMMAND\n' % cmd_command
+            # wait for up to a minute for curl command to return
+            cmd_time_end = time.time() + 10
+            while time.time() <= cmd_time_end:
+                g_health = subprocess.Popen(cmd_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                # I do not really like to put it to sleep for 2 sec, but poll() checks if the process has terminated,
+                # sometimes it takes more than a few seconds.
                 time.sleep(2)
+                if g_health.poll() == None:
+                    print 'Waiting for \'%s\' command to return' % cmd_command
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+            if g_health.poll() != 0:
+                print 'EXIT STATUS OF \'%s\' COMMAND IS NOT ZERO. TRYING ONCE AGAIN\n' % cmd_command
+                time.sleep(1)
+                continue
+            # get output and error (if any) of the command
+            out, err = g_health.communicate()
+            if err != '':
+                print '\'%s\' command returned an error \'%s\'' % (cmd_command, err)
+                time.sleep(1)
+                continue
+            # remove new line characters from output of the command, which is a JSON string
+            out = out.replace('\n','')
+            """
+            <gateway>:<port>/healthz command returns the health status for gateway, kafka and etcd.
+            if status of kafka or/and etcd or/and gateway is 'unhealthy', then the general status is unhealthy
+            """
+            if out == '':
+                print 'OUTPUT OF THE COMMAND IS EMPTY. SLEEPING'
+                time.sleep(1)
+                continue
+            # load JSON string to be able to access it
+            out = json.loads(out)
+            # get the status
+            general_status = out.get('status')
+            if general_status != 'healthy':
+                print 'Waiting for services to start up'
+                time.sleep(1)
                 continue
             else:
+                print 'SERVICES ARE UP AND RUNNING'
+                print '---------------------------\n'
                 break
-	if g_health.poll() != 0:
-            print 'EXIT STATUS OF \'%s\' COMMAND IS NOT ZERO. TRYING ONCE AGAIN\n' % cmd
-            time.sleep(1)
-            continue
-        # get output and error (if any) of the command
-        out, err = g_health.communicate()
-        if err != '':
-            print '\'%s\' command returned an error \'%s\'' % (cmd, err)
-            time.sleep(1)
-            continue
-        # remove new line characters from output of the command, which is a JSON string
-        out = out.replace('\n','')
-        """
-        <gateway>:<port>/healthz command returns the health status for gateway, kafka and etcd.
-        if status of kafka or/and etcd or/and gateway is 'unhealthy', then the general status is unhealthy
-        """
-	if out == '':
-            print 'OUTPUT OF THE COMMAND IS EMPTY. SLEEPING'
-            time.sleep(1)
-	    continue	
-        # load JSON string to be able to access it
-        out = json.loads(out)
-        # get the status
-        general_status = out.get('status')
-        if general_status != 'healthy':
-            print 'Waiting for services to start up'
-            time.sleep(1)
-            continue
-        else:
-            print 'SERVICES ARE UP AND RUNNING'
-            print '---------------------------\n'
-            break
     if general_status != 'healthy':
-        print 'SERVICES ARE NOT UP AND RUNNING AFTER 1 MINUTE. EXITING.'
-        print 'STATUS OF THE SERVICES \'%s\'' % out
+        print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
+        #print 'STATUS OF THE SERVICES \'%s\'' % out
         exit(1)
 
 # passing a file containing the test suite(s)
