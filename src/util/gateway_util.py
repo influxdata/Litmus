@@ -782,9 +782,11 @@ def get_org_etcd(test_class_instance, etcd, org_id, get_index_values=False):
                           '--print-value-only' % (etcd, org_id)
         name_by_index_id, error_by_index_id = \
             litmus_utils.execCmd(test_class_instance, cmd_index_by_id, status='OUT_STATUS')
+        # get first 64 characters
+        name_by_index_id = name_by_index_id[:64]
         test_class_instance.mylog.info('gateway_util.get_org_etcd() : Getting index by index by name prefix')
         cmd_index_by_name = 'ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "indexv1/org/name/%s" ' \
-                            '--print-value-only' % (etcd, name_by_index_id.strip())
+                            '--print-value-only' % (etcd, name_by_index_id)
         id_by_index_name, error_by_index_name = \
             litmus_utils.execCmd(test_class_instance, cmd_index_by_name, status='OUT_STATUS')
         name_by_index_id = name_by_index_id.strip()

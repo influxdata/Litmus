@@ -409,36 +409,41 @@ else:
     general_status, out = '', ''
     # let the whole curl operation to run for no more than 10 seconds
     cmd = 'curl -s --max-time 10 -GET %s/healthz' % options.gateway
-    time_end = time.time() + 120 # wait up to 120 sec for services to start
+    time_end = time.time() + 180 # wait up to 120 sec for services to start
     print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
     print '-----------------------------------------------------------------\n'
     while time.time() <= time_end:
-        g_health = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # wait for up to 10 sec for curl command to return
-        cmd_time_end = time.time() + 10
-        """
+	print 'RUNNING \'%s\' COMMAND\n' % cmd
+        # wait for up to a minute for curl command to return
+        cmd_time_end = time.time() + 60
         while time.time() <= cmd_time_end:
+            g_health = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if g_health.poll() == None:
-                #print 'Waiting for \'%s\' command to return' % cmd
-                time.sleep(1)
+                print 'Waiting for \'%s\' command to return' % cmd
+                time.sleep(2)
                 continue
             else:
                 break
-        if g_health.poll() != 0:
-            print '\'%s\' command returned non-zero status. Exiting' % cmd
-            exit(1)
-        """
+	if g_health.poll() != 0:
+            print 'EXIT STATUS OF \'%s\' COMMAND IS NOT ZERO. TRYING ONCE AGAIN\n' % cmd
+            time.sleep(1)
+            continue
         # get output and error (if any) of the command
         out, err = g_health.communicate()
         if err != '':
-            print '\'%s\' command returned an error \'%s\'. Exiting' % (cmd, err)
-            exit(1)
+            print '\'%s\' command returned an error \'%s\'' % (cmd, err)
+            time.sleep(1)
+            continue
         # remove new line characters from output of the command, which is a JSON string
         out = out.replace('\n','')
         """
         <gateway>:<port>/healthz command returns the health status for gateway, kafka and etcd.
         if status of kafka or/and etcd or/and gateway is 'unhealthy', then the general status is unhealthy
         """
+	if out == '':
+            print 'OUTPUT OF THE COMMAND IS EMPTY. SLEEPING'
+            time.sleep(1)
+	    continue	
         # load JSON string to be able to access it
         out = json.loads(out)
         # get the status
