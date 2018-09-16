@@ -197,8 +197,14 @@ def get_all_organizations(test_class_instance, url):
     :param test_class_instance:
     :param url:
     :return: status_code, list of organization's dictionaries:
-            {u'id': u'0255285f6ef3c000', u'name': u'n_same_bucket_name'},
-            {u'id': u'0255286dae73c000', u'name': u'u_same_bucket_name'}
+            {u'id': u'02a51e4f52a22000',
+             u'links': {
+                u'users': u'/v2/orgs/02a51e4f52a22000/users',
+                u'buckets': u'/v2/buckets?org=gxfrp',
+                u'tasks': u'/v2/tasks?org=gxfrp',
+                u'dashboards': u'/v2/dashboards?org=gxfrp',
+                u'self': u'/v2/orgs/02a51e4f52a22000'},
+             u'name': u'gxfrp'}
     """
     test_class_instance.mylog.info('gateway_util.get_all_organizations() function is being called')
     test_class_instance.mylog.info('-------------------------------------------------------------')
@@ -206,7 +212,21 @@ def get_all_organizations(test_class_instance, url):
     list_of_organizations = []
     response = test_class_instance.rl.get(base_url=url, path=ORG_URL)
     try:
-        list_of_organizations = response.json()
+        # response.json() returns dictionary:
+        # {
+        #  u'orgs':
+        #   [{u'id': u'02a51e4f52a22000',
+        #     u'links': {
+        #                   u'users': u'/v2/orgs/02a51e4f52a22000/users',
+        #                   u'buckets': u'/v2/buckets?org=gxfrp',
+        #                   u'tasks': u'/v2/tasks?org=gxfrp',
+        #                   u'dashboards': u'/v2/dashboards?org=gxfrp',
+        #                   u'self': u'/v2/orgs/02a51e4f52a22000'},
+        #    u'name': u'gxfrp'}
+        #    ],
+        # u'links': {u'self': u'/v2/orgs'}
+        # }
+        list_of_organizations = response.json()['orgs']
         if type(list_of_organizations) == list:
             test_class_instance.mylog.info('gateway_util.get_all_organizations() LIST OF OGRANIZATIONS=' +
                                            str(list_of_organizations))
@@ -685,10 +705,14 @@ def get_all_buckets(test_class_instance, url):
     :param test_class_instance: instance of the test class
     :param url: gateway url
     :return: status code and list of all of the bucket's dictionaries:
-             {u'organizationID': u'0255286dae73c000', u'organization': u'u_same_bucket_name', u'id': u'0255286eb833c000',
-                    u'retentionPeriod': 1, u'name': u'one_for_all'}
-             {u'organizationID': u'0255284939b3c000', u'organization': u'c_same_bucket_name', u'id': u'0255284a3d33c000',
-                    u'retentionPeriod': 1, u'name': u'one_for_all'}
+             {u'name': u'bucket_1',
+              u'links':
+                   {u'org': u'/v1/orgs/02a5230b19a22000',
+                   u'self': u'/v1/buckets/02a5231df7a22000'},
+               u'organizationID': u'02a5230b19a22000',
+               u'retentionPeriod': 0,
+               u'organization': u'org_1',
+               u'id': u'02a5231df7a22000'}
     """
     test_class_instance.mylog.info('gateway_util.get_all_buckets() function is being called')
     test_class_instance.mylog.info('-------------------------------------------------------')
@@ -696,7 +720,21 @@ def get_all_buckets(test_class_instance, url):
     list_of_buckets = []
     response = test_class_instance.rl.get(base_url=url, path=BUCKETS_URL)
     try:
-        list_of_buckets = response.json()
+        # response object returns dictionary:
+        # {u'buckets':
+        #   [
+        #       {u'name': u'bucket_1',
+        #       u'links':
+        #           {u'org': u'/v1/orgs/02a5230b19a22000',
+        #           u'self': u'/v1/buckets/02a5231df7a22000'},
+        #       u'organizationID': u'02a5230b19a22000',
+        #       u'retentionPeriod': 0,
+        #       u'organization': u'org_1',
+        #       u'id': u'02a5231df7a22000'}
+        #   ],
+        # u'links': {u'self': u'/v1/buckets'}
+        # }
+        list_of_buckets = response.json()['buckets']
         if type(list_of_buckets) == list:
             test_class_instance.mylog.info('gateway_util.get_all_buckets() LIST OF BUCKETS=' +
                                            str(list_of_buckets))
