@@ -423,13 +423,13 @@ else:
     # queryd checks for queryd and storage services
     # transpilerde checks for transpilerde service
     # TODO: tasks and etcd-tasks services
+    status = {}
     services = {'gateway':options.gateway, 'queryd': options.flux, 'transpilerde': options.transpilerde}
-    general_status, out = 'unhealthy', ''
-    i = 0
     for service in services:
+        general_status, out = 'unhealthy', ''
         # let the whole curl operation to run for no more than 10 seconds
         cmd_command = 'curl -s --max-time 10 -GET %s/healthz' % services[service]
-        time_end = time.time() + 180 # wait up to 120 sec for services to start
+        time_end = time.time() + 20 # wait up to 120 sec for services to start
         if service == 'gateway': print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
         if service == 'queryd': print 'GETTING THE HEALTH STATUS OF THE QUERYD AND STORAGE SERVICES'
         if service == 'transpilerde': print 'GETTING THE HEALTH STATUS OF THE TRANSPILERDE SERVICE'
@@ -440,8 +440,6 @@ else:
             cmd_time_end = time.time() + 10
             while time.time() <= cmd_time_end:
                 g_health = subprocess.Popen(cmd_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                # I do not really like to put it to sleep for 2 sec, but poll() checks if the process has terminated,
-                # sometimes it takes more than a few seconds.
                 time.sleep(2)
                 if g_health.poll() == None:
                     print 'Waiting for \'%s\' command to return' % cmd_command
@@ -481,11 +479,11 @@ else:
                 print 'SERVICES ARE UP AND RUNNING'
                 print '---------------------------\n'
                 break
-    if general_status != 'healthy':
+        status[service] = general_status
+    print "STATUS OD THE SERVICES : " + str(status)
+    if 'unhealthy' in status.values():
         print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
-        #print 'STATUS OF THE SERVICES \'%s\'' % out
         exit(1)
-
 # passing a file containing the test suite(s)
 if options.tests is not None:
     pytest_parameters.extend(options.tests)
