@@ -429,7 +429,7 @@ else:
         general_status, out = 'unhealthy', ''
         # let the whole curl operation to run for no more than 10 seconds
         cmd_command = 'curl -s --max-time 10 -GET %s/healthz' % services[service]
-        time_end = time.time() + 20 # wait up to 120 sec for services to start
+        time_end = time.time() + 180 # wait up to 180 sec for services to start
         if service == 'gateway': print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
         if service == 'queryd': print 'GETTING THE HEALTH STATUS OF THE QUERYD AND STORAGE SERVICES'
         if service == 'transpilerde': print 'GETTING THE HEALTH STATUS OF THE TRANSPILERDE SERVICE'
