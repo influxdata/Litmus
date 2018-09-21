@@ -495,7 +495,8 @@ def get_all_users(test_class_instance, url):
     list_of_users = []
     response = test_class_instance.rl.get(base_url=url, path=USERS_URL)
     try:
-        list_of_users = response.json()
+        # {u'users': [], u'links': {u'self': u'/v2/users'}}
+        list_of_users = response.json()['users']
         if type(list_of_users) == list:
             test_class_instance.mylog.info('gateway_util.get_all_users() LIST OF USERS=' +
                                            str(list_of_users))
