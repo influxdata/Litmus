@@ -80,11 +80,11 @@ class TestDeleteOrganizationsAPI(object):
                     self.mylog.info(test_name + 'STEP 2.1: Create Bucket "%s"' % name_of_the_bucket)
                     self.mylog.info('')
                     status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-                        gateway_util.create_bucket(self, self.gateway, name_of_the_bucket, retentionPeriod=None,
+                        gateway_util.create_bucket(self, self.gateway, name_of_the_bucket, retentionPeriod='1h',
                                                    organizationID=created_org_id)
                     _assert(self, status, 201, 'status code')
                     _assert(self, created_bucket_name, name_of_the_bucket, 'bucket_name')
-                    _assert(self, retention_period, 0, 'retention period')
+                    _assert(self, retention_period, '1h', 'retention period')
                     _assert(self, error_message, '', 'error message')
                     bucket_info[created_bucket_id] = created_bucket_name
                 self.mylog.info('')
@@ -103,7 +103,7 @@ class TestDeleteOrganizationsAPI(object):
                 self.mylog.info(test_name + ' STEP 5: Verify bucket data is preseved in the etcd store')
                 self.mylog.info('')
                 for id in bucket_info.keys():
-                    verify_bucket_etcd_entries(self, test_name, id, bucket_info[id], 0, '')
+                    verify_bucket_etcd_entries(self, test_name, id, bucket_info[id], 3600000000000, '')
                     self.mylog.info('')
                     self.mylog.info(test_name + ' STEP 6: Verify bucket is not in the list of all buckets')
                     self.mylog.info('')
