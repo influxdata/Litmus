@@ -75,13 +75,17 @@ class TestCreateBucketsAPI(object):
             _assert(self, status, 201, 'status code')
 
         self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
+        # since RP is stored in nanoseconds, need to convert PR that is passed to method (1h, 1m, 1s, etc) into int by
+        # removing the last character that indicates the duration in our case - h (hour)
+        #exp_retention_period = int(retention_period[:-1]) * 3600000000000
         verify_bucket_etcd_entries(self, test_name, created_bucket_id, created_bucket_name, expected_error='',
-                                   expected_retention_period=retention_period)
+                                   expected_retention_period=3600000000000)
         self.footer(test_name)
 
     ############################################
     #       Lower Case Character Bucket Names  #
     ############################################
+    @pytest.mark.onetest
     @pytest.mark.parametrize('one_char', ascii_lowercase)
     def test_create_buckets_single_char_lower_case(self, one_char):
         """
@@ -94,7 +98,7 @@ class TestCreateBucketsAPI(object):
         3. Create a bucket with the name containing the same lower case ascii character as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_single_char_lower_case ', one_char, one_char, 1)
+        self.run_tests('test_create_buckets_single_char_lower_case ', one_char, one_char, "1h")
 
     @pytest.mark.parametrize('ten_char_lc', ten_char_lc)
     def test_create_buckets_10_char_lower_case(self, ten_char_lc):
@@ -109,7 +113,7 @@ class TestCreateBucketsAPI(object):
         3. Create a bucket with the name containing the same lower case ascii characters as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_10_char_lower_case ', ten_char_lc, ten_char_lc, 1)
+        self.run_tests('test_create_buckets_10_char_lower_case ', ten_char_lc, ten_char_lc, "1h")
 
     @pytest.mark.parametrize('twenty_char_lc', twenty_char_lc)
     def test_create_buckets_20_char_lower_case(self, twenty_char_lc):
@@ -124,7 +128,7 @@ class TestCreateBucketsAPI(object):
         3. Create a bucket with the name containing the same lower case ascii characters as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_20_char_lower_case ', twenty_char_lc, twenty_char_lc, 1)
+        self.run_tests('test_create_buckets_20_char_lower_case ', twenty_char_lc, twenty_char_lc, "1h")
 
     ######################################################
     #          Upper Case Character Bucket Names         #
@@ -142,7 +146,7 @@ class TestCreateBucketsAPI(object):
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
 
-        self.run_tests('test_create_buckets_single_char_upper_case ', one_char, one_char, 1)
+        self.run_tests('test_create_buckets_single_char_upper_case ', one_char, one_char, "1h")
 
     @pytest.mark.parametrize('ten_char_uc', ten_char_uc)
     def test_create_buckets_10_char_upper_case(self, ten_char_uc):
@@ -157,7 +161,7 @@ class TestCreateBucketsAPI(object):
         3. Create a bucket with the name containing the same upper case ascii characters as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_10_char_upper_case ', ten_char_uc, ten_char_uc, 1)
+        self.run_tests('test_create_buckets_10_char_upper_case ', ten_char_uc, ten_char_uc, "1h")
 
     @pytest.mark.parametrize('twenty_char_uc', twenty_char_uc)
     def test_create_buckets_20_char_upper_case(self, twenty_char_uc):
@@ -166,13 +170,13 @@ class TestCreateBucketsAPI(object):
         METHOD: POST
         tests bucket name containing random 20 upper case letters can be created and persisted in the etcd store.
         Test Steps:
-        1. Create an org with the name containing 20 random upper case ascii characters from the
+        "1h". Create an org with the name containing 20 random upper case ascii characters from the
            [ABCDEFGHIJKLMNOPQRSTUVWXYZ] list.
         2. Verify org name and org id persisted in the etcd store.
         3. Create a bucket with the name containing the same upper case ascii characters as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_20_char_upper_case ', twenty_char_uc, twenty_char_uc, 1)
+        self.run_tests('test_create_buckets_20_char_upper_case ', twenty_char_uc, twenty_char_uc, "1h")
 
     ############################################################
     #          Non-alphanumeric Character Bucket Names         #
@@ -190,7 +194,7 @@ class TestCreateBucketsAPI(object):
         3. Create a bucket with the name containing the same non-alphanumeric character as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_single_char_nonalphanumeric_case ', one_char, one_char, 1)
+        self.run_tests('test_create_buckets_single_char_nonalphanumeric_case ', one_char, one_char, "1h")
 
     @pytest.mark.parametrize('ten_char_nonalphanumeric', ten_char_nonalphanumeric)
     def test_create_buckets_10_char_nonalphanumeric_case(self, ten_char_nonalphanumeric):
@@ -206,7 +210,7 @@ class TestCreateBucketsAPI(object):
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
         self.run_tests('test_create_buckets_10_char_nonalphanumeric_case ',
-                       ten_char_nonalphanumeric, ten_char_nonalphanumeric, 1)
+                       ten_char_nonalphanumeric, ten_char_nonalphanumeric, "1h")
 
     @pytest.mark.parametrize('twenty_char_nonalphanumeric', twenty_char_nonalphanumeric)
     def test_create_buckets_20_char_nonalphanumeric_case(self, twenty_char_nonalphanumeric):
@@ -222,7 +226,7 @@ class TestCreateBucketsAPI(object):
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
         self.run_tests('test_create_buckets_20_char_nonalphanumeric_case ',
-                       twenty_char_nonalphanumeric, twenty_char_nonalphanumeric, 1)
+                       twenty_char_nonalphanumeric, twenty_char_nonalphanumeric, "1h")
 
     ####################################################
     #          Number Characters Bucket Names          #
@@ -239,7 +243,7 @@ class TestCreateBucketsAPI(object):
         3. Create a bucket with the name containing the same single digit as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_single_char_numbers ', one_char, one_char, 1)
+        self.run_tests('test_create_buckets_single_char_numbers ', one_char, one_char, "1h")
 
     @pytest.mark.parametrize('ten_char_numbers', ten_char_numbers)
     def test_create_buckets_10_char_numbers(self, ten_char_numbers):
@@ -253,7 +257,7 @@ class TestCreateBucketsAPI(object):
         3. Create a bucket with the name containing the same 10 random digits as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_10_char_numbers', ten_char_numbers, ten_char_numbers, 1)
+        self.run_tests('test_create_buckets_10_char_numbers', ten_char_numbers, ten_char_numbers, "1h")
 
     @pytest.mark.parametrize('five_chars', five_char_numbers)
     def test_create_buckets_5_char_numbers(self, five_chars):
@@ -267,7 +271,7 @@ class TestCreateBucketsAPI(object):
         3. Create a bucket with the name containing the same 20 random digits as the organization name.
         4. Verify bucket name and bucket id persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_5_char_numbers', five_chars, five_chars, 1)
+        self.run_tests('test_create_buckets_5_char_numbers', five_chars, five_chars, "1h")
 
     #######################################
     #     Mix Characters Bucket Names     #
@@ -279,7 +283,7 @@ class TestCreateBucketsAPI(object):
         METHOD: POST
         tests bucket name containing 20 mix characters can be created and persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_20_char_mix ', twenty_char_names, twenty_char_names, 1)
+        self.run_tests('test_create_buckets_20_char_mix ', twenty_char_names, twenty_char_names, "1h")
 
     @pytest.mark.parametrize('forty_char_names', forty_char_names_list)
     def test_create_buckets_40_char_mix(self, forty_char_names):
@@ -288,7 +292,7 @@ class TestCreateBucketsAPI(object):
         METHOD: POST
         tests bucket name containing 40 mix characters can be created and persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_40_char_mix ', forty_char_names, forty_char_names, 1)
+        self.run_tests('test_create_buckets_40_char_mix ', forty_char_names, forty_char_names, "1h")
 
     @pytest.mark.parametrize('special_char', special_char)
     def test_create_buckets_special_chars(self, special_char):
@@ -297,7 +301,7 @@ class TestCreateBucketsAPI(object):
         METHOD: POST
         tests bucket name containing special characters can be created and persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_special_chars ', special_char, special_char, 1)
+        self.run_tests('test_create_buckets_special_chars ', special_char, special_char, "1h")
 
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
     def test_create_buckets_200_char_mix(self, two_hundred_char_names):
@@ -306,7 +310,7 @@ class TestCreateBucketsAPI(object):
         METHOD: POST
         tests bucket name containing 200 mix characters can be created and persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_200_char_mix ', two_hundred_char_names, two_hundred_char_names, 1)
+        self.run_tests('test_create_buckets_200_char_mix ', two_hundred_char_names, two_hundred_char_names, "1h")
 
     @pytest.mark.parametrize('four_hundred_char_names', four_hundred_char_name_list)
     def test_create_buckets_400_char_mix(self, four_hundred_char_names):
@@ -315,7 +319,7 @@ class TestCreateBucketsAPI(object):
         METHOD: POST
         tests bucket name containing 400 mix characters can be created and persisted in the etcd store.
         """
-        self.run_tests('test_create_buckets_400_char_mix ', four_hundred_char_names, four_hundred_char_names, 1)
+        self.run_tests('test_create_buckets_400_char_mix ', four_hundred_char_names, four_hundred_char_names, "1h")
 
     def test_create_many_buckets_same_org(self):
         """
@@ -340,12 +344,12 @@ class TestCreateBucketsAPI(object):
         for bucket_name in ascii_lowercase:
             self.mylog.info(test_name + 'Creating bucket \'%s\' name' % bucket_name)
             status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-                gateway_util.create_bucket(self, self.gateway, bucket_name, 1, created_org_id)
+                gateway_util.create_bucket(self, self.gateway, bucket_name, "1h", created_org_id)
             self.mylog.info(test_name + 'Assert actual status \'%s\' equals to expected status 201' % status)
             _assert(self, status, 201, '')
             self.mylog.info(test_name + 'Verify bucket data was persisted in the etcd store')
             verify_bucket_etcd_entries(self, test_name, created_bucket_id, bucket_name, expected_error='',
-                                       expected_retention_period=1)
+                                       expected_retention_period=3600000000000)
         self.footer(test_name)
 
     def test_create_same_bucket_different_orgs(self):
@@ -373,13 +377,13 @@ class TestCreateBucketsAPI(object):
             self.mylog.info(test_name + 'STEP 3: Create Bucket \'%s\' name for org \'%s\' name'
                             % (bucket_name, org_name))
             status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-                gateway_util.create_bucket(self, self.gateway, bucket_name, 1, created_org_id)
+                gateway_util.create_bucket(self, self.gateway, bucket_name, "1h", created_org_id)
             self.mylog.info(test_name + 'Assert actual status \'%s\' equals to expected status 201' % status)
             _assert(self, status, 201, '')
 
             self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
             verify_bucket_etcd_entries(self, test_name, created_bucket_id, bucket_name, expected_error='',
-                                       expected_retention_period=1)
+                                       expected_retention_period=3600000000000)
         self.footer(test_name)
 
     def test_create_duplicate_bucket(self):
@@ -405,19 +409,18 @@ class TestCreateBucketsAPI(object):
 
         self.mylog.info(test_name + 'STEP 3: Create Bucket \'%s\'' % bucket_name)
         status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-            gateway_util.create_bucket(self, self.gateway, bucket_name, 1, created_org_id)
+            gateway_util.create_bucket(self, self.gateway, bucket_name, "1h", created_org_id)
         self.mylog.info(test_name + 'Assert actual status \'%s\' equals to expected status 201' % status)
-        _assert(self, status, 201, '')
+        _assert(self, status, 201, 'status code')
 
         self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
         verify_bucket_etcd_entries(self, test_name, created_bucket_id, bucket_name, expected_error='',
-                                   expected_retention_period=1)
+                                   expected_retention_period=3600000000000)
 
         self.mylog.info(test_name + 'STEP 5: Create Bucket with already existing name for the same org')
         status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-            gateway_util.create_bucket(self, self.gateway, bucket_name, 1, created_org_id)
-        _assert(self, error_message, expected_error_message, 'error message', xfail=True,
-                reason='error message is empty')
+            gateway_util.create_bucket(self, self.gateway, bucket_name, "1h", created_org_id)
+        _assert(self, error_message, expected_error_message, 'error message')
         self.footer(test_name)
 
     def test_create_bucket_no_org_id(self):
@@ -431,14 +434,14 @@ class TestCreateBucketsAPI(object):
         self.header(test_name)
         self.mylog.info(test_name + 'STEP 1: Create Bucket \'%s\' without ORG ID' % bucket_name)
         status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-            gateway_util.create_bucket(self, self.gateway, bucket_name, 1)
+            gateway_util.create_bucket(self, self.gateway, bucket_name, "1h")
         _assert(self, status, 404, 'status code', xfail=True, reason='status=%s' % status)
 
     def test_create_bucket_default_rp(self):
         """
         REST API: http://<gateway>/v1/buckets
         METHOD: POST
-        tests bucket can be created if retention policy is not provided, default RP is used: 0s)
+        tests bucket cannot be created if retention policy is not provided, (was before: default RP is used: 0s))
         """
         test_name = 'test_create_bucket_default_rp'
         org_name = 'org_default_rp'
@@ -448,7 +451,7 @@ class TestCreateBucketsAPI(object):
         status, created_org_id, created_org_name, error_message = \
             gateway_util.create_organization(self, self.gateway, org_name)
         self.mylog.info(test_name + 'Assert actual status \'%s\' equals to expected status 201' % status)
-        _assert(self, status, 201, '')
+        _assert(self, status, 201, 'status code')
 
         self.mylog.info(test_name + 'STEP 2: Verify org data was persisted in the etcd store')
         verify_org_etcd_entries(self, test_name, created_org_id, created_org_name, error='', get_index_values=True,
@@ -457,12 +460,12 @@ class TestCreateBucketsAPI(object):
         self.mylog.info(test_name + 'STEP 3: Create Bucket \'%s\'' % bucket_name)
         status, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
             gateway_util.create_bucket(self, self.gateway, bucket_name, organizationID=created_org_id)
-        self.mylog.info(test_name + 'Assert actual status \'%s\' equals to expected status 201' % status)
-        _assert(self, status, 201, 'status code')
-        self.mylog.info(test_name + 'Assert actual RP \'%s\' equals to expected RP \'%s\'' % (retention_period, 0))
-        _assert(self, retention_period, 0, 'retention policy')
+        self.mylog.info(test_name + 'Assert actual status \'%s\' equals to expected status 400' % status)
+        _assert(self, status, 400, 'status code')
+        #self.mylog.info(test_name + 'Assert actual RP \'%s\' equals to expected RP \'%s\'' % (retention_period, 0))
+        #_assert(self, retention_period, 0, 'retention policy')
 
-        self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
-        verify_bucket_etcd_entries(self, test_name, created_bucket_id, bucket_name, expected_error='',
-                                   expected_retention_period=0)
+        #self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
+        #verify_bucket_etcd_entries(self, test_name, created_bucket_id, bucket_name, expected_error='',
+        #                           expected_retention_period=0)
         self.footer(test_name)

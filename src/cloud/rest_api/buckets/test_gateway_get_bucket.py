@@ -71,8 +71,11 @@ class TestGetBucketsAPI(object):
             _assert(self, status, 201, 'status code')
 
         self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
+        # since RP is stored in nanoseconds, need to convert PR that is passed to method (1h, 1m, 1s, etc) into int by
+        # removing the last character that indicates the duration in our case - h (hour)
+        exp_retention_period = int(retention_period[:-1]) * 3600000000000
         verify_bucket_etcd_entries(self, test_name, created_bucket_id, created_bucket_name, expected_error='',
-                                   expected_retention_period=retention_period)
+                                   expected_retention_period=exp_retention_period)
 
         self.mylog.info(test_name + ' STEP 5: Get Created Bucket')
         status, actual_bucket_id, actual_bucket_name, error_message = \
@@ -97,7 +100,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using single lower case characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_single_char_lower_case_', one_char, one_char, 1)
+        self.run_tests('test_get_buckets_single_char_lower_case_', one_char, one_char, '1h')
 
     @pytest.mark.parametrize('ten_char_lc', ten_char_lc)
     def test_get_buckets_10_char_lower_case(self, ten_char_lc):
@@ -106,7 +109,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 10 random lower case characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_10_char_lower_case_', ten_char_lc, ten_char_lc, 1)
+        self.run_tests('test_get_buckets_10_char_lower_case_', ten_char_lc, ten_char_lc, '1h')
 
     @pytest.mark.parametrize('twenty_char_lc', twenty_char_lc)
     def test_get_buckets_20_char_lower_case(self, twenty_char_lc):
@@ -115,7 +118,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 20 random lower case characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_20_char_lower_case_', twenty_char_lc, twenty_char_lc, 1)
+        self.run_tests('test_get_buckets_20_char_lower_case_', twenty_char_lc, twenty_char_lc, '1h')
 
     #####################################################
     #     Upper Case Character Get bucket Name          #
@@ -127,7 +130,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using single upper case characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_single_char_upper_case_', one_char, one_char, 1)
+        self.run_tests('test_get_buckets_single_char_upper_case_', one_char, one_char, '1h')
 
     @pytest.mark.parametrize('ten_char_uc', ten_char_uc)
     def test_get_buckets_10_char_upper_case(self, ten_char_uc):
@@ -136,7 +139,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 10 random upper case characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('est_get_buckets_10_char_upper_case_', ten_char_uc, ten_char_uc, 1)
+        self.run_tests('est_get_buckets_10_char_upper_case_', ten_char_uc, ten_char_uc, '1h')
 
     @pytest.mark.parametrize('twenty_char_uc', twenty_char_uc)
     def test_get_orgs_20_char_upper_case(self, twenty_char_uc):
@@ -145,7 +148,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 20 random upper case characters can be returned by using get bucket by id endpoint.
                 """
-        self.run_tests('test_get_orgs_20_char_upper_case_', twenty_char_uc, twenty_char_uc, 1)
+        self.run_tests('test_get_orgs_20_char_upper_case_', twenty_char_uc, twenty_char_uc, '1h')
 
     ###########################################################
     #      Non-alphanumeric Character Get bucket Name         #
@@ -157,7 +160,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using single non-alphanumeric characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_single_char_nonalphanumeric_', one_char, one_char, 1)
+        self.run_tests('test_get_buckets_single_char_nonalphanumeric_', one_char, one_char, '1h')
 
     @pytest.mark.parametrize('ten_char_nonalphanumeric', ten_char_nonalphanumeric)
     def test_get_buckets_10_char_nonalphanumeric(self, ten_char_nonalphanumeric):
@@ -166,7 +169,8 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 10 random non-alphanumeric characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_orgs_10_char_nonalphanumeric_', ten_char_nonalphanumeric, ten_char_nonalphanumeric, 1)
+        self.run_tests('test_get_orgs_10_char_nonalphanumeric_', ten_char_nonalphanumeric,
+                       ten_char_nonalphanumeric, '1h')
 
     @pytest.mark.parametrize('twenty_char_nonalphanumeric', twenty_char_nonalphanumeric)
     def test_get_buckets_20_char_nonalphanumeric(self, twenty_char_nonalphanumeric):
@@ -176,7 +180,7 @@ class TestGetBucketsAPI(object):
         tests created bucket using 20 random non-alphanumeric characters can be returned by using get bucket by id endpoint.
         """
         self.run_tests('test_get_orgs_20_char_nonalphanumeric_',
-                       twenty_char_nonalphanumeric, twenty_char_nonalphanumeric, 1)
+                       twenty_char_nonalphanumeric, twenty_char_nonalphanumeric, '1h')
 
     ###################################################
     #      Number Characters Get bucket Name          #
@@ -188,7 +192,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using single digits can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_single_char_numbers_', one_char, one_char, 1)
+        self.run_tests('test_get_buckets_single_char_numbers_', one_char, one_char, '1h')
 
     @pytest.mark.parametrize('ten_char_numbers', ten_char_numbers)
     def test_get_buckets_10_char_numbers(self, ten_char_numbers):
@@ -197,7 +201,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 10 random digits can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_10_char_numbers_', ten_char_numbers, ten_char_numbers, 1)
+        self.run_tests('test_get_buckets_10_char_numbers_', ten_char_numbers, ten_char_numbers, '1h')
 
     @pytest.mark.parametrize('five_char_numbers', five_char_numbers)
     def test_get_buckets_5_char_numbers(self, five_char_numbers):
@@ -206,7 +210,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 5 random digits can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_5_char_numbers_', five_char_numbers, five_char_numbers, 1)
+        self.run_tests('test_get_buckets_5_char_numbers_', five_char_numbers, five_char_numbers, '1h')
 
     ######################################
     #     Mix Characters Get bucket Name #
@@ -218,7 +222,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 20 mix characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_20_char_name_mix_', twenty_char, twenty_char, 1)
+        self.run_tests('test_get_buckets_20_char_name_mix_', twenty_char, twenty_char, '1h')
 
     @pytest.mark.parametrize('forty_char', forty_char_names_list)
     def test_get_buckets_40_char_name_mix(self, forty_char):
@@ -227,7 +231,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 40 mix characters can be returned by using get bucket by id endpoint.
                 """
-        self.run_tests('test_get_buckets_40_char_name_mix_', forty_char, forty_char, 1)
+        self.run_tests('test_get_buckets_40_char_name_mix_', forty_char, forty_char, '1h')
 
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
     def test_get_buckets_200_char_mix(self, two_hundred_char_names):
@@ -236,7 +240,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 200 mix characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_200_char_name_mix_', two_hundred_char_names, two_hundred_char_names, 1)
+        self.run_tests('test_get_buckets_200_char_name_mix_', two_hundred_char_names, two_hundred_char_names, '1h')
 
     @pytest.mark.parametrize('four_hundred_char_names', four_hundred_char_name_list)
     def test_get_buckets_400_char_mix(self, four_hundred_char_names):
@@ -245,7 +249,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using 400 mix characters can be returned by using get bucket by id endpoint.
                 """
-        self.run_tests('test_get_buckets_400_char_name_mix_', four_hundred_char_names, four_hundred_char_names, 1)
+        self.run_tests('test_get_buckets_400_char_name_mix_', four_hundred_char_names, four_hundred_char_names, '1h')
 
     @pytest.mark.parametrize('special_char', special_char)
     def test_get_buckets_special_chars(self, special_char):
@@ -254,7 +258,7 @@ class TestGetBucketsAPI(object):
         METHOD: GET
         tests created bucket using special characters can be returned by using get bucket by id endpoint.
         """
-        self.run_tests('test_get_buckets_special_chars_', special_char, special_char, 1)
+        self.run_tests('test_get_buckets_special_chars_', special_char, special_char, '1h')
 
     def test_get_non_existent_bucket_id(self):
         """

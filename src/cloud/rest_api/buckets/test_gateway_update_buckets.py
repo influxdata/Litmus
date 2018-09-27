@@ -79,7 +79,7 @@ class TestUpdateBucketsNameAPI(object):
 
         self.mylog.info(test_name + 'STEP 4: Verify bucket data was persisted in the etcd store')
         verify_bucket_etcd_entries(self, test_name, created_bucket_id, created_bucket_name, expected_error='',
-                                   expected_retention_period=retention_period)
+                                   expected_retention_period=3600000000000)
 
         # Neither bucket name, nor the retention period are being updated.
         if new_bucket_name is None and new_retention is None:
@@ -150,7 +150,7 @@ class TestUpdateBucketsNameAPI(object):
 
         self.mylog.info(test_name + 'STEP 6: Verify updated bucket info was persisted in the etcd store')
         verify_bucket_etcd_entries(self, test_name, bucket_id, updated_bucket_name, expected_error='',
-                                   expected_retention_period=retention)
+                                   expected_retention_period=3600000000000)
         self.footer(test_name)
 
     ###############################################
@@ -165,7 +165,7 @@ class TestUpdateBucketsNameAPI(object):
         tests bucket name containing single character lower case letters can be updated and persisted in the etcd store.
         """
         self.run_tests('test_update_buckets_name_single_char_lower_case ',
-                       one_char, one_char, 1, one_char + '_updated', None)
+                       one_char, one_char, '1h', one_char + '_updated', None)
 
     @pytest.mark.parametrize('ten_char_lc', ten_char_lc)
     def test_update_buckets_name_10_char_lower_case(self, ten_char_lc):
@@ -174,7 +174,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing random 10 lower case letters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_10_char_lower_case ', ten_char_lc, ten_char_lc, 1,
+        self.run_tests('test_update_buckets_name_10_char_lower_case ', ten_char_lc, ten_char_lc, '1h',
                        ten_char_lc + '_updated', None)
 
     @pytest.mark.parametrize('twenty_char_lc', twenty_char_lc)
@@ -184,7 +184,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing random 20 lower case letters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_20_char_lower_case ', twenty_char_lc, twenty_char_lc, 1,
+        self.run_tests('test_update_buckets_name_20_char_lower_case ', twenty_char_lc, twenty_char_lc, '1h',
                        twenty_char_lc + '_updated', None)
 
     ######################################################
@@ -197,7 +197,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing single upper case letters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_single_char_upper_case ', one_char, one_char, 1,
+        self.run_tests('test_update_buckets_name_single_char_upper_case ', one_char, one_char, '1h',
                        one_char + '_updated', None)
 
     @pytest.mark.parametrize('ten_char_uc', ten_char_uc)
@@ -207,7 +207,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing random 10 upper case letters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_10_char_upper_case ', ten_char_uc, ten_char_uc, 1,
+        self.run_tests('test_update_buckets_name_10_char_upper_case ', ten_char_uc, ten_char_uc, '1h',
                        ten_char_uc + '_updated', None)
 
     @pytest.mark.parametrize('twenty_char_uc', twenty_char_uc)
@@ -217,7 +217,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests buckets name containing random 20 upper case letters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_20_char_upper_case ', twenty_char_uc, twenty_char_uc, 1,
+        self.run_tests('test_update_buckets_name_20_char_upper_case ', twenty_char_uc, twenty_char_uc, '1h',
                        twenty_char_uc + '_updated', None)
 
     #############################################################
@@ -230,7 +230,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing single non-alphanumeric character can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_single_char_nonalphanumeric_case ', one_char, one_char, 1,
+        self.run_tests('test_update_buckets_name_single_char_nonalphanumeric_case ', one_char, one_char, '1h',
                        one_char + '_updated', None)
 
     @pytest.mark.parametrize('ten_char_nonalphanumeric', ten_char_nonalphanumeric)
@@ -241,7 +241,7 @@ class TestUpdateBucketsNameAPI(object):
         tests bucket name containing random 10 non-alphanumeric characters can be updated and persisted in the etcd store.
         """
         self.run_tests('test_update_buckets_name_10_char_nonalphanumeric_case ', ten_char_nonalphanumeric,
-                       ten_char_nonalphanumeric, 1, ten_char_nonalphanumeric + '_updated', None)
+                       ten_char_nonalphanumeric, '1h', ten_char_nonalphanumeric + '_updated', None)
 
     @pytest.mark.parametrize('twenty_char_nonalphanumeric', twenty_char_nonalphanumeric)
     def test_update_buckets_name_20_char_nonalphanumeric_case(self, twenty_char_nonalphanumeric):
@@ -251,7 +251,7 @@ class TestUpdateBucketsNameAPI(object):
         tests bucket name containing random 20 non-alphanumeric characters can be updated and persisted in the etcd store.
         """
         self.run_tests('test_update_buckets_name_20_char_nonalphanumeric_case ', twenty_char_nonalphanumeric,
-                       twenty_char_nonalphanumeric, 1, twenty_char_nonalphanumeric + '_updated', None)
+                       twenty_char_nonalphanumeric, '1h', twenty_char_nonalphanumeric + '_updated', None)
 
     ####################################################
     #          Number Characters bucket Names          #
@@ -263,7 +263,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing single digits can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_single_char_numbers ', one_char, one_char, 1,
+        self.run_tests('test_update_buckets_name_single_char_numbers ', one_char, one_char, '1h',
                        one_char + '_updated', None)
 
     @pytest.mark.parametrize('ten_char_numbers', ten_char_numbers)
@@ -273,7 +273,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing random 10 digits can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_10_char_numbers ', ten_char_numbers, ten_char_numbers, 1,
+        self.run_tests('test_update_buckets_name_10_char_numbers ', ten_char_numbers, ten_char_numbers, '1h',
                        ten_char_numbers + '_updated', None)
 
     @pytest.mark.parametrize('five_char_numbers', five_char_numbers)
@@ -283,7 +283,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing random 5 digits can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_5_char_numbers ', five_char_numbers, five_char_numbers, 1,
+        self.run_tests('test_update_buckets_name_5_char_numbers ', five_char_numbers, five_char_numbers, '1h',
                        five_char_numbers + '_updated', None)
 
     #######################################
@@ -296,7 +296,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing 20 mix characters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_20_char_mix ', twenty_char_names, twenty_char_names, 1,
+        self.run_tests('test_update_buckets_name_20_char_mix ', twenty_char_names, twenty_char_names, '1h',
                        twenty_char_names + '_updated', None)
 
     @pytest.mark.parametrize('forty_char_names', forty_char_names_list)
@@ -306,7 +306,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing 40 mix characters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_40_char_mix ', forty_char_names, forty_char_names, 1,
+        self.run_tests('test_update_buckets_name_40_char_mix ', forty_char_names, forty_char_names, '1h',
                        forty_char_names + '_updated', None)
 
     @pytest.mark.parametrize('two_hundred_char_name', two_hundred_char_name_list)
@@ -316,7 +316,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing 200 mix characters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_200_char_mix ', two_hundred_char_name, two_hundred_char_name, 1,
+        self.run_tests('test_update_buckets_name_200_char_mix ', two_hundred_char_name, two_hundred_char_name, '1h',
                        two_hundred_char_name + '_updated', None)
 
     @pytest.mark.parametrize('four_hundred_char_name', four_hundred_char_name_list)
@@ -326,7 +326,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests bucket name containing 400 mix characters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_400_char_mix ', four_hundred_char_name, four_hundred_char_name, 1,
+        self.run_tests('test_update_buckets_name_400_char_mix ', four_hundred_char_name, four_hundred_char_name, '1h',
                        four_hundred_char_name + '_updated', None)
 
     @pytest.mark.onetest
@@ -337,7 +337,7 @@ class TestUpdateBucketsNameAPI(object):
         METHOD: PATCH
         tests buckets name containing special characters can be updated and persisted in the etcd store.
         """
-        self.run_tests('test_update_buckets_name_special_chars ', special_char, special_char, 1,
+        self.run_tests('test_update_buckets_name_special_chars ', special_char, special_char, '1h',
                        special_char + '_updated', None)
 
     def test_update_buckets_name_already_exist(self):
@@ -348,7 +348,7 @@ class TestUpdateBucketsNameAPI(object):
         """
         org_name = 'test_org_name_already_exists'
         bucket_name = 'test_bucket_name_already_exists'
-        self.run_tests('test_update_buckets_name_already_exist', org_name, bucket_name, 1, bucket_name, None)
+        self.run_tests('test_update_buckets_name_already_exist', org_name, bucket_name, '1h', bucket_name, None)
 
     def test_update_buckets_to_empty_name(self):
         """
@@ -358,4 +358,4 @@ class TestUpdateBucketsNameAPI(object):
         """
         org_name = 'test_org_name_empty_name'
         bucket_name = 'test_bucket_name'
-        self.run_tests('test_update_buckets_to_empty_name', org_name, bucket_name, 1, '', None)
+        self.run_tests('test_update_buckets_to_empty_name', org_name, bucket_name, '1h', '', None)
