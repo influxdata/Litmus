@@ -304,7 +304,8 @@ def get_all_setup_buckets(request, gateway):
         assert status == 201, request.cls.mylog.info('Failed to create an org \'%s\'' % org_name)
         for bucket_name in ascii_uppercase:
             request.cls.mylog.info('get_all_setup_buckets() fixture : Creating a bucket \'%s\'' % bucket_name)
-            response=gateway_util.create_bucket(request.cls, gateway, bucket_name, 1, org_id)
+            # TODO make retention period a variable param
+            response=gateway_util.create_bucket(request.cls, gateway, bucket_name, '1h', org_id)
             # status = response[0]
             assert response[0] == 201, request.cls.mylog.info('Failed to create a bucket \'%s\'' % bucket_name)
     (status, created_buckets_list)=gateway_util.get_all_buckets(request.cls, gateway)
