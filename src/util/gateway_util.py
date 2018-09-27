@@ -566,14 +566,15 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod=None, o
     test_class_instance.mylog.info('')
     test_class_instance.mylog.info('gateway_util.create_function() :'
                                    'Creating Bucket with \'%s\' name' % bucket_name)
-    # hardcoding retention period to 1, anything below 1h, will default to 1h,
     # https://github.com/influxdata/platform/issues/143
-    if retentionPeriod is None:
+    # as of 09/26/18 Chris Goller made a change, retentionPeriod is now a string, i.e. "1h" = 1 hour, or 20m = 20 min, etc
+    # https://github.com/influxdata/platform/pull/864. Also retentionPeriod is not optional as of this PR
+    if retentionPeriod is None: # test the negative test
         data = '{"name":"%s", "organizationID": "%s"}' % (bucket_name, organizationID)
     elif organizationID is None:
-        data = '{"name":"%s", "retentionPeriod": %d}' % (bucket_name, retentionPeriod)
+        data = '{"name":"%s", "retentionPeriod": "%s"}' % (bucket_name, retentionPeriod)
     else:
-        data = '{"name":"%s", "retentionPeriod": %d, "organizationID": "%s"}' \
+        data = '{"name":"%s", "retentionPeriod": "%s", "organizationID": "%s"}' \
                % (bucket_name, retentionPeriod, organizationID)
 
     organization_id, created_bucket_id, created_bucket_name, \
@@ -598,6 +599,7 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod=None, o
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        error_message = response.headers['X-Influx-Error']
     test_class_instance.mylog.info('gateway_util.create_bucket() function returned : status = \'%s\', '
                                    'bucket_id = \'%s\', bucket_name = \'%s\', org_id = \'%s\', rp = \'%s\', '
                                    'error_message = \'%s\'' % (response.status_code, created_bucket_id,
