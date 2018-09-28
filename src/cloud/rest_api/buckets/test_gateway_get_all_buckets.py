@@ -30,7 +30,7 @@ class TestGetAllBucketsAPI(object):
 
     def test_get_all_buckets_count(self):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: GET
         tests that the count of the created buckets equals to expected
         """
@@ -47,7 +47,7 @@ class TestGetAllBucketsAPI(object):
 
     def test_verify_created_buckets(self):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: GET
         tests that created bucket can be found in the list of all buckets returned by the 'get all buckets' endpoint
         """

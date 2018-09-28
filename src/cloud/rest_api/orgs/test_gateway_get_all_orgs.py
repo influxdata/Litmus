@@ -29,7 +29,7 @@ class TestGetAllOrganizationsAPI(object):
 
     def test_get_all_orgs_count(self):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests that the count of the created orgs equals to expected
         """
@@ -46,7 +46,7 @@ class TestGetAllOrganizationsAPI(object):
 
     def test_verify_created_orgs(self):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests that created org can be found in the list of all orgs returned by the 'get all orgs' endpoint
         """

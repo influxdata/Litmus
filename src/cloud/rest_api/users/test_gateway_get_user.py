@@ -75,7 +75,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('one_char', ascii_lowercase)
     def test_get_users_single_char_lower_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using single lower case characters can be returned by using get user by id endpoint.
         """
@@ -84,7 +84,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('ten_char_lc', ten_char_lc)
     def test_get_users_10_char_lower_case(self, ten_char_lc):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 10 random lower case characters can be returned by using get user by id endpoint.
         """
@@ -93,7 +93,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('twenty_char_lc', twenty_char_lc)
     def test_get_users_20_char_lower_case(self, twenty_char_lc):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 20 random lower case characters can be returned by using get user by id endpoint.
         """
@@ -105,7 +105,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('one_char', ascii_uppercase)
     def test_get_users_single_char_upper_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using single upper case characters can be returned by using get user by id endpoint.
         """
@@ -114,7 +114,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('ten_char_uc', ten_char_uc)
     def test_get_users_10_char_upper_case(self, ten_char_uc):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 10 random upper case characters can be returned by using get user by id endpoint.
         """
@@ -123,7 +123,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('twenty_char_uc', twenty_char_uc)
     def test_get_users_20_char_upper_case(self, twenty_char_uc):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 20 random upper case characters can be returned by using get user by id endpoint.
                 """
@@ -135,7 +135,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('one_char', nonalphanumeric)
     def test_get_users_single_char_nonalphanumeric(self, one_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using single non-alphanumeric characters can be returned by using get user by id endpoint.
         """
@@ -144,7 +144,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('ten_char_alphanumeric', ten_char_nonalphanumeric)
     def test_get_users_10_char_nonalphanumeric(self, ten_char_alphanumeric):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 10 random non-alphanumeric characters can be returned by using get user by id endpoint.
         """
@@ -153,7 +153,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('twenty_char_alphanumeric', twenty_char_nonalphanumeric)
     def test_get_users_20_char_nonalphanumeric(self, twenty_char_alphanumeric):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 20 random non-alphanumeric characters can be returned by using get user by id endpoint.
         """
@@ -165,7 +165,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('one_char', digits)
     def test_get_users_single_char_numbers(self, one_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using single digits can be returned by using get user by id endpoint.
         """
@@ -174,7 +174,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('ten_char_numbers', ten_char_numbers)
     def test_get_users_10_char_numbers(self, ten_char_numbers):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 10 random digits can be returned by using get user by id endpoint.
         """
@@ -183,7 +183,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('five_char_numbers', five_char_numbers)
     def test_get_users_5_char_numbers(self, five_char_numbers):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 5 random digits can be returned by using get user by id endpoint.
         """
@@ -195,7 +195,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('twenty_char', twenty_char_names_list)
     def test_get_users_20_char_name_mix(self, twenty_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 20 mix characters can be returned by using get user by id endpoint.
         """
@@ -204,7 +204,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('forty_char', forty_char_names_list)
     def test_get_users_40_char_name_mix(self, forty_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 40 mix characters can be returned by using get user by id endpoint.
                 """
@@ -213,7 +213,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
     def test_get_users_200_char_mix(self, two_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 200 mix characters can be returned by using get user by id endpoint.
         """
@@ -222,7 +222,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('four_hundred_char_names', four_hundred_char_name_list)
     def test_get_users_400_char_mix(self, four_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using 400 mix characters can be returned by using get user by id endpoint.
                 """
@@ -231,7 +231,7 @@ class TestGetUsersAPI(object):
     @pytest.mark.parametrize('special_char', special_char)
     def test_get_users_special_chars(self, special_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests created user using special characters can be returned by using get user by id endpoint.
         """
@@ -239,7 +239,7 @@ class TestGetUsersAPI(object):
 
     def test_get_non_existent_user_id(self):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests getting non-existent user returns an error.
         """

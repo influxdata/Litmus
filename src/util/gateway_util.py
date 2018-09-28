@@ -5,10 +5,10 @@ import traceback
 
 from src.util import litmus_utils
 
-BUCKETS_URL = '/v1/buckets'
-TASKS_URL = '/v1/tasks'
-ORG_URL = '/v1/orgs'
-USERS_URL = '/v1/users'
+BUCKETS_URL = '/api/v2/buckets'
+TASKS_URL = '/api/v2/tasks'
+ORG_URL = '/api/v2/orgs'
+USERS_URL = '/api/v2/users'
 
 
 # =================================================== TASKS =============================================================
@@ -199,11 +199,11 @@ def get_all_organizations(test_class_instance, url):
     :return: status_code, list of organization's dictionaries:
             {u'id': u'02a51e4f52a22000',
              u'links': {
-                u'users': u'/v2/orgs/02a51e4f52a22000/users',
-                u'buckets': u'/v2/buckets?org=gxfrp',
-                u'tasks': u'/v2/tasks?org=gxfrp',
-                u'dashboards': u'/v2/dashboards?org=gxfrp',
-                u'self': u'/v2/orgs/02a51e4f52a22000'},
+                u'users': u'/api/v2/orgs/02a51e4f52a22000/users',
+                u'buckets': u'/api/v2/buckets?org=gxfrp',
+                u'tasks': u'/api/v2/tasks?org=gxfrp',
+                u'dashboards': u'/api/v2/dashboards?org=gxfrp',
+                u'self': u'/api/v2/orgs/02a51e4f52a22000'},
              u'name': u'gxfrp'}
     """
     test_class_instance.mylog.info('gateway_util.get_all_organizations() function is being called')
@@ -217,14 +217,14 @@ def get_all_organizations(test_class_instance, url):
         #  u'orgs':
         #   [{u'id': u'02a51e4f52a22000',
         #     u'links': {
-        #                   u'users': u'/v2/orgs/02a51e4f52a22000/users',
-        #                   u'buckets': u'/v2/buckets?org=gxfrp',
-        #                   u'tasks': u'/v2/tasks?org=gxfrp',
-        #                   u'dashboards': u'/v2/dashboards?org=gxfrp',
-        #                   u'self': u'/v2/orgs/02a51e4f52a22000'},
+        #                   u'users': u'/api/v2/orgs/02a51e4f52a22000/users',
+        #                   u'buckets': u'/api/v2/buckets?org=gxfrp',
+        #                   u'tasks': u'/api/v2/tasks?org=gxfrp',
+        #                   u'dashboards': u'/api/v2/dashboards?org=gxfrp',
+        #                   u'self': u'/api/v2/orgs/02a51e4f52a22000'},
         #    u'name': u'gxfrp'}
         #    ],
-        # u'links': {u'self': u'/v2/orgs'}
+        # u'links': {u'self': u'/api/v2/orgs'}
         # }
         list_of_organizations = response.json()['orgs']
         if type(list_of_organizations) == list:
@@ -495,7 +495,7 @@ def get_all_users(test_class_instance, url):
     list_of_users = []
     response = test_class_instance.rl.get(base_url=url, path=USERS_URL)
     try:
-        # {u'users': [], u'links': {u'self': u'/v2/users'}}
+        # {u'users': [], u'links': {u'self': u'/api/v2/users'}}
         list_of_users = response.json()['users']
         if type(list_of_users) == list:
             test_class_instance.mylog.info('gateway_util.get_all_users() LIST OF USERS=' +
@@ -710,8 +710,8 @@ def get_all_buckets(test_class_instance, url):
     :return: status code and list of all of the bucket's dictionaries:
              {u'name': u'bucket_1',
               u'links':
-                   {u'org': u'/v1/orgs/02a5230b19a22000',
-                   u'self': u'/v1/buckets/02a5231df7a22000'},
+                   {u'org': u'/api/v2/orgs/02a5230b19a22000',
+                   u'self': u'/api/v2/buckets/02a5231df7a22000'},
                u'organizationID': u'02a5230b19a22000',
                u'retentionPeriod': 0,
                u'organization': u'org_1',
@@ -728,14 +728,14 @@ def get_all_buckets(test_class_instance, url):
         #   [
         #       {u'name': u'bucket_1',
         #       u'links':
-        #           {u'org': u'/v1/orgs/02a5230b19a22000',
-        #           u'self': u'/v1/buckets/02a5231df7a22000'},
+        #           {u'org': u'/api/v2/orgs/02a5230b19a22000',
+        #           u'self': u'/api/v2/buckets/02a5231df7a22000'},
         #       u'organizationID': u'02a5230b19a22000',
         #       u'retentionPeriod': 0,
         #       u'organization': u'org_1',
         #       u'id': u'02a5231df7a22000'}
         #   ],
-        # u'links': {u'self': u'/v1/buckets'}
+        # u'links': {u'self': u'/api/v2/buckets'}
         # }
         list_of_buckets = response.json()['buckets']
         if type(list_of_buckets) == list:

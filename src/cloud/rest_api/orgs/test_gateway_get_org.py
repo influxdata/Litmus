@@ -76,7 +76,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('one_char', ascii_lowercase)
     def test_get_orgs_single_char_lower_case(self, one_char):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created user using single lower case characters can be returned by using "get org by id endpoint".
         '''
@@ -85,7 +85,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('ten_char_lc', ten_char_lc)
     def test_get_orgs_10_char_lower_case(self, ten_char_lc):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 10 random lower case characters can be returned by using "get org by id" endpoint.
         '''
@@ -94,7 +94,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_char_lc', twenty_char_lc)
     def test_get_orgs_20_char_lower_case(self, twenty_char_lc):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 20 random lower case characters can be returned by using "get org by id" endpoint.
         '''
@@ -106,7 +106,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('one_char', ascii_uppercase)
     def test_get_orgs_single_char_upper_case(self, one_char):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using single UPPER case characters can be returned by using "get org by id endpoint".
         '''
@@ -115,7 +115,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('ten_char_uc', ten_char_uc)
     def test_get_orgs_10_char_upper_case(self, ten_char_uc):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 10 random UPPER case characters can be returned by using "get org by id endpoint".
         '''
@@ -124,7 +124,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_char_uc', twenty_char_uc)
     def test_get_orgs_20_char_upper_case(self, twenty_char_uc):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 20 random UPPER case characters can be returned by using "get org by id endpoint".
         '''
@@ -136,7 +136,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('one_char', nonalphanumeric)
     def test_get_orgs_single_char_nonalphanumeric(self, one_char):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using non-alphanumeric characters can be returned by using "get org by id endpoint".
         '''
@@ -145,7 +145,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('ten_char_nonalphanumeric', ten_char_nonalphanumeric)
     def test_get_orgs_10_char_nonalphanumeric(self, ten_char_nonalphanumeric):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 10 random non-alphanumeric characters can be returned by using "get org by id endpoint".
         '''
@@ -154,7 +154,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_char_nonalphanumeric', twenty_char_nonalphanumeric)
     def test_get_orgs_20_char_nonalphanumeric(self, twenty_char_nonalphanumeric):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 20 random non-alphanumeric characters can be returned by using "get org by id endpoint".
         '''
@@ -166,7 +166,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('one_char', digits)
     def test_get_orgs_single_char_numbers(self, one_char):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using single digits can be returned by using "get org by id endpoint"
         '''
@@ -175,7 +175,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('ten_char_numbers', ten_char_numbers)
     def test_get_orgs_10_char_numbers(self, ten_char_numbers):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 10 random digits can be returned by using "get org by id endpoint"
         '''
@@ -184,7 +184,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('five_char_numbers', five_char_numbers)
     def test_get_orgs_5_char_numbers(self, five_char_numbers):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 5 random digits can be returned by using "get org by id endpoint"
         '''
@@ -196,7 +196,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_char', twenty_char_names_list)
     def test_get_orgs_20_char_name_mix(self, twenty_char):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 20 mixed characters can be returned by using "get org by id endpoint"
         '''
@@ -205,7 +205,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('forty_char', forty_char_names_list)
     def test_get_orgs_40_char_name_mix(self, forty_char):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 40 mixed characters can be returned by using "get org by id endpoint"
         '''
@@ -214,7 +214,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('two_hundred_char_name', two_hundred_char_name_list)
     def test_get_orgs_200_char_mix(self, two_hundred_char_name):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 200 mixed characters can be returned by using "get org by id endpoint"
         '''
@@ -223,7 +223,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('four_hundred_char_name', four_hundred_char_name_list)
     def test_get_orgs_400_char_mix(self, four_hundred_char_name):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using 400 mixed characters can be returned by using "get org by id endpoint"
         '''
@@ -232,7 +232,7 @@ class TestGetOrganizationsAPI(object):
     @pytest.mark.parametrize('special_char', special_char)
     def test_get_orgs_special_chars(self, special_char):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests created org using special characters can be returned by using "get org by id endpoint"
         '''
@@ -240,7 +240,7 @@ class TestGetOrganizationsAPI(object):
 
     def test_get_non_existent_org_id(self):
         '''
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: GET
         tests getting non-existent org returns an error.
         '''
