@@ -74,7 +74,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('one_char', ascii_lowercase)
     def test_create_orgs_single_char_lower_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing single character lower case letters can be created and persisted in the etcd store.
         """
@@ -83,7 +83,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('ten_char_lc', ten_char_lc)
     def test_create_orgs_10_char_lower_case(self, ten_char_lc):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing random 10 lower case letters can be created and persisted in the etcd store.
         """
@@ -92,7 +92,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_char_lc', twenty_char_lc)
     def test_create_orgs_20_char_lower_case(self, twenty_char_lc):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing random 20 lower case letters can be created and persisted in the etcd store.
         """
@@ -104,7 +104,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('one_char', ascii_uppercase)
     def test_create_orgs_single_char_upper_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing single character upper case letters can be created and persisted in the etcd store.
         """
@@ -113,7 +113,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('ten_char_uc', ten_char_uc)
     def test_create_orgs_10_char_upper_case(self, ten_char_uc):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing random 10 upper case letters can be created and persisted in the etcd store.
         """
@@ -122,7 +122,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_char_uc', twenty_char_uc)
     def test_create_orgs_20_char_upper_case(self, twenty_char_uc):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing random 20 upper case letters can be created and persisted in the etcd store.
         """
@@ -134,7 +134,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('one_char', nonalphanumeric)
     def test_create_orgs_single_char_nonalphanumeric_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing single non-alphanumeric characters can be created and persisted in the etcd store.
         """
@@ -143,7 +143,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('ten_char_nonalphanumeric', ten_char_nonalphanumeric)
     def test_create_orgs_10_char_nonalphanumeric_case(self, ten_char_nonalphanumeric):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing 10 random non-alphanumeric charactersd can be created and persisted in the etcd store.
         """
@@ -152,7 +152,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_char_nonalphanumeric', twenty_char_nonalphanumeric)
     def test_create_orgs_20_char_nonalphanumeric_case(self, twenty_char_nonalphanumeric):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing 20 random non-alphanumeric charactersd can be created and persisted in the etcd store.
         """
@@ -164,7 +164,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('one_char', digits)
     def test_create_orgs_single_char_numbers(self, one_char):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing single digits can be created and persisted in the etcd store
         """
@@ -173,7 +173,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('ten_char_numbers', ten_char_numbers)
     def test_create_orgs_10_char_numbers(self, ten_char_numbers):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing 10 random digits can be created and persisted in the etcd store
         """
@@ -182,7 +182,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('five_chars', five_char_numbers)
     def test_create_orgs_5_char_numbers(self, five_chars):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing 5 random digits can be created and persisted in the etcd store
         """
@@ -194,7 +194,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_char_names', twenty_char_names_list)
     def test_create_orgs_20_char_mix(self, twenty_char_names):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing 20 mix characters can be created and persisted in the etcd store.
         """
@@ -203,7 +203,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('forty_char_names', forty_char_names_list)
     def test_create_orgs_40_char_mix(self, forty_char_names):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing 40 mix characters can be created and persisted in the etcd store.
         """
@@ -212,7 +212,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('special_char', special_char)
     def test_create_orgs_special_chars(self, special_char):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing special characters can be created and persisted in the etcd store.
         """
@@ -221,7 +221,7 @@ class TestCreateOrganizationsAPI(object):
     # TODO modify test: should be able to create duplicate org
     def test_create_duplicate_org(self):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests cannot create org with already existing name.
         """
@@ -248,7 +248,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
     def test_create_orgs_200_char_mix(self, two_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing 200 mix characters can be created and persisted in the etcd store.
         """
@@ -257,7 +257,7 @@ class TestCreateOrganizationsAPI(object):
     @pytest.mark.parametrize('four_hundred_char_names', four_hundred_char_name_list)
     def test_create_orgs_400_char_mix(self, four_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/orgs
+        REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
         tests org name containing 400 mix characters can be created and persisted in the etcd store.
         """

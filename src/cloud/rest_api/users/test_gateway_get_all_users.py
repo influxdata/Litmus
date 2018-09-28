@@ -29,7 +29,7 @@ class TestGetAllUsersAPI(object):
 
     def test_get_all_users_count(self):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests that the count of the created users equals to expected
         """
@@ -46,7 +46,7 @@ class TestGetAllUsersAPI(object):
 
     def test_verify_created_users(self):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: GET
         tests that created user can be found in the list of all users returned by the 'get all users' endpoint
         """

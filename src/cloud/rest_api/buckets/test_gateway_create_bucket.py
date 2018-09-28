@@ -89,7 +89,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('one_char', ascii_lowercase)
     def test_create_buckets_single_char_lower_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing single character lower case letters can be created and persisted in the etcd store.
         Test Steps:
@@ -103,7 +103,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('ten_char_lc', ten_char_lc)
     def test_create_buckets_10_char_lower_case(self, ten_char_lc):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing random 10 lower case letters can be created and persisted in the etcd store.
         Test Steps:
@@ -118,7 +118,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('twenty_char_lc', twenty_char_lc)
     def test_create_buckets_20_char_lower_case(self, twenty_char_lc):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing random 20 lower case letters can be created and persisted in the etcd store.
         Test Steps:
@@ -136,7 +136,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('one_char', ascii_uppercase)
     def test_create_buckets_single_char_upper_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing single character upper case letters can be created and persisted in the etcd store.
         Test Steps:
@@ -151,7 +151,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('ten_char_uc', ten_char_uc)
     def test_create_buckets_10_char_upper_case(self, ten_char_uc):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing random 10 upper case letters can be created and persisted in the etcd store.
         Test Steps:
@@ -166,7 +166,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('twenty_char_uc', twenty_char_uc)
     def test_create_buckets_20_char_upper_case(self, twenty_char_uc):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing random 20 upper case letters can be created and persisted in the etcd store.
         Test Steps:
@@ -184,7 +184,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('one_char', nonalphanumeric)
     def test_create_buckets_single_char_nonalphanumeric_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing single non-alphanumeric characters can be created and persisted in the etcd store.
         Test Steps:
@@ -199,7 +199,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('ten_char_nonalphanumeric', ten_char_nonalphanumeric)
     def test_create_buckets_10_char_nonalphanumeric_case(self, ten_char_nonalphanumeric):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing 10 random non-alphanumeric characters can be created and persisted in the etcd store.
         Test Steps:
@@ -215,7 +215,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('twenty_char_nonalphanumeric', twenty_char_nonalphanumeric)
     def test_create_buckets_20_char_nonalphanumeric_case(self, twenty_char_nonalphanumeric):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing 20 random non-alphanumeric characters can be created and persisted in the etcd store.
         Test Steps:
@@ -234,7 +234,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('one_char', digits)
     def test_create_buckets_single_char_numbers(self, one_char):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing single digits can be created and persisted in the etcd store
         Test Steps:
@@ -248,7 +248,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('ten_char_numbers', ten_char_numbers)
     def test_create_buckets_10_char_numbers(self, ten_char_numbers):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing 10 random digits can be created and persisted in the etcd store.
         Test Steps:
@@ -262,7 +262,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('five_chars', five_char_numbers)
     def test_create_buckets_5_char_numbers(self, five_chars):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing 5 random digits can be created and persisted in the etcd store.
         Test Steps:
@@ -279,7 +279,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('twenty_char_names', twenty_char_names_list)
     def test_create_buckets_20_char_mix(self, twenty_char_names):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing 20 mix characters can be created and persisted in the etcd store.
         """
@@ -288,7 +288,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('forty_char_names', forty_char_names_list)
     def test_create_buckets_40_char_mix(self, forty_char_names):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing 40 mix characters can be created and persisted in the etcd store.
         """
@@ -297,7 +297,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('special_char', special_char)
     def test_create_buckets_special_chars(self, special_char):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing special characters can be created and persisted in the etcd store.
         """
@@ -306,7 +306,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
     def test_create_buckets_200_char_mix(self, two_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing 200 mix characters can be created and persisted in the etcd store.
         """
@@ -315,7 +315,7 @@ class TestCreateBucketsAPI(object):
     @pytest.mark.parametrize('four_hundred_char_names', four_hundred_char_name_list)
     def test_create_buckets_400_char_mix(self, four_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket name containing 400 mix characters can be created and persisted in the etcd store.
         """
@@ -323,7 +323,7 @@ class TestCreateBucketsAPI(object):
 
     def test_create_many_buckets_same_org(self):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests many buckets with different names can be created for the same organization.
         """
@@ -354,7 +354,7 @@ class TestCreateBucketsAPI(object):
 
     def test_create_same_bucket_different_orgs(self):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket with the same name can be created for different organizations
         """
@@ -388,7 +388,7 @@ class TestCreateBucketsAPI(object):
 
     def test_create_duplicate_bucket(self):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests cannot create bucket with already existing name with the same org.
         """
@@ -425,7 +425,7 @@ class TestCreateBucketsAPI(object):
 
     def test_create_bucket_no_org_id(self):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests cannot create bucket if organization id is not provided
         """
@@ -439,7 +439,7 @@ class TestCreateBucketsAPI(object):
 
     def test_create_bucket_default_rp(self):
         """
-        REST API: http://<gateway>/v1/buckets
+        REST API: http://<gateway>/api/v2/buckets
         METHOD: POST
         tests bucket cannot be created if retention policy is not provided, (was before: default RP is used: 0s))
         """

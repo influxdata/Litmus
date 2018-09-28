@@ -142,7 +142,7 @@ class TestDeleteOrganizationsAPI(object):
 
     def test_delete_org_id_odd_length(self):
         """
-        REST API: http://<gateway>/v1/orgs/aff
+        REST API: http://<gateway>/api/v2/orgs/aff
         METHOD: DELETE
         tests API will return an error if org_id has an odd length
         """
@@ -151,7 +151,7 @@ class TestDeleteOrganizationsAPI(object):
 
     def test_delete_org_id_invalid_byte(self):
         """
-        REST API: http://<gateway>/v1/orgs/aff
+        REST API: http://<gateway>/api/v2/orgs/aff
         METHOD: DELETE
         tests API will return an error if org_id has an invalid byte
         """
@@ -160,7 +160,7 @@ class TestDeleteOrganizationsAPI(object):
 
     def test_delete_org_id_does_not_exist(self):
         """
-        REST API: http://<gateway>/v1/orgs/1234567890
+        REST API: http://<gateway>/api/v2/orgs/1234567890
         METHOD: DELETE
         tests API will return an error if org_id does not exist in etcd store, but is valid
         """
@@ -169,7 +169,7 @@ class TestDeleteOrganizationsAPI(object):
 
     def test_delete_org_id_missing(self):
         """
-        REST API: http://<gateway>/v1/orgs/
+        REST API: http://<gateway>/api/v2/orgs/
         METHOD: DELETE
         tests API will return an error if org_id is missing
         """
@@ -179,7 +179,7 @@ class TestDeleteOrganizationsAPI(object):
                                              choice(nonalphanumeric)])
     def test_delete_empty_org_single_char_name(self, single_char):
         """
-        REST API: http://<gateway>/v1/orgs/<org_id>
+        REST API: http://<gateway>/api/v2/orgs/<org_id>
         METHOD: DELETE
         tests API will successfully remove organization records from etcd store
         """
@@ -188,7 +188,7 @@ class TestDeleteOrganizationsAPI(object):
     @pytest.mark.parametrize('twenty_mix_chars', twenty_char_names_list)
     def test_delete_empty_org_20_mix_char_name(self, twenty_mix_chars):
         """
-        REST API: http://<gateway>/v1/orgs/<org_id>
+        REST API: http://<gateway>/api/v2/orgs/<org_id>
         METHOD: DELETE
         tests API will successfully remove organization records from etcd store when org name is 20 characters long
         """
@@ -197,7 +197,7 @@ class TestDeleteOrganizationsAPI(object):
     @pytest.mark.parametrize('four_hundred_char_names', four_hundred_char_name_list)
     def test_delete_empty_org_400_mix_char_name(self, four_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/orgs/<org_id>
+        REST API: http://<gateway>/api/v2/orgs/<org_id>
         METHOD: DELETE
         tests API will successfully remove organization records from etcd store when org name is 400 characters long
         """
@@ -207,7 +207,7 @@ class TestDeleteOrganizationsAPI(object):
 
     def test_delete_org_one_empty_bucket(self):
         """
-        REST API: http://<gateway>/v1/orgs/aff
+        REST API: http://<gateway>/api/v2/orgs/aff
         METHOD: DELETE
         tests org is deleted and bucket's data is preserved.
         1. Create Organization.
@@ -224,7 +224,7 @@ class TestDeleteOrganizationsAPI(object):
 
     def test_delete_org_five_empty_buckets(self):
         """
-        REST API: http://<gateway>/v1/orgs/aff
+        REST API: http://<gateway>/api/v2/orgs/aff
         METHOD: DELETE
         tests org is deleted and bucket's data is preserved.
         1. Create Organization.

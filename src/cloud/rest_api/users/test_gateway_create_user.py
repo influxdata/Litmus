@@ -61,7 +61,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('one_char', ascii_lowercase)
     def test_create_users_single_char_lower_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing single character lower case letters can be created and persisted in the etcd store.
         """
@@ -70,7 +70,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('ten_char', ten_char_lc)
     def test_create_users_10_char_lower_case(self, ten_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 10 random lower case characters can be created and persisted in the etcd store.
         """
@@ -79,7 +79,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('twenty_char', twenty_char_lc)
     def test_create_users_20_char_lower_case(self, twenty_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 20 random lower case characters can be created and persisted in the etcd store.
         """
@@ -89,7 +89,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('one_char', ascii_uppercase)
     def test_create_users_single_char_upper_case(self, one_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing single character upper case letters can be created and persisted in the etcd store.
         """
@@ -98,7 +98,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('ten_char', ten_char_uc)
     def test_create_users_10_char_upper_case(self, ten_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 10 random upper case characters can be created and persisted in the etcd store.
         """
@@ -107,7 +107,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('twenty_char', twenty_char_uc)
     def test_create_users_20_char_upper_case(self, twenty_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 20 random lower case characters can be created and persisted in the etcd store.
         """
@@ -117,7 +117,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('one_char', digits)
     def test_create_users_single_digit(self, one_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing single digit can be created and persisted in the etcd store.
         """
@@ -126,7 +126,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('ten_char', ten_char_numbers)
     def test_create_users_10_digits(self, ten_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 10 random digits can be created and persisted in the etcd store.
         """
@@ -135,7 +135,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('five_char', five_char_numbers)
     def test_create_users_5_digits(self, five_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 5 random digits can be created and persisted in the etcd store.
         """
@@ -145,7 +145,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('one_char', nonalphanumeric)
     def test_create_users_single_nonalphanumeric_char(self, one_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 1 non-alphanumeric character can be created and persisted in the etcd store.
         """
@@ -154,7 +154,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('ten_char', ten_char_nonalphanumeric)
     def test_create_users_10_nonalphanumeric_char(self, ten_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 10 random non-alphanumeric character can be created and persisted in the etcd store.
         """
@@ -163,7 +163,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('twenty_char', twenty_char_nonalphanumeric)
     def test_create_users_20_nonalphanumeric_char(self, twenty_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing random 20 non-alphanumeric characters can be created and persisted in the etcd store.
         """
@@ -173,7 +173,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('twenty_char_names', twenty_char_names_list)
     def test_create_users_20_char_mix(self, twenty_char_names):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 20 mix characters can be created and persisted in the etcd store.
         """
@@ -182,7 +182,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('forty_char_names', forty_char_names_list)
     def test_create_users_40_char_mix(self, forty_char_names):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 40 mix characters can be created and persisted in the etcd store.
         """
@@ -191,7 +191,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
     def test_create_users_200_char_mix(self, two_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 200 mix characters can be created and persisted in the etcd store.
         """
@@ -200,7 +200,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('four_hundred_char_names', four_hundred_char_name_list)
     def test_create_users_400_char_mix(self, four_hundred_char_names):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing 400 mix characters can be created and persisted in the etcd store.
         """
@@ -209,7 +209,7 @@ class TestCreateUsersAPI(object):
     @pytest.mark.parametrize('special_char', special_char)
     def test_create_users_special_chars(self, special_char):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests user name containing special characters can be created and persisted in the etcd store.
         """
@@ -217,7 +217,7 @@ class TestCreateUsersAPI(object):
 
     def test_create_users_duplicate_names(self):
         """
-        REST API: http://<gateway>/v1/users
+        REST API: http://<gateway>/api/v2/users
         METHOD: POST
         tests cannot create user with already existing name.
         """
