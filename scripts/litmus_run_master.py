@@ -430,60 +430,36 @@ else:
         # let the whole curl operation to run for no more than 10 seconds
         cmd_command = 'curl -s --max-time 10 -GET %s/healthz' % services[service]
         time_end = time.time() + 180 # wait up to 180 sec for services to start
+        delay = 1
         if service == 'gateway': print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
         if service == 'queryd': print 'GETTING THE HEALTH STATUS OF THE QUERYD AND STORAGE SERVICES'
         if service == 'transpilerde': print 'GETTING THE HEALTH STATUS OF THE TRANSPILERDE SERVICE'
         print '-----------------------------------------------------------------\n'
-        while time.time() <= time_end:
-            print 'RUNNING \'%s\' COMMAND\n' % cmd_command
-            # wait for up to a minute for curl command to return
-            cmd_time_end = time.time() + 10
-            while time.time() <= cmd_time_end:
-                g_health = subprocess.Popen(cmd_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                time.sleep(2)
-                if g_health.poll() == None:
-                    print 'Waiting for \'%s\' command to return' % cmd_command
-                    time.sleep(1)
-                    continue
-                else:
-                    break
-            if g_health.poll() != 0:
-                print 'EXIT STATUS OF \'%s\' COMMAND IS NOT ZERO. TRYING ONCE AGAIN\n' % cmd_command
-                time.sleep(1)
-                continue
-            # get output and error (if any) of the command
+        print 'RUNNING \'%s\' COMMAND\n' % cmd_command
+        g_health = subprocess.Popen(cmd_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while g_health.poll() is None and time_end > 0:
+            time.sleep(delay)
+            time_end -= delay
+        if g_health.poll() is None or g_health.poll() > 0:
+            print 'EXIT STATUS OF \'%s\' COMMAND IS ' % cmd_command + str(g_health.poll())
+            print '\n'
+            status[service] = general_status
+        else:
             out, err = g_health.communicate()
-            if err != '':
-                print '\'%s\' command returned an error \'%s\'' % (cmd_command, err)
-                time.sleep(1)
-                continue
             # remove new line characters from output of the command, which is a JSON string
-            out = out.replace('\n','')
-            """
-            <gateway>:<port>/healthz command returns the health status for gateway, kafka and etcd.
-            if status of kafka or/and etcd or/and gateway is 'unhealthy', then the general status is unhealthy
-            """
-            if out == '':
-                print 'OUTPUT OF THE COMMAND IS EMPTY. SLEEPING'
-                time.sleep(1)
-                continue
-            # load JSON string to be able to access it
+            out = out.replace('\n', '')
             out = json.loads(out)
             # get the status
             general_status = out.get('status')
-            if general_status != 'healthy':
-                print 'Waiting for services to start up'
-                time.sleep(1)
-                continue
-            else:
-                print 'SERVICES ARE UP AND RUNNING'
-                print '---------------------------\n'
-                break
-        status[service] = general_status
+            status[service] = general_status
     print "STATUS OD THE SERVICES : " + str(status)
+    print '\n'
     if 'unhealthy' in status.values():
         print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
+        print '-----------------------------------------\n'
         exit(1)
+    print 'SERVICES ARE UP AND RUNNING.'
+    print '-----------------------------\n'
 # passing a file containing the test suite(s)
 if options.tests is not None:
     pytest_parameters.extend(options.tests)
