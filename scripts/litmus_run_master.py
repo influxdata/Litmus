@@ -5,7 +5,7 @@
 #3. Collect all relevant product logs (if any)
 #4. Call pytest to run tests
 
-import pkgutil, subprocess, os, sys, optparse, json, time
+import pkgutil, subprocess, os, sys, optparse, json, time, datetime
 
 MasterScriptDir=os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(MasterScriptDir, 'src'))
@@ -428,21 +428,22 @@ else:
     for service in services:
         general_status, out = 'unhealthy', ''
         # let the whole curl operation to run for no more than 10 seconds
-        cmd_command = 'curl -s --max-time 10 -GET %s/healthz' % services[service]
+        # --max-time 10
+        cmd_command = 'curl -s -GET %s/healthz' % services[service]
         time_end = time.time() + 180 # wait up to 180 sec for services to start
         delay = 1
         if service == 'gateway': print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
         if service == 'queryd': print 'GETTING THE HEALTH STATUS OF THE QUERYD AND STORAGE SERVICES'
         if service == 'transpilerde': print 'GETTING THE HEALTH STATUS OF THE TRANSPILERDE SERVICE'
         print '-----------------------------------------------------------------\n'
-        print 'RUNNING \'%s\' COMMAND\n' % cmd_command
+        print str(datetime.datetime.now()) + ' RUNNING \'%s\' COMMAND\n' % cmd_command
         g_health = subprocess.Popen(cmd_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        while g_health.poll() is None and time_end > 0:
+        while g_health.poll() is None and time.time() < time_end:
             time.sleep(delay)
-            time_end -= delay
+            #print str(datetime.datetime.now()) + ' ' + str(g_health.poll())
         if g_health.poll() is None or g_health.poll() > 0:
-            print 'EXIT STATUS OF \'%s\' COMMAND IS ' % cmd_command + str(g_health.poll())
-            print '\n'
+            print str(datetime.datetime.now()) + \
+                  ' EXIT STATUS OF \'%s\' COMMAND IS \'%s\'\n' % (cmd_command, str(g_health.poll()))
             status[service] = general_status
         else:
             out, err = g_health.communicate()
@@ -452,8 +453,7 @@ else:
             # get the status
             general_status = out.get('status')
             status[service] = general_status
-    print "STATUS OD THE SERVICES : " + str(status)
-    print '\n'
+    print str(datetime.datetime.now()) + ' STATUS OD THE SERVICES : ' + str(status) + '\n'
     if 'unhealthy' in status.values():
         print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
         print '-----------------------------------------\n'
