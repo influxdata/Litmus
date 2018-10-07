@@ -24,6 +24,7 @@ parser.add_option('--gateway', action='store', help='GATEWAY URL THAT HANDLES EX
 parser.add_option('--flux', action='store', help='QUERY URL THAT HANDLES FLUX REQUESTS, e.g http://localhost:8093')
 parser.add_option('--etcd', action='store', help='ETCD URL FOR DISTRIBUTED KEY-VALUE STORE')
 parser.add_option('--transpilerde', action='store', help='TRANSPILERDE URL THAT HANDLES REQUESTS TO TRANSLATE INFLUXQL QUERIES TO FLUX')
+parser.add_option('--namespace', action='store', help='KUBERNETES NAMESPACE')
 
 # options for running REST tests (By default these options will be derived from the output o the pcl list command
 # chronograf is supported on both platforms 1.x and 2.0
@@ -383,6 +384,15 @@ else:
         print 'TRANSPILERDE URL IS NOT SPECIFIED. EXITING'
         exit(1)
 
+    ##################
+    # KUBE NAMESPACE #
+    ##################
+    if options.namespace:
+        pytest_parameters.append('--namespace=' + options.namespace)
+        print 'KUBERNETES NAMESPACE : ' + options.namespace
+        print '--------------------------------------------\n'
+
+
     ################
     # HEALTH CHECK #
     ################
@@ -430,8 +440,8 @@ else:
         # let the whole curl operation to run for no more than 10 seconds
         # --max-time 10
         cmd_command = 'curl -s -GET %s/healthz' % services[service]
-        time_end = time.time() + 180 # wait up to 180 sec for services to start
-        delay = 1
+        time_end = time.time() + 300 # wait up to 180 sec for services to start
+        delay = 2
         if service == 'gateway': print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
         if service == 'queryd': print 'GETTING THE HEALTH STATUS OF THE QUERYD AND STORAGE SERVICES'
         if service == 'transpilerde': print 'GETTING THE HEALTH STATUS OF THE TRANSPILERDE SERVICE'
@@ -445,6 +455,15 @@ else:
             print str(datetime.datetime.now()) + \
                   ' EXIT STATUS OF \'%s\' COMMAND IS \'%s\'\n' % (cmd_command, str(g_health.poll()))
             status[service] = general_status
+            p = subprocess.Popen('kubectl get pods -n %s' % options.namespace, shell=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            if p.wait() != 0:
+                print 'FAILED TO GET PODS'
+                out, error = p.communicate()
+                print error
+            else:
+                out, error = p.communicate()
+                print out
         else:
             out, err = g_health.communicate()
             # remove new line characters from output of the command, which is a JSON string
