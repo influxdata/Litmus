@@ -19,7 +19,11 @@ def pytest_addoption(parser):
     parser.addoption('--flux', action='store')
     parser.addoption('--etcd', action='store')
     parser.addoption('--transpilerde', action='store')
+    parser.addoption('--namespace', action='store')
 
+
+def get_namespace(request):
+    return request.config.getoption('--namespace')
 
 def get_gateway(request):
     return request.config.getoption('--gateway')
@@ -88,6 +92,23 @@ def get_ldap_auth(request):
 def get_meta_auth(request):
     return request.config.getoption('--metaauth')
 
+
+@pytest.fixture(scope='class')
+def namespace(request):
+    """
+
+    :param request:
+    :return:
+    """
+    request.cls.mylog.info('namespace() fixture is being called')
+    request.cls.mylog.info('-----------------------------------')
+    namespace = get_namespace(request)
+    request.cls.mylog.info('namespace() fixture : gateway=' + str(gateway))
+    request.cls.namespace = namespace
+    request.cls.mylog.info('namespace() fixture - done')
+    request.cls.mylog.info('------------------------')
+    request.cls.mylog.info('')
+    return request.cls.namespace
 
 @pytest.fixture(scope='class')
 def gateway(request):
