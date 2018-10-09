@@ -82,6 +82,8 @@ class RestLib(BaseLib):
         try:
             response=requests.delete(base_url + path, auth=auth)
             self.log.info('RestLib.delete() - status_code=' + str(response.status_code))
+            self.log.info('RestLib.get() - response headers = ' + str(response.headers))
+            self.log.info('RestLib.get() - response url = ' + str(response.url))
         except requests.ConnectionError, e:
             self.log.info('RestLib.delete() - ConnectionError : ' + str(e.message))
             response=None

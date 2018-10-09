@@ -9,6 +9,8 @@ BUCKETS_URL = '/api/v2/buckets'
 TASKS_URL = '/api/v2/tasks'
 ORG_URL = '/api/v2/orgs'
 USERS_URL = '/api/v2/users'
+AUTHORIZATION_URL = '/api/v2/authorizations'
+FLUX_QUERY = '/api/v2/query'
 
 
 # =================================================== TASKS =============================================================
@@ -228,7 +230,7 @@ def get_all_organizations(test_class_instance, url):
         # }
         list_of_organizations = response.json()['orgs']
         if type(list_of_organizations) == list:
-            test_class_instance.mylog.info('gateway_util.get_all_organizations() LIST OF OGRANIZATIONS=' +
+            test_class_instance.mylog.info('gateway_util.get_all_organizations() LIST OF ORGANIZATIONS=' +
                                            str(list_of_organizations))
         else:
             test_class_instance.mylog.info('gateway_util.get_all_organizations() ERROR=' + response.json()['message'])
@@ -320,7 +322,7 @@ def get_count_of_orgs(test_class_instance, list_of_organizations):
     """
     :param test_class_instance:
     :param list_of_organizations:
-    :return: count of corganizations
+    :return: count of organizations
     """
     test_class_instance.mylog.info('gateway_util.get_count_of_orgs() function is being called')
     test_class_instance.mylog.info('---------------------------------------------------------')
@@ -546,6 +548,59 @@ def find_user_by_name(test_class_instance, user_name, list_of_users):
     return success
 
 
+# =================================================== PERMISSIONS =======================================================
+
+def create_authorization(test_class_instance, url, user, userid, list_of_permission):
+    """
+    :param userid:
+    :param test_class_instance:
+    :param url:
+    :param user:
+    :param list_of_permission:
+    :return:
+    """
+    id, user_name, user_id, token, permissions, error_message = None, None, None, None, None, None
+    test_class_instance.mylog.info('gateway_util.create_authorization() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------------\n')
+    test_class_instance.mylog.info('gateway_util.create_authorization() :'
+                                   'Creating Authorization For User \'%s\' With userID \'%s\' and permissions \'%s\''
+                                   % (user, userid, str(list_of_permission)))
+    # permissions":[{"action":"create","resource":"user"},{"action":"write","resource":"bucket/022a99c38eede000"},
+    # {"action":"read","resource":"bucket/022a99c38eede000"}]
+    data = '{"user":"%s", "userID":"%s", "permissions": %s}' % (user, userid, list_of_permission)
+    response = test_class_instance.rl.post(base_url=url, path=AUTHORIZATION_URL, data=data)
+    r = response.json()
+    try:
+        id = r.get('id')
+        user_name = r.get('user')
+        user_id = r.get('userID')
+        token = r.get('token')
+        permissions = r.get('permissions')
+        if id is not None and user_name is not None and user_id is not None and token is not None \
+                and permissions is not None:
+            test_class_instance.mylog.info('gateway_util.create_authorization() USER_ID=' + str(user_id))
+            test_class_instance.mylog.info('gateway_util.create_authorization() USER_NAME=' + str(user_name))
+            test_class_instance.mylog.info('gateway_util.create_authorization() ID=' + str(id))
+            test_class_instance.mylog.info('gateway_util.create_authorization() TOKEN=' + str(token))
+            test_class_instance.mylog.info('gateway_util.create_authorization() PERMISSIONS=' + str(permissions))
+        else:
+            test_class_instance.mylog.info('gateway_util.create_authorization() '
+                                           'REQUESTED PARAMS ARE NONE')
+            error_message = response.headers['X-Influxs-Error']
+            test_class_instance.mylog.info('gateway_util.create_authorization() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.create_user() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        error_message = response.headers['X-Influxs-Error']
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.create_organization() function is done')
+    test_class_instance.mylog.info('')
+    return {"STATUS_CODE": response.status_code, "ID": id, "USER": user_name, "USER_ID": user_id, "TOKEN": token,
+            "PERMISSIONS": permissions, "ERROR_MESSAGE": error_message}
+
+
 # =================================================== BUCKETS ===========================================================
 
 # Currently retention periods are only numbers and not durations:
@@ -569,7 +624,7 @@ def create_bucket(test_class_instance, url, bucket_name, retentionPeriod=None, o
     # https://github.com/influxdata/platform/issues/143
     # as of 09/26/18 Chris Goller made a change, retentionPeriod is now a string, i.e. "1h" = 1 hour, or 20m = 20 min, etc
     # https://github.com/influxdata/platform/pull/864. Also retentionPeriod is not optional as of this PR
-    if retentionPeriod is None: # test the negative test
+    if retentionPeriod is None:  # test the negative test
         data = '{"name":"%s", "organizationID": "%s"}' % (bucket_name, organizationID)
     elif organizationID is None:
         data = '{"name":"%s", "retentionPeriod": "%s"}' % (bucket_name, retentionPeriod)
@@ -658,7 +713,7 @@ def update_bucket(test_class_instance, url, bucket_id, new_bucket_name=None, new
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-    test_class_instance.mylog.info('gateway_util.update_obucket() function is done')
+    test_class_instance.mylog.info('gateway_util.update_bucket() function is done')
     test_class_instance.mylog.info('')
     return response.status_code, updated_bucket_id, updated_bucket_name, updated_retention, org_id, \
            org_name, error_message
@@ -702,18 +757,19 @@ def get_bucket_by_id(test_class_instance, url, bucket_id):
     return response.status_code, requested_bucket_id, requested_bucket_name, error_message
 
 
-def get_all_buckets(test_class_instance, url):
+def get_all_buckets(test_class_instance, url, org):
     """
-    Gets all of the created buckets.
+    Gets all of the created buckets for a specific organization.
     :param test_class_instance: instance of the test class
     :param url: gateway url
-    :return: status code and list of all of the bucket's dictionaries:
+    :param org: organization name for which to get all of the buckets
+    :return: status code, error and list of all of the bucket's dictionaries:
              {u'name': u'bucket_1',
               u'links':
                    {u'org': u'/api/v2/orgs/02a5230b19a22000',
                    u'self': u'/api/v2/buckets/02a5231df7a22000'},
                u'organizationID': u'02a5230b19a22000',
-               u'retentionPeriod': 0,
+               u'retentionPeriod': "1h",
                u'organization': u'org_1',
                u'id': u'02a5231df7a22000'}
     """
@@ -721,7 +777,9 @@ def get_all_buckets(test_class_instance, url):
     test_class_instance.mylog.info('-------------------------------------------------------')
     test_class_instance.mylog.info('')
     list_of_buckets = []
-    response = test_class_instance.rl.get(base_url=url, path=BUCKETS_URL)
+    error_message = ''
+    get_all_buckets_per_org_param = {'org': '%s' % org}
+    response = test_class_instance.rl.get(base_url=url, path=BUCKETS_URL, params=get_all_buckets_per_org_param)
     try:
         # response object returns dictionary:
         # {u'buckets':
@@ -745,13 +803,15 @@ def get_all_buckets(test_class_instance, url):
             test_class_instance.mylog.info('gateway_util.get_all_buckets() ERROR=' + response.json()['message'])
     except:
         test_class_instance.mylog.info('gateway_util.get_all_buckets() Exception:')
+        # get an error from the header
+        error_message = response.headers['X-Influx-Error']
         clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
     test_class_instance.mylog.info('gateway_util.get_all_buckets() function is done')
     test_class_instance.mylog.info('')
-    return response.status_code, list_of_buckets
+    return response.status_code, error_message, list_of_buckets
 
 
 def get_count_of_buckets(test_class_instance, list_of_buckets):
@@ -790,14 +850,57 @@ def find_bucket_by_name(test_class_instance, list_of_buckets, bucket_name, org_n
     return success
 
 
+# ============================================== WRITE/QUERY DATA POINTS ================================================
+
+def write_points(test_class_instance, url, token, organization, bucket, data):
+    """
+    Write point(s) to a bucket in organization given the correct credentials,=.
+    :param data:
+    :param test_class_instance:
+    :param url: gateway url, e.g. http://localhost:9999
+    :param token: Token for a given user, with a read/write permissions for a given user
+    :param organization: organization the bucket belongs to
+    :param bucket: bucket to write data point(s) to
+    :return: dictionary of STATUS_CODE and ERROR_MESSAGE, if status code is 204, then error_message is an empty string,
+            if status_code does not equal to 204, then error_message should not be an empty string
+    """
+    error_message = ''
+    write_url = '/api/v2/organizations/%s/buckets/%s/write' % (organization, bucket)
+    test_class_instance.mylog.info('gateway_util.write_points() function is being called')
+    test_class_instance.mylog.info('-----------------------------------------------------\n')
+    test_class_instance.mylog.info('gateway_util.write_points() :'
+                                   'Writing Points for \'%s\' org, \'%s\' bucket with \'%s\' token'
+                                   % (organization, bucket, token))
+    # data could be : 'cpu,t=1 f=1'
+    headers = {"Authorization": "Token %s" % token}
+    response = test_class_instance.rl.post(base_url=url, path=write_url, data=data, headers=headers)
+    # in case if there is an error, then get the error_message
+    if response.status_code != 204:
+        error_message = response.headers['X-Influx-Error']
+    return {"STATUS_CODE": response.status_code, "ERROR_MESSAGE": error_message}
+
+
+def get_data_queryd(test_class_instance, url, token, organization, bucket):
+    """
+
+    :param test_class_instance:
+    :param url:
+    :param token:
+    :param organization:
+    :param bucket:
+    :return:
+    """
+
+
+
 # ========================================================== ETCD =======================================================
 
 def get_org_etcd(test_class_instance, etcd, org_id, get_index_values=False):
     """
     Function gets org ids and org name (hashed name) from etcd store and reports any errors.
+    :param etcd:
+    :param org_id:
     :param test_class_instance: instance of the test class, i.e. self
-    :param etcd (str): url of the etcd service
-    :param org_id (str): organization id
     :param get_index_values (bool), if set to True then get the org id and org name values from etcd index,
                                     default value is False
     :return: actual_org_id =>
@@ -808,7 +911,7 @@ def get_org_etcd(test_class_instance, etcd, org_id, get_index_values=False):
              id_by_index_name =>
              error_by_index_name =>
     """
-    actual_org_id, actual_org_name, error, name_by_index_id, error_by_index_id, id_by_index_name, error_by_index_name =\
+    actual_org_id, actual_org_name, error, name_by_index_id, error_by_index_id, id_by_index_name, error_by_index_name = \
         '', '', '', '', '', '', ''
     test_class_instance.mylog.info('gateway_util.get_org_etcd() function is being called')
     test_class_instance.mylog.info('----------------------------------------------------')
@@ -848,6 +951,7 @@ def get_org_etcd(test_class_instance, etcd, org_id, get_index_values=False):
 def get_user_etcd(test_class_instance, etcd, user_id):
     """
     Function gets user_id and user_name from etcd store.
+    :param user_id:
     :param test_class_instance: instance of the test class, i.e. self
     :param etcd: url of the etcd service
     :return: actual_user_id =>
@@ -857,7 +961,7 @@ def get_user_etcd(test_class_instance, etcd, user_id):
     actual_user_id, actual_user_name, error = '', '', ''
     test_class_instance.mylog.info('gateway_util.get_user_etcd() function is being called')
     test_class_instance.mylog.info('--------------------------------------------------------')
-    test_class_instance.mylog.info('gateway_util.get_user_etcd(): params: user_id \'%s\'' % (user_id))
+    test_class_instance.mylog.info('gateway_util.get_user_etcd(): params: user_id \'%s\'' % user_id)
     test_class_instance.mylog.info('')
     cmd = 'ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "userv1/%s" --print-value-only' \
           % (etcd, user_id)
@@ -897,7 +1001,8 @@ def get_bucket_etcd(test_class_instance, etcd, bucket_id):
         test_class_instance.mylog.info('gateway_util.get_bucket_etcd() : actual_bucket_id = \'%s\'' % actual_bucket_id)
         actual_bucket_name = ast.literal_eval(out).get('name')
         if actual_bucket_name != 'DoubleQuotes\"' and actual_bucket_name != 'DoubleQuotes\"_updated_name' \
-            and actual_bucket_name != 'DoubleQuotes\"_updated':
+                and actual_bucket_name != 'DoubleQuotes\"_updated':
             actual_bucket_name = json.loads("\"" + actual_bucket_name + "\"")
-        test_class_instance.mylog.info('gateway_util.get_bucket_etcd() : actual_bucket_name = \'%s\'' % actual_bucket_name)
+        test_class_instance.mylog.info(
+            'gateway_util.get_bucket_etcd() : actual_bucket_name = \'%s\'' % actual_bucket_name)
     return actual_bucket_id, actual_bucket_name, actual_rp, error

@@ -24,7 +24,7 @@ node('dind') {
 						sh "printenv"
 						sh """
         					docker login -u="${QUAYUSER}" -p="${QUAYPASS}" quay.io
-                				docker run --rm -e ETCD_HOST=http://etcd."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:2379 -e GATEWAY_HOST=http://gateway."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:9999 -e QUERYD_HOST=http://queryd."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:8093 -e TEST_LIST=tests_lists/gateway_api_tests.list -v "${env.WORKSPACE}":/Litmus/result quay.io/influxdb/litmus:latest
+                				docker run --rm -e ETCD_HOST=http://etcd."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:2379 -e GATEWAY_HOST=http://gateway."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:9999 -e QUERYD_HOST=http://queryd."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:8093 -e NAMESPACE "lit-${env.JOB_NAME}-${env.BUILD_ID}" -e TEST_LIST=tests_lists/gateway_api_tests.list -v "${env.WORKSPACE}":/Litmus/result quay.io/influxdb/litmus:latest
 						"""
 					slackSend (channel: "#testinng",color: "#00FF00", message: "SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
 					}
