@@ -39,6 +39,8 @@ CLUSTER_ENV=
 # name of the cluster, default name is 'litmus'
 CLUSTER_NAME="litmus"
 LDAP_CONFIG="sample-ldap-config.toml"
+# data node config
+DATA_CONFIG="/etc/influxdb/influxdb.conf"
 # license key for an enterprise deployments
 LICENSE_KEY="d69c9a41-6800-4419-ae5b-1df5aec449df"
 # the latest meta node build (from plutonium build)
@@ -214,6 +216,28 @@ installCluster() {
     CLUSTER_ENV=$(echo ${CLUSTER_ENV//,/ --env })
 	CLUSTER_ENV="--env $CLUSTER_ENV"
 	catchFail  "$PCL create -c $CLUSTER_NAME $DATANODES $METANODES $LOCAL_PKG_DATA $LOCAL_PKG_META $CLUSTER_ENV $INFLUX_DB_VERSION $TELEGRAF_VERSION --license-key $LICENSE_KEY"
+	if [ "X"$META_AUTH != "X" ]; then
+	    counter=0
+        while [ $counter -lt $DATANODES_NUM ]
+        do
+            # ssh to a datanode, stop influxdb service, update the confing and start influxdb service
+            catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service influxdb stop'"
+            out=`$PCL ssh -c $CLUSTER_NAME data-$counter "ps axu | grep influxdb| grep -v grep"`
+            if [ "X$out" == "X" ]; then
+                catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo sed -i -e \"s/.*meta-internal-shared-secret =.*/  meta-internal-shared-secret = \\\"$INTERNAL_SHARED_SECRET\\\"/\" $DATA_CONFIG'"
+                catchFail "$PCL ssh -c $CLUSTER_NAME data-$counter 'sudo service influxdb start'"
+                start=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep influxdb| grep -v grep"`
+                if [ "X$start" == "X" ]; then
+                    echo "INFLUXDB SERVICE DID NOT START ON data-$counter. EXITING"
+                    exit 1
+                fi
+            else
+                echo "COULD NOT STOP INFLUXDB SERVICE. EXISITNG"
+                exit 1
+            fi
+            let counter+=1
+        done
+    fi
 	# create admin user and password
 	if [ "X"$HTTP_AUTH_ENABLED != "X" ]; then
 		catchFail "curl --fail -XPOST \"http://`$PCL host data-0 -c $CLUSTER_NAME`:8086/query\" --data-urlencode \"q=CREATE USER $ADMIN_USER WITH PASSWORD '$ADMIN_PASSWORD' WITH ALL PRIVILEGES\""
@@ -523,7 +547,7 @@ do
 		    # INFLUXDB_META_AUTH_ENABLED=true is equal to auth-enabled = true on meta node - will be set up later.
 		    # INFLUXDB_META_META_AUTH_ENABLED=true is equal to meta-auth-enabled = true on data node
 		    meta_auth=true
-		    META_AUTH=",INFLUXDB_META_META_AUTH_ENABLED=true,INFLUXDB_META_META_INTERNAL_SHARED_SECRET=\\\"$INTERNAL_SHARED_SECRET\\\"";;
+		    META_AUTH=",INFLUXDB_META_META_AUTH_ENABLED=true";;
 		--pkg-data)
 			shift
 			LOCAL_PKG_DATA="--local-pkg-data $1";;
