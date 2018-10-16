@@ -523,7 +523,7 @@ do
 		    # INFLUXDB_META_AUTH_ENABLED=true is equal to auth-enabled = true on meta node - will be set up later.
 		    # INFLUXDB_META_META_AUTH_ENABLED=true is equal to meta-auth-enabled = true on data node
 		    meta_auth=true
-		    META_AUTH=",INFLUXDB_META_META_AUTH_ENABLED=true,INFLUXDB_META_META_INTERNAL_SHARED_SECRET=$INTERNAL_SHARED_SECRET";;
+		    META_AUTH=",INFLUXDB_META_META_AUTH_ENABLED=true,INFLUXDB_META_META_INTERNAL_SHARED_SECRET=\\\"$INTERNAL_SHARED_SECRET\\\"";;
 		--pkg-data)
 			shift
 			LOCAL_PKG_DATA="--local-pkg-data $1";;
