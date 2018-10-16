@@ -91,6 +91,7 @@ class TestDeleteOrganizationsAPI(object):
                 self.mylog.info(test_name + ' STEP 3: Delete Organization with \'%s\' id' % created_org_id)
                 self.mylog.info('')
                 status, error = gateway_util.delete_organization(self, self.gateway, created_org_id)
+                # The status code should be eventually 204 (for successful deletes)
                 _assert(self, status, 202, 'status code')
                 _assert(self, error, '', 'expected error')
                 self.mylog.info('')
@@ -107,10 +108,13 @@ class TestDeleteOrganizationsAPI(object):
                     self.mylog.info('')
                     self.mylog.info(test_name + ' STEP 6: Verify bucket is not in the list of all buckets')
                     self.mylog.info('')
-                    status, list_of_buckets = gateway_util.get_all_buckets(self, self.gateway)
-                    _assert(self, status, 200, 'status_code')
-                    status = gateway_util.find_bucket_by_name(self, list_of_buckets, bucket_info[id], org_name)
-                    _assert(self, status, False, 'find bucket by name')
+                    status, error_message, list_of_buckets = \
+                        gateway_util.get_all_buckets(self, self.gateway, org_name)
+                    # Status code eventually should be changed from 500
+                    _assert(self, status, 500, 'status_code')
+                    _assert(self,'organization not found', error_message, 'error message')
+                    #status = gateway_util.find_bucket_by_name(self, list_of_buckets, bucket_info[id], org_name)
+                    #_assert(self, status, False, 'find bucket by name')
             else:
                 self.mylog.info('')
                 self.mylog.info(test_name + ' STEP 2: Delete Organization with \'%s\' id' % created_org_id)

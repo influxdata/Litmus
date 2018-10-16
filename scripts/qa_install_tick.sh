@@ -34,6 +34,7 @@ META_CONFIG="/etc/influxdb/influxdb-meta.conf"
 META_LDAP_ALLOWED=
 META_AUTH=
 # cluster configuration
+INTERNAL_SHARED_SECRET="long shared secret"
 CLUSTER_ENV=
 # name of the cluster, default name is 'litmus'
 CLUSTER_NAME="litmus"
@@ -377,6 +378,7 @@ enableMetaAuth() {
 		out=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep influxdb| grep -v grep"`
 		if [ "X$out" == "X" ]; then
 		    catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo sed -i -e \"s/.*auth-enabled = false/  auth-enabled = true/\" $META_CONFIG'"
+		    catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo sed -i -e \"s/.*internal-shared-secret =.*/  internal-shared-secret = \\\"$INTERNAL_SHARED_SECRET\\\"/\" $META_CONFIG'"
 		    catchFail "$PCL ssh -c $CLUSTER_NAME meta-$counter 'sudo service influxdb-meta start'"
             start=`$PCL ssh -c $CLUSTER_NAME meta-$counter "ps axu | grep influxdb| grep -v grep"`
             if [ "X$start" == "X" ]; then
@@ -517,11 +519,11 @@ do
 		    ldap_auth=true
 		    META_LDAP_ALLOWED=",INFLUXDB_META_LDAP_ALLOWED=true";;
 		--meta-auth)
-		    # for now meta authentication wiill support basic authentication : username/password
+		    # for now meta authentication will support basic authentication : username/password
 		    # INFLUXDB_META_AUTH_ENABLED=true is equal to auth-enabled = true on meta node - will be set up later.
 		    # INFLUXDB_META_META_AUTH_ENABLED=true is equal to meta-auth-enabled = true on data node
 		    meta_auth=true
-		    META_AUTH=",INFLUXDB_META_META_AUTH_ENABLED=true";;
+		    META_AUTH=",INFLUXDB_META_META_AUTH_ENABLED=true,INFLUXDB_META_META_INTERNAL_SHARED_SECRET=$INTERNAL_SHARED_SECRET";;
 		--pkg-data)
 			shift
 			LOCAL_PKG_DATA="--local-pkg-data $1";;

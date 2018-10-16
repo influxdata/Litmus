@@ -439,18 +439,24 @@ else:
         general_status, out = 'unhealthy', ''
         # let the whole curl operation to run for no more than 10 seconds
         # --max-time 10
-        cmd_command = 'curl -s -GET %s/healthz' % services[service]
-        time_end = time.time() + 300 # wait up to 180 sec for services to start
+        cmd_command = 'curl --max-time 20 -s -GET %s/health' % services[service]
+        time_end = time.time() + 180  # wait up to 180 sec for services to start
         delay = 2
         if service == 'gateway': print 'GETTING THE HEALTH STATUS OF THE GATEWAY, KAFKA and ETCD SERVICES'
         if service == 'queryd': print 'GETTING THE HEALTH STATUS OF THE QUERYD AND STORAGE SERVICES'
         if service == 'transpilerde': print 'GETTING THE HEALTH STATUS OF THE TRANSPILERDE SERVICE'
         print '-----------------------------------------------------------------\n'
         print str(datetime.datetime.now()) + ' RUNNING \'%s\' COMMAND\n' % cmd_command
-        g_health = subprocess.Popen(cmd_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        while g_health.poll() is None and time.time() < time_end:
-            time.sleep(delay)
-            #print str(datetime.datetime.now()) + ' ' + str(g_health.poll())
+        while time.time() < time_end:
+            g_health = subprocess.Popen(cmd_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            g_health.wait()
+            if g_health.poll() is None or g_health.poll() > 0:
+                time.sleep(delay)
+                print str(datetime.datetime.now()) + ' SLEEPING'
+                print str(datetime.datetime.now()) + ' CURL EXIT STATUS : ' + str(g_health.poll())
+                continue
+            else:
+                break
         if g_health.poll() is None or g_health.poll() > 0:
             print str(datetime.datetime.now()) + \
                   ' EXIT STATUS OF \'%s\' COMMAND IS \'%s\'\n' % (cmd_command, str(g_health.poll()))
@@ -465,12 +471,15 @@ else:
                 out, error = p.communicate()
                 print out
         else:
-            out, err = g_health.communicate()
-            # remove new line characters from output of the command, which is a JSON string
-            out = out.replace('\n', '')
-            out = json.loads(out)
+            try:
+                out, err = g_health.communicate()
+                # remove new line characters from output of the command, which is a JSON string
+                out = out.replace('\n', '')
+                out = json.loads(out)
+                general_status = out.get('status')
+            except ValueError as e:
+                general_status = 'unhealthy'
             # get the status
-            general_status = out.get('status')
             status[service] = general_status
     print str(datetime.datetime.now()) + ' STATUS OD THE SERVICES : ' + str(status) + '\n'
     if 'unhealthy' in status.values():
