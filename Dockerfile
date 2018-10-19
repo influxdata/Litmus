@@ -35,7 +35,6 @@ RUN cp /usr/bin/kubectl /usr/local/bin/kubectl
 
 WORKDIR Litmus
 RUN cp scripts/litmus_run_master.py .
-
 RUN cp scripts/run_litmus_tests.sh .
 
 ENTRYPOINT ["bash","run_litmus_tests.sh"]

@@ -2,8 +2,10 @@ import ast
 import json
 import sys
 import traceback
+import csv
 
 from src.util import litmus_utils
+from StringIO import StringIO
 
 BUCKETS_URL = '/api/v2/buckets'
 TASKS_URL = '/api/v2/tasks'
@@ -11,6 +13,8 @@ ORG_URL = '/api/v2/orgs'
 USERS_URL = '/api/v2/users'
 AUTHORIZATION_URL = '/api/v2/authorizations'
 FLUX_QUERY = '/api/v2/query'
+GATEWAY_QUERY = '/api/v2/query'
+QUERYD = '/api/v2/querysvc'
 
 
 # =================================================== TASKS =============================================================
@@ -548,59 +552,6 @@ def find_user_by_name(test_class_instance, user_name, list_of_users):
     return success
 
 
-# =================================================== PERMISSIONS =======================================================
-
-def create_authorization(test_class_instance, url, user, userid, list_of_permission):
-    """
-    :param userid:
-    :param test_class_instance:
-    :param url:
-    :param user:
-    :param list_of_permission:
-    :return:
-    """
-    id, user_name, user_id, token, permissions, error_message = None, None, None, None, None, None
-    test_class_instance.mylog.info('gateway_util.create_authorization() function is being called')
-    test_class_instance.mylog.info('------------------------------------------------------------\n')
-    test_class_instance.mylog.info('gateway_util.create_authorization() :'
-                                   'Creating Authorization For User \'%s\' With userID \'%s\' and permissions \'%s\''
-                                   % (user, userid, str(list_of_permission)))
-    # permissions":[{"action":"create","resource":"user"},{"action":"write","resource":"bucket/022a99c38eede000"},
-    # {"action":"read","resource":"bucket/022a99c38eede000"}]
-    data = '{"user":"%s", "userID":"%s", "permissions": %s}' % (user, userid, list_of_permission)
-    response = test_class_instance.rl.post(base_url=url, path=AUTHORIZATION_URL, data=data)
-    r = response.json()
-    try:
-        id = r.get('id')
-        user_name = r.get('user')
-        user_id = r.get('userID')
-        token = r.get('token')
-        permissions = r.get('permissions')
-        if id is not None and user_name is not None and user_id is not None and token is not None \
-                and permissions is not None:
-            test_class_instance.mylog.info('gateway_util.create_authorization() USER_ID=' + str(user_id))
-            test_class_instance.mylog.info('gateway_util.create_authorization() USER_NAME=' + str(user_name))
-            test_class_instance.mylog.info('gateway_util.create_authorization() ID=' + str(id))
-            test_class_instance.mylog.info('gateway_util.create_authorization() TOKEN=' + str(token))
-            test_class_instance.mylog.info('gateway_util.create_authorization() PERMISSIONS=' + str(permissions))
-        else:
-            test_class_instance.mylog.info('gateway_util.create_authorization() '
-                                           'REQUESTED PARAMS ARE NONE')
-            error_message = response.headers['X-Influxs-Error']
-            test_class_instance.mylog.info('gateway_util.create_authorization() ERROR=' + error_message)
-    except:
-        test_class_instance.mylog.info('gateway_util.create_user() Exception:')
-        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
-        error_message = response.headers['X-Influxs-Error']
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-    test_class_instance.mylog.info('gateway_util.create_organization() function is done')
-    test_class_instance.mylog.info('')
-    return {"STATUS_CODE": response.status_code, "ID": id, "USER": user_name, "USER_ID": user_id, "TOKEN": token,
-            "PERMISSIONS": permissions, "ERROR_MESSAGE": error_message}
-
-
 # =================================================== BUCKETS ===========================================================
 
 # Currently retention periods are only numbers and not durations:
@@ -850,6 +801,59 @@ def find_bucket_by_name(test_class_instance, list_of_buckets, bucket_name, org_n
     return success
 
 
+# =================================================== PERMISSIONS =======================================================
+
+def create_authorization(test_class_instance, url, user, userid, list_of_permission):
+    """
+    :param userid:
+    :param test_class_instance:
+    :param url:
+    :param user:
+    :param list_of_permission:
+    :return:
+    """
+    id, user_name, user_id, token, permissions, error_message = None, None, None, None, None, None
+    test_class_instance.mylog.info('gateway_util.create_authorization() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------------\n')
+    test_class_instance.mylog.info('gateway_util.create_authorization() :'
+                                   'Creating Authorization For User \'%s\' With userID \'%s\' and permissions \'%s\''
+                                   % (user, userid, str(list_of_permission)))
+    # permissions":[{"action":"create","resource":"user"},{"action":"write","resource":"bucket/022a99c38eede000"},
+    # {"action":"read","resource":"bucket/022a99c38eede000"}]
+    data = '{"user":"%s", "userID":"%s", "permissions": %s}' % (user, userid, list_of_permission)
+    response = test_class_instance.rl.post(base_url=url, path=AUTHORIZATION_URL, data=data)
+    r = response.json()
+    try:
+        id = r.get('id')
+        user_name = r.get('user')
+        user_id = r.get('userID')
+        token = r.get('token')
+        permissions = r.get('permissions')
+        if id is not None and user_name is not None and user_id is not None and token is not None \
+                and permissions is not None:
+            test_class_instance.mylog.info('gateway_util.create_authorization() USER_ID=' + str(user_id))
+            test_class_instance.mylog.info('gateway_util.create_authorization() USER_NAME=' + str(user_name))
+            test_class_instance.mylog.info('gateway_util.create_authorization() ID=' + str(id))
+            test_class_instance.mylog.info('gateway_util.create_authorization() TOKEN=' + str(token))
+            test_class_instance.mylog.info('gateway_util.create_authorization() PERMISSIONS=' + str(permissions))
+        else:
+            test_class_instance.mylog.info('gateway_util.create_authorization() '
+                                           'REQUESTED PARAMS ARE NONE')
+            error_message = response.headers['X-Influxs-Error']
+            test_class_instance.mylog.info('gateway_util.create_authorization() ERROR=' + error_message)
+    except:
+        test_class_instance.mylog.info('gateway_util.create_user() Exception:')
+        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
+        error_message = response.headers['X-Influxs-Error']
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
+        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
+    test_class_instance.mylog.info('gateway_util.create_organization() function is done')
+    test_class_instance.mylog.info('')
+    return {"STATUS_CODE": response.status_code, "ID": id, "USER": user_name, "USER_ID": user_id, "TOKEN": token,
+            "PERMISSIONS": permissions, "ERROR_MESSAGE": error_message}
+
+
 # ============================================== WRITE/QUERY DATA POINTS ================================================
 
 def write_points(test_class_instance, url, token, organization, bucket, data):
@@ -880,17 +884,85 @@ def write_points(test_class_instance, url, token, organization, bucket, data):
     return {"STATUS_CODE": response.status_code, "ERROR_MESSAGE": error_message}
 
 
-def get_data_queryd(test_class_instance, url, token, organization, bucket):
+def gateway_query_data(test_class_instance, query, url, token, organization):
     """
 
     :param test_class_instance:
-    :param url:
+    :param query: Flux query
+    :param url: (str) gateway url
     :param token:
     :param organization:
-    :param bucket:
     :return:
     """
+    error = ''
+    test_class_instance.mylog.info('gateway_util.gateway_query_data() function is being called')
+    test_class_instance.mylog.info('--------------------------------------------------\n')
+    test_class_instance.mylog.info('gateway_util.gateway_query_data() : Query : \'%s\'' % query)
+    test_class_instance.mylog.info('gateway_util.gateway_query_data() : Token : \'%s\'' % token)
+    test_class_instance.mylog.info('gateway_util.gateway_query_data() : Org : \'%s\'' % organization)
 
+    params = {"organization": "%s" % organization}
+    data = '{"query":"%s}' % json.dumps(query)
+    headers = {"Authorization": "Token %s" % token}
+
+    response = test_class_instance.rl.post(base_url=url, path=GATEWAY_QUERY, params=params, data=data, headers=headers)
+    # successful status is 200
+    if response.status_code > 200:
+        error = response.headers['X-Influx-Error']
+    return {'STATUS_CODE': response.status_code, 'ERROR': error, 'RESULT': response.content}
+
+
+def queryd_query_data(test_class_instance, query, url, organization_id, timeout=None, responsenone=None):
+    """
+
+    :param test_class_instance:
+    :param query: Flux query
+    :param url: queryd url
+    :param organization_id:
+    :param timeout
+    :param responsenone
+    :return:
+    """
+    result_list = []
+    error = ''
+    status_code = None
+    test_class_instance.mylog.info('gateway_util.queryd_query_data() function is being called')
+    test_class_instance.mylog.info('--------------------------------------------------\n')
+    test_class_instance.mylog.info('gateway_util.queryd_query_data() : Query : \'%s\'' % query)
+    test_class_instance.mylog.info('gateway_util.queryd_query_data() : Org_ID : \'%s\'' % organization_id)
+
+    data = '{"organization_id":"%s","compiler":{"query":%s}, "compiler_type":"flux"}' \
+           % (organization_id, json.dumps(query))
+
+    response = test_class_instance.rl.post(base_url=url, path=QUERYD, data=data, timeout=timeout,
+                                           responsenone=responsenone)
+    if not responsenone:
+        if response is None:
+            status_code = 500
+        else:
+            if response.status_code > 200:
+                error = response.headers['X-Influx-Error']
+                status_code = response.status_code
+            else:
+                status_code = response.status_code
+            # the first three lines are not needed (at least for now), they are:
+            # datatype,string,long,dateTime:RFC3339,dateTime:RFC3339,dateTime:RFC3339,double,string,string,string
+            # group,false,false,true,true,false,false,true,true,true
+            # default,_result,,,,,,,,
+            """
+            What we are interested in is result:
+            ,result,table,_start,_stop,_time,_value,_field,_measurement,t
+            ,,0,2016-11-09T20:09:47.52299776Z,2018-10-10T20:09:47.52299776Z,2018-10-10T20:09:36.072403525Z,1234,f,test_m,0000
+            """
+            result = '\r\n'.join(response.content.split('\r\n')[3:])
+            # read the query results into buffer
+            buffer = StringIO(result)
+            reader = csv.DictReader(buffer)
+            # iterate over reader object
+            for line in reader:
+                result_list.append(line)
+            test_class_instance.mylog.info('gateway_util.queryd_query_data() : result : ' + str(result_list))
+    return {'STATUS_CODE': status_code, 'RESULT': result_list, 'ERROR': error}
 
 
 # ========================================================== ETCD =======================================================
