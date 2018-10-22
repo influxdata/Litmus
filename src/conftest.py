@@ -20,10 +20,16 @@ def pytest_addoption(parser):
     parser.addoption('--etcd', action='store')
     parser.addoption('--transpilerde', action='store')
     parser.addoption('--namespace', action='store')
+    parser.addoption('--storage', action='store')
+
+
+def get_storage(request):
+    return request.config.getoption('--storage')
 
 
 def get_namespace(request):
     return request.config.getoption('--namespace')
+
 
 def get_gateway(request):
     return request.config.getoption('--gateway')
@@ -94,6 +100,24 @@ def get_meta_auth(request):
 
 
 @pytest.fixture(scope='class')
+def storage(request):
+    """
+
+    :param request:
+    :return:
+    """
+    request.cls.mylog.info('storage() fixture is being called')
+    request.cls.mylog.info('-----------------------------------')
+    storage = get_storage(request)
+    request.cls.mylog.info('storage() fixture : storage=' + str(storage))
+    request.cls.storage = storage
+    request.cls.mylog.info('storage() fixture - done')
+    request.cls.mylog.info('------------------------')
+    request.cls.mylog.info('')
+    return request.cls.storage
+
+
+@pytest.fixture(scope='class')
 def namespace(request):
     """
 
@@ -109,6 +133,7 @@ def namespace(request):
     request.cls.mylog.info('------------------------')
     request.cls.mylog.info('')
     return request.cls.namespace
+
 
 @pytest.fixture(scope='class')
 def gateway(request):

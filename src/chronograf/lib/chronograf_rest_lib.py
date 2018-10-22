@@ -17,7 +17,7 @@ class RestLib(BaseLib):
 
     ############################################# GENERIC HTTP methods #################################################
 
-    def post(self, base_url, path, json=None, data=None, headers=None, auth=None):
+    def post(self, base_url, path, json=None, data=None, headers=None, auth=None, timeout=None, responsenone=True):
         '''
         :param base_url:Chronograf URL, e.g http://<ip>:<port>
         :param path:path to post url
@@ -25,23 +25,26 @@ class RestLib(BaseLib):
         :param data:dictionary containing post data
         :param headers: any custom headers for post request
         :param auth
+        :param timeout
+        :param responsenone (sometimes we would have a need in response being None)
         :return:response object
         '''
         self.log.info('RestLib.post() is called with parameters: base_url=' + str(base_url) +
-                      ', path=' + str(path) + ', json=' + str(json)+ ', auth=' + str(auth)+
-                      ', data=' + str(data) + ', headers=' + str(headers))
+                      ', path=' + str(path) + ', json=' + str(json) + ', auth=' + str(auth) +
+                      ', data=' + str(data) + ', headers=' + str(headers) + ', timeout=' + str(timeout))
         try:
-            response=requests.post(base_url + path, json=json, data=data, headers=headers, auth=auth)
+            response = requests.post(base_url + path, json=json, data=data, headers=headers, auth=auth, timeout=timeout)
             self.log.info('RestLib.post() response code=' + str(response.status_code))
             self.log.info('RestLib.get() - response headers = ' + str(response.headers))
             self.log.info('RestLib.get() - response url = ' + str(response.url))
         except requests.ConnectionError, e:
             self.log.info('RestLib.post() - ConnectionError : ' + str(e.message))
-            response=None
+            response = None
         except requests.RequestException, e:
             self.log.info('RestLib.post() - RequestsException : ' + str(e.message))
-            response=None
-        assert response is not None, self.log.info('RestLib.post() : Response object is None')
+            response = None
+        if responsenone:
+            assert response is not None, self.log.info('RestLib.post() : Response object is None')
         return response
 
     def get(self, base_url, path, params=None, headers=None, auth=None):
