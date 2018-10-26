@@ -17,12 +17,14 @@ class RestLib(BaseLib):
 
     ############################################# GENERIC HTTP methods #################################################
 
-    def post(self, base_url, path, json=None, data=None, headers=None, auth=None, timeout=None, responsenone=True):
+    def post(self, base_url, path, json=None, data=None, params=None, headers=None, auth=None, timeout=None,
+             responsenone=True):
         '''
         :param base_url:Chronograf URL, e.g http://<ip>:<port>
         :param path:path to post url
         :param json:JSON object containiong post data
         :param data:dictionary containing post data
+        :param params:
         :param headers: any custom headers for post request
         :param auth
         :param timeout
@@ -31,9 +33,11 @@ class RestLib(BaseLib):
         '''
         self.log.info('RestLib.post() is called with parameters: base_url=' + str(base_url) +
                       ', path=' + str(path) + ', json=' + str(json) + ', auth=' + str(auth) +
-                      ', data=' + str(data) + ', headers=' + str(headers) + ', timeout=' + str(timeout))
+                      ', data=' + str(data) + ', headers=' + str(headers) + ', timeout=' + str(timeout) +
+                      ', params=' + str(params))
         try:
-            response = requests.post(base_url + path, json=json, data=data, headers=headers, auth=auth, timeout=timeout)
+            response = requests.post(base_url + path, json=json, params=params, data=data, headers=headers,
+                                     auth=auth, timeout=timeout)
             self.log.info('RestLib.post() response code=' + str(response.status_code))
             self.log.info('RestLib.get() - response headers = ' + str(response.headers))
             self.log.info('RestLib.get() - response url = ' + str(response.url))

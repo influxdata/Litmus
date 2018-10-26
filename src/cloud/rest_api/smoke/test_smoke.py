@@ -3,6 +3,7 @@ import time
 import src.util.gateway_util as gateway_util
 import src.util.login_util as lu
 import json
+import subprocess
 
 from src.chronograf.lib import chronograf_rest_lib as crl
 from src.cloud.rest_api.conftest import _assert
@@ -10,7 +11,8 @@ from src.cloud.rest_api.conftest import _assert
 
 # remove authorization before removing users
 @pytest.mark.usefixtures('remove_orgs', 'remove_buckets', 'remove_auth',
-                         'remove_users', 'gateway', 'flux', 'namespace')
+                         'remove_users', 'gateway', 'flux', 'namespace',
+                         'kubeconf')
 class TestSmoke(object):
     """
     TODO
@@ -83,22 +85,39 @@ class TestSmoke(object):
         """
         self.mylog.info(test_name + 'STEP 6: Verify Data Was Written To Kafka')
         kafka_result = \
-            subprocess.Popen('kubectl exec kafka-0 -c k8skafka -n %s -- bash -c '
+            subprocess.Popen('kubectl --kubeconfig="%s" --context=influx-internal exec kafka-0 -c k8skafka -n %s -- bash -c '
                              '"(/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka-svc:9093 '
                              '--topic ingress --from-beginning > /tmp/out.log 2>&1 &) && sleep 2 && egrep -a \"[0]{4}\" '
-                             '/tmp/out.log"' % self.namespace,
+                             '/tmp/out.log"' % (self.kubeconf, self.namespace),
                              shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         kafka_result.wait()
         out, error = kafka_result.communicate()
         self.mylog.info(test_name + ' KAFKA RESULTS : ' + str(out) + ' ' + str(error))
         self.mylog.info(test_name + '')
-        """
 
+        """
         self.mylog.info(test_name + 'STEP 6: Query Data using Queryd')
         # need to give it up to 30 sec to get the results back
         end_time = time.time() + 30
         while time.time() <= end_time:
             result = gateway_util.queryd_query_data(self, query, self.flux, org_id, timeout=5, responsenone=False)
+            if result['STATUS_CODE'] == 200 and len(result['RESULT']) == 1:
+                break
+            else:
+                self.mylog.info(test_name + ' SLEEPING 1 sec')
+                time.sleep(1)
+        _assert(self, result['STATUS_CODE'], 200, ' STATUS CODE')
+        _assert(self, len(result['RESULT']), 1, ' NUMBER OF RECORDS')
+        _assert(self, result['RESULT'][0]['_measurement'], 'test_m', 'Measurement')
+        _assert(self, result['RESULT'][0]['_value'], '1234', 'Field Value')
+        _assert(self, result['RESULT'][0]['t'], '0000', 'Tag Value')
+
+        self.mylog.info('')
+        self.mylog.info(test_name + 'STEP 7: Query Data using Gateway')
+        # need to give it up to 30 sec to get the results back
+        end_time = time.time() + 30
+        while time.time() <= end_time:
+            result = gateway_util.gateway_query_data(self, query, self.gateway, r_dic['TOKEN'], org_name)
             if result['STATUS_CODE'] == 200 and len(result['RESULT']) == 1:
                 break
             else:
