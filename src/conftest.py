@@ -21,6 +21,10 @@ def pytest_addoption(parser):
     parser.addoption('--transpilerde', action='store')
     parser.addoption('--namespace', action='store')
     parser.addoption('--storage', action='store')
+    parser.addoption('--kubeconf', action='store')
+
+def get_kubeconfig(request):
+    return request.config.getoption('--kubeconf')
 
 
 def get_storage(request):
@@ -97,6 +101,24 @@ def get_ldap_auth(request):
 
 def get_meta_auth(request):
     return request.config.getoption('--metaauth')
+
+
+@pytest.fixture(scope='class')
+def kubeconf(request):
+    """
+
+    :param request:
+    :return:
+    """
+    request.cls.mylog.info('kubeconf() fixture is being called')
+    request.cls.mylog.info('----------------------------------')
+    kubeconf = get_kubeconfig(request)
+    request.cls.mylog.info('kuebconf() fixture : kubeconf=' + str(kubeconf))
+    request.cls.kubeconf = kubeconf
+    request.cls.mylog.info('kubeconf() fixture - done')
+    request.cls.mylog.info('-------------------------')
+    request.cls.mylog.info('')
+    return request.cls.kubeconf
 
 
 @pytest.fixture(scope='class')

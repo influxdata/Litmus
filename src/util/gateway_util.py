@@ -895,6 +895,7 @@ def gateway_query_data(test_class_instance, query, url, token, organization):
     :return:
     """
     error = ''
+    result_list = []
     test_class_instance.mylog.info('gateway_util.gateway_query_data() function is being called')
     test_class_instance.mylog.info('--------------------------------------------------\n')
     test_class_instance.mylog.info('gateway_util.gateway_query_data() : Query : \'%s\'' % query)
@@ -902,14 +903,25 @@ def gateway_query_data(test_class_instance, query, url, token, organization):
     test_class_instance.mylog.info('gateway_util.gateway_query_data() : Org : \'%s\'' % organization)
 
     params = {"organization": "%s" % organization}
-    data = '{"query":"%s}' % json.dumps(query)
+    data = '{"query":%s}' % json.dumps(query)
     headers = {"Authorization": "Token %s" % token}
 
     response = test_class_instance.rl.post(base_url=url, path=GATEWAY_QUERY, params=params, data=data, headers=headers)
     # successful status is 200
     if response.status_code > 200:
         error = response.headers['X-Influx-Error']
-    return {'STATUS_CODE': response.status_code, 'ERROR': error, 'RESULT': response.content}
+    else:
+        test_class_instance.mylog.info('gateway_util.gateway_query_data() : content : ' + str(response.content))
+        result = '\r\n'.join(response.content.split('\r\n')[:-2])
+        test_class_instance.mylog.info('gateway_util.gateway_query_data() : result : ' + str(result))
+        # read the query results into buffer
+        buffer = StringIO(result)
+        reader = csv.DictReader(buffer)
+        # iterate over reader object
+        for line in reader:
+            result_list.append(line)
+    test_class_instance.mylog.info('gateway_util.gateway_query_data() : result : ' + str(result_list))
+    return {'STATUS_CODE': response.status_code, 'ERROR': error, 'RESULT': result_list}
 
 
 def queryd_query_data(test_class_instance, query, url, organization_id, timeout=None, responsenone=None):

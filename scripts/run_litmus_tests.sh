@@ -19,14 +19,38 @@ if [ "X$TEST_LIST" != "X" ] && [ "X$ONE_TEST" != "X" ]; then
 fi
 if [ "X$TEST_LIST" != "X" ]; then
 	echo ""
-	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST --flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST --namespace $NAMESPACE --storage $STORAGE_HOST--tests-list $TEST_LIST --product-version 2"
+	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST "`\
+	                                        `"--flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST "`\
+	                                        `"--namespace $NAMESPACE --storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
+	                                        `"--tests-list $TEST_LIST --product-version 2"
 	echo ""
-	python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST --flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST --namespace $NAMESPACE --storage $STORAGE_HOST --tests-list $TEST_LIST --product-version 2
+	python litmus_run_master.py --no-chronograf \
+	                            --etcd $ETCD_HOST \
+	                            --gateway $GATEWAY_HOST \
+	                            --flux $QUERYD_HOST \
+	                            --transpilerde $TRANSPILERDE_HOST \
+	                            --namespace $NAMESPACE \
+	                            --storage $STORAGE_HOST \
+	                            --kubeconf $KUBE_CONFIG \
+	                            --tests-list $TEST_LIST \
+	                            --product-version 2
 elif [ "X$ONE_TEST" != "X" ]; then
 	echo ""
-	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST --flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST --namespace $NAMESPACE --storage $STORAGE_HOST --tests $ONE_TEST --product-version 2"
+	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST "`\
+	                                        `"--flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST "`\
+	                                        `"--namespace $NAMESPACE --storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
+	                                        `"--tests $ONE_TEST --product-version 2"
 	echo ""
-	python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST --flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST --namespace $NAMESPACE --storage $STORAGE_HOST --tests $ONE_TEST --product-version 2
+	python litmus_run_master.py --no-chronograf \
+	                            --etcd $ETCD_HOST \
+	                            --gateway $GATEWAY_HOST \
+	                            --flux $QUERYD_HOST \
+	                            --transpilerde $TRANSPILERDE_HOST \
+	                            --namespace $NAMESPACE \
+	                            --storage $STORAGE_HOST \
+	                            --kubeconf $KUBE_CONFIG \
+	                            --tests $ONE_TEST \
+	                            --product-version 2
 fi
 # Return success or failure ( 0 - success )
 EXIT_STATUS=$?

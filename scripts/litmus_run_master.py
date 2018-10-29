@@ -34,6 +34,7 @@ parser.add_option('--transpilerde', action='store',
                   help='TRANSPILERDE URL THAT HANDLES REQUESTS TO TRANSLATE INFLUXQL QUERIES TO FLUX')
 parser.add_option('--namespace', action='store', help='KUBERNETES NAMESPACE')
 parser.add_option('--storage', action='store', help='STORAGE URL')
+parser.add_option('--kubeconf', action='store', help='LOCATION OF KUBE CONFIG FILE')
 
 # options for running REST tests (By default these options will be derived from the output o the pcl list command
 # chronograf is supported on both platforms 1.x and 2.0
@@ -545,6 +546,17 @@ else:
         print 'STORAGE URL IS NOT SPECIFIED. EXITING.'
         exit(1)
 
+    ###############
+    # KUBE CONFIG #
+    ###############
+    if options.kubeconf:
+        pytest_parameters.append('--kubeconf=' + options.kubeconf)
+        print 'LOCATION OF KUBE CONFIGURATION FILE : ' + options.kubeconf
+        print '----------------------------------------------------------\n'
+    else:
+        print 'LOCATION OF KUBE CONFIGURATION FILE IS NOT SPECIFIED. EXITING.'
+        exit(1)
+
     ################
     # HEALTH CHECK #
     ################
@@ -564,7 +576,17 @@ else:
         status = check_service_status(service, cmd_command, time_delay=180, time_sleep=2)
         services_status[service] = status
     print str(datetime.datetime.now()) + ' STATUS OF THE SERVICES : ' + str(services_status) + '\n'
-
+    if 'unhealthy' in services_status.values():
+        print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
+        print '-----------------------------------------\n'
+        pods = subprocess.Popen('kubectl --context=influx-internal get pods -n %s' % options.namespace, shell=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        pods.wait()
+        out, err = pods.communicate()
+        print out, err
+        exit(1)
+    print 'SERVICES ARE UP AND RUNNING.'
+    """
     # need to restart Storage Service
     cmd_command = 'curl --max-time 20 -s -GET %s/health' % options.storage
     status = check_service_status(service=options.storage, cmd_command=cmd_command, time_delay=180, time_sleep=2,
@@ -579,7 +601,7 @@ else:
     cmd_command = 'curl --max-time 20 -s -GET %s/health' % options.flux
     status = check_service_status(service=options.flux, cmd_command=cmd_command, time_delay=180, time_sleep=2,
                                   restart=True, pod=out.strip())
-
+    """
 # passing a file containing the test suite(s)
 if options.tests is not None:
     pytest_parameters.extend(options.tests)
