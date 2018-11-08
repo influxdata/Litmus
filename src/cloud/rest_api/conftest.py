@@ -1,6 +1,8 @@
 import pytest
 import src.util.litmus_utils as litmus_utils
 from src.util import gateway_util
+from src.util.twodotoh import org_util
+from src.util.twodotoh import buckets_util
 from random import sample, shuffle
 from string import ascii_lowercase
 from string import ascii_uppercase
@@ -17,12 +19,18 @@ special_char = ["", "\'", 'DoubleQuotes\\"', 'BackSlash\\']
 ten_char_lc = [''.join(sample(ascii_lowercase, 10)) for i in range(10)]
 # noinspection PyRedeclaration
 twenty_char_lc = [''.join(sample(ascii_lowercase, 20)) for i in range(10)]
+# noinspection PyRedeclaration
 ten_char_uc = [''.join(sample(ascii_uppercase, 10)) for i in range(10)]
+# noinspection PyRedeclaration
 twenty_char_uc = [''.join(sample(ascii_uppercase, 20)) for i in range(10)]
+# noinspection PyRedeclaration
 ten_char_numbers = [''.join(sample(digits, 10)) for i in range(10)]
+# noinspection PyRedeclaration
 five_char_numbers = [''.join(sample(digits, 5)) for i in range(10)]
 nonalphanumeric = '!@#$%^*><&()_+{}[]|,.~/`?'  # removed \, ' and " character
+# noinspection PyRedeclaration
 ten_char_nonalphanumeric = [''.join(sample(nonalphanumeric, 10)) for i in range(10)]
+# noinspection PyRedeclaration
 twenty_char_nonalphanumeric = [''.join(sample(nonalphanumeric, 20)) for i in range(10)]
 twenty_char_names_list = []
 two_hundred_char_name_list = []
@@ -74,18 +82,6 @@ def verify_org_etcd_entries(request, test_name, created_org_id, created_org_name
                             error_by_index_name=None):
     """
     Function verifies id and name of the organization
-<<<<<<< HEAD:src/cloud/rest_api/conftest.py
-    :param error_by_index_name:
-    :param id_by_index_name:
-    :param error_by_index_id:
-    :param name_by_index_id:
-    :param get_index_values:
-    :param error:
-    :param created_org_name:
-    :param created_org_id:
-    :param test_name:
-    :param request:
-=======
     :param request:
     :param test_name:
     :param created_org_id:
@@ -96,7 +92,6 @@ def verify_org_etcd_entries(request, test_name, created_org_id, created_org_name
     :param error_by_index_id:
     :param id_by_index_name:
     :param error_by_index_name:
->>>>>>> bd68fa140... Merge pull request #1832 from influxdata/gs-smoke-test:litmus/src/cloud/rest_api/conftest.py
     :return: Pass/Fail
     """
     # actual_org_id, actual_org_name, error, name_by_index_id, error_by_index_id, id_by_index_name, error_by_index_name
@@ -135,20 +130,12 @@ def verify_bucket_etcd_entries(request, test_name, expected_bucket_id, expected_
                                expected_error):
     """
     Function verifies bucket id, name and errors, if any
-<<<<<<< HEAD:src/cloud/rest_api/conftest.py
-    :param expected_error:
-    :param expected_retention_period:
-    :param expected_bucket_name:
-    :param expected_bucket_id:
-    :param test_name:
-=======
-    :param test_name:
-    :param expected_bucket_id:
-    :param expected_bucket_name:
-    :param expected_retention_period:
-    :param expected_error:
->>>>>>> bd68fa140... Merge pull request #1832 from influxdata/gs-smoke-test:litmus/src/cloud/rest_api/conftest.py
     :param request:
+    :param test_name:
+    :param expected_bucket_id:
+    :param expected_bucket_name:
+    :param expected_retention_period:
+    :param expected_error:
     :return: Pass/Fail
     """
     request.mylog.info(test_name + 'Parameters: expected_bucket_id = \'%s\', expected_bucket_name = \'%s\', '
@@ -173,18 +160,11 @@ def verify_bucket_etcd_entries(request, test_name, expected_bucket_id, expected_
 def verify_user_etcd_entries(request, test_name, expected_user_id, expected_user_name, expected_error):
     """
     Function verifies user id, name and errors, if any
-<<<<<<< HEAD:src/cloud/rest_api/conftest.py
-    :param expected_error:
-    :param expected_user_name:
-    :param expected_user_id:
-    :param test_name:
-=======
-    :param test_name:
-    :param expected_user_id:
-    :param expected_user_name:
-    :param expected_error:
->>>>>>> bd68fa140... Merge pull request #1832 from influxdata/gs-smoke-test:litmus/src/cloud/rest_api/conftest.py
     :param request:
+    :param test_name:
+    :param expected_user_id:
+    :param expected_user_name:
+    :param expected_error:
     :return: Pass/Fail
     """
     request.mylog.info(test_name + 'Parameters: expected_user_id = \'%s\', expected_user_name = \'%s\', '
@@ -205,7 +185,8 @@ def verify_user_etcd_entries(request, test_name, expected_user_id, expected_user
 
 # to install etcdctl tool on mac we need to install etcd : brew install etcd
 # for ubuntu run :
-# 1. curl -L  https://github.com/coreos/etcd/releases/download/v2.1.0-rc.0/etcd-v2.1.0-rc.0-linux-amd64.tar.gz -o etcd-v2.1.0-rc.0-linux-amd64.tar.gz
+# 1. curl -L  https://github.com/coreos/etcd/releases/download/v2.1.0-rc.0/etcd-v2.1.0-rc.0-linux-amd64.tar.gz -o
+#     etcd-v2.1.0-rc.0-linux-amd64.tar.gz
 # 2. tar xzvf etcd-v2.1.0-rc.0-linux-amd64.tar.gz
 # 3. etcdctl could be found in /tmp/etcd-v2.1.0-rc.0-linux-amd64, copy to /usr/local/bin
 etcdctl = 'ETCDCTL_API=3 /usr/local/bin/etcdctl'
@@ -326,10 +307,11 @@ def get_all_setup_orgs(request, gateway):
     request.cls.mylog.info('')
     for org_name in org_names:
         request.cls.mylog.info('get_all_setup_orgs() fixture : Creating an org \'%s\'' % org_name)
-        (status, org_id, name, error) = gateway_util.create_organization(request.cls, gateway, org_name)
+        create_result = org_util.create_organization(request.cls, gateway, org_name)
+        status = create_result['status']
         assert status == 201, request.cls.mylog.info('Failed to create an org \'%s\'' % org_name)
     request.cls.mylog.info('get_all_setup_orgs() fixture: Get all of the created organizations')
-    (status, created_orgs_list) = gateway_util.get_all_organizations(request.cls, gateway)
+    status, created_orgs_list = org_util.get_all_organizations(request.cls, gateway)
     assert status == 200, \
         request.cls.mylog.info('get_all_setup_orgs() fixture: response status is ' + str(status))
     request.cls.get_all_setup_orgs = created_orgs_list
@@ -339,7 +321,6 @@ def get_all_setup_orgs(request, gateway):
     return request.cls.get_all_setup_orgs
 
 
-# Since retention period is not working for rest api, it is hardcoded to 1 for now
 @pytest.fixture(scope='class')
 def get_all_setup_buckets(request, gateway):
     """
@@ -350,19 +331,20 @@ def get_all_setup_buckets(request, gateway):
     request.cls.mylog.info('get_all_setup_buckets() fixture is being called')
     request.cls.mylog.info('-----------------------------------------------')
     request.cls.mylog.info('')
-    created_buckets_list = []
     for org_name in org_names:
         request.cls.mylog.info('get_all_setup_buckets() fixture : Creating an org \'%s\'' % org_name)
         request.cls.mylog.info('-' * (51 + len(org_name) + 1))
-        (status, org_id, name, error) = gateway_util.create_organization(request.cls, gateway, org_name)
+        create_result = org_util.create_organization(request.cls, gateway, org_name)
+        status = create_result['status']
+        org_id = create_result['org_id']
         assert status == 201, request.cls.mylog.info('Failed to create an org \'%s\'' % org_name)
         for bucket_name in ascii_uppercase:
             request.cls.mylog.info('get_all_setup_buckets() fixture : Creating a bucket \'%s\'' % bucket_name)
             # TODO make retention period a variable param
-            response = gateway_util.create_bucket(request.cls, gateway, bucket_name, '1h', org_id)
-            # status = response[0]
-            assert response[0] == 201, request.cls.mylog.info('Failed to create a bucket \'%s\'' % bucket_name)
-    (status, created_buckets_list) = gateway_util.get_all_buckets(request.cls, gateway)
+            create_bucket_result = buckets_util.create_bucket(request.cls, gateway, bucket_name, 3600, org_id)
+            assert create_bucket_result['status'] == \
+                   201, request.cls.mylog.info('Failed to create a bucket \'%s\'' % bucket_name)
+    status, error_message, created_buckets_list = buckets_util.get_all_buckets(request.cls, gateway)
     assert status == 200, \
         request.cls.mylog.info('get_all_setup_buckets() fixture: response status is ' + str(status))
     request.cls.get_all_setup_buckets = created_buckets_list

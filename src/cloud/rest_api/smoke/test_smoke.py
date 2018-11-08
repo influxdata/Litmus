@@ -1,5 +1,7 @@
 import pytest
 import time
+import src.util.twodotoh.org_util as org_util
+import src.util.twodotoh.buckets_util as buckets_util
 import src.util.gateway_util as gateway_util
 import src.util.login_util as lu
 import json
@@ -52,14 +54,19 @@ class TestSmoke(object):
 
         self.header(test_name)
         self.mylog.info(test_name + 'STEP 1: Create Organization')
-        status_code, org_id, created_org_name, error_message = \
-            gateway_util.create_organization(self, self.gateway, org_name)
+        create_org_result = org_util.create_organization(self, self.gateway, org_name)
+        status_code = create_org_result['status']
+        org_id = create_org_result['org_id']
+
         _assert(self, status_code, 201, 'Create Organization Status Code')
         # TODO add more checks that Organization was created OK
 
         self.mylog.info(test_name + 'STEP 2: Create Bucket')
-        status_code, created_bucket_id, created_bucket_name, organization_id, retention_period, error_message = \
-            gateway_util.create_bucket(self, self.gateway, bucket_name, retentionPeriod="1h", organizationID=org_id)
+        create_bucket_result = \
+            buckets_util.create_bucket(self, self.gateway, bucket_name, 3600, org_id)
+        status_code = create_bucket_result['status']
+        created_bucket_id = create_bucket_result['bucket_id']
+
         _assert(self, status_code, 201, 'Create Bucket Status Code')
         # TODO add more checks that bucket was created OK
 

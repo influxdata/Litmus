@@ -4,7 +4,7 @@ from string import digits
 
 import pytest
 
-import src.util.gateway_util as gateway_util
+import src.util.twodotoh.org_util as org_util
 import src.util.login_util as lu
 from src.chronograf.lib import chronograf_rest_lib as crl
 from src.cloud.rest_api.conftest import ten_char_lc, twenty_char_lc, twenty_char_uc, ten_char_uc, \
@@ -47,8 +47,9 @@ class TestUpdateOrganizationsAPI(object):
         self.header(test_name)
 
         self.mylog.info(test_name + ' STEP 1: Create Organization')
-        status, created_org_id, created_org_name, error_message = \
-            gateway_util.create_organization(self, self.gateway, org_name)
+        create_result = org_util.create_organization(self, self.gateway, org_name)
+        status = create_result['status']
+        created_org_id = create_result['org_id']
         if org_name == '':
             _assert(self, status, 201, 'status_code', xfail=True,
                     reason='https://github.com/influxdata/platform/issues/188')
@@ -59,8 +60,10 @@ class TestUpdateOrganizationsAPI(object):
             _assert(self, status, 201, 'status_code')
 
         self.mylog.info(test_name + ' STEP 2: Update created org with the \'%s\' name' % new_org_name)
-        status, new_org_id, updated_org_name, error_message = \
-            gateway_util.update_organization(self, self.gateway, created_org_id, new_org_name)
+        update_result = org_util.update_organization(self, self.gateway, created_org_id, new_org_name)
+        status = update_result['status']
+        new_org_id = update_result['updated_org_id']
+        updated_org_name = update_result['updated_org_name']
         self.mylog.info(test_name + 'Assert actual status \'%s\' equals to expected status 200' % status)
         _assert(self, status, 200, 'status_code')
         self.mylog.info(test_name + 'Assert actual org_id \'%s\' equals to expected org_id \'%s\''
@@ -257,20 +260,24 @@ class TestUpdateOrganizationsAPI(object):
         org_name = 'existing_org'
         self.header(test_name)
         self.mylog.info(test_name + ' STEP 1: Create Organization')
-        status, created_org_id, created_org_name, error_message = \
-            gateway_util.create_organization(self, self.gateway, org_name)
+        create_result = org_util.create_organization(self, self.gateway, org_name)
+        status = create_result['status']
+        created_org_id = create_result['org_id']
         self.mylog.info(test_name + 'Assert actual status code \'%s\' equals to expected status code 201' % status)
         _assert(self, status, 201, 'status_code')
 
         self.mylog.info(test_name + ' STEP 2: Update created org with the \'%s\' name' % org_name)
-        status, updated_org_id, updated_org_name, error_message = \
-            gateway_util.update_organization(self, self.gateway, created_org_id, org_name)
+        update_result = org_util.update_organization(self, self.gateway, created_org_id, org_name)
+        status = update_result['status']
+        updated_org_id = update_result['updated_org_id']
+        updated_org_name = update_result['updated_org_name']
         self.mylog.info(test_name + 'Assert actual status code \'%s\' equals to expected status code 201' % status)
         _assert(self, status, 200, 'status_code')
         self.mylog.info(test_name + 'Assert updated org_id \'%s\' equals to expected org_id \'%s\''
                         % (updated_org_id, created_org_id))
         _assert(self, updated_org_id, created_org_id, 'org_id')
-        self.mylog.info(test_name + 'Assert updated org_name \'%s\' equals to expected org_name \'%s\'' % (updated_org_name, org_name))
+        self.mylog.info(test_name + 'Assert updated org_name \'%s\' equals to expected org_name \'%s\''
+                        % (updated_org_name, org_name))
         _assert(self, updated_org_name, org_name, 'org_name')
 
         self.mylog.info(test_name + 'STEP 3: Verify created user was persisted in the etcd store')
@@ -288,8 +295,10 @@ class TestUpdateOrganizationsAPI(object):
         org_name_to_update = ''
         self.header(test_name)
         self.mylog.info(test_name + ' STEP 1: Create Organization')
-        status, created_org_id, created_org_name, error_message = \
-            gateway_util.create_organization(self, self.gateway, org_name)
+        create_result = org_util.create_organization(self, self.gateway, org_name)
+        status = create_result['status']
+        created_org_id = create_result['org_id']
+        created_org_name = create_result['org_name']
         self.mylog.info(test_name + 'Assert actual status code \'%s\' equals to expected status code 201' % status)
         _assert(self, status, 201, 'status_code')
 
@@ -297,8 +306,10 @@ class TestUpdateOrganizationsAPI(object):
         verify_org_etcd_entries(self, test_name, created_org_id, created_org_name, error='')
 
         self.mylog.info(test_name + ' STEP 3: Update created org with the \'%s\' name' % org_name_to_update)
-        status, updated_org_id, updated_org_name, error_message = \
-            gateway_util.update_organization(self, self.gateway, created_org_id, org_name_to_update)
+        update_result = org_util.update_organization(self, self.gateway, created_org_id, org_name_to_update)
+        status = update_result['status']
+        updated_org_id = update_result['updated_org_id']
+        updated_org_name = update_result['updated_org_name']
         self.mylog.info(test_name + 'Assert actual status code \'%s\' equals to expected status code 200' % status)
         _assert(self, status, 200, 'status_code')
         self.mylog.info(test_name + 'Assert updated org_id \'%s\' equals to expected org_id \'%s\''
