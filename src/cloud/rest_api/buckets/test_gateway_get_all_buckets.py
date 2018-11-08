@@ -1,7 +1,7 @@
 import pytest
 import src.util.login_util as lu
 from src.chronograf.lib import chronograf_rest_lib as crl
-from src.util import gateway_util
+from src.util.twodotoh import buckets_util
 from src.cloud.rest_api.conftest import org_names, _assert
 from string import ascii_uppercase
 
@@ -38,7 +38,7 @@ class TestGetAllBucketsAPI(object):
         expected_buckets_count = 130
         self.header(test_name)
         self.mylog.info(test_name + 'STEP 1: Get count of all buckets')
-        actual_count = gateway_util.get_count_of_buckets(self, self.get_all_setup_buckets)
+        actual_count = buckets_util.get_count_of_buckets(self, self.get_all_setup_buckets)
         self.mylog.info(test_name + 'Actual count of created buckets is ' + str(actual_count))
         self.mylog.info(test_name + 'Assert expected_count ' + str(expected_buckets_count) +
                         ' equals to actual count ' + str(actual_count))
@@ -56,7 +56,7 @@ class TestGetAllBucketsAPI(object):
         self.mylog.info(test_name + 'STEP 1: find bucket per org')
         for org_name in org_names:
             for bucket_name in ascii_uppercase:
-                success = gateway_util.find_bucket_by_name(self, self.get_all_setup_buckets, bucket_name, org_name)
+                success = buckets_util.find_bucket_by_name(self, self.get_all_setup_buckets, bucket_name, org_name)
                 self.mylog.info(test_name + 'Assert actual bucket \'%s\' could be found in \'%s\''
                                 % (bucket_name, org_name))
                 _assert(self, success, True, 'find bucket per org')

@@ -6,11 +6,13 @@ import pytest
 
 import src.util.login_util as lu
 from src.chronograf.lib import chronograf_rest_lib as crl
+# noinspection PyProtectedMember
 from src.cloud.rest_api.conftest import ten_char_lc, twenty_char_lc, twenty_char_uc, ten_char_uc, \
     ten_char_numbers, five_char_numbers, nonalphanumeric, ten_char_nonalphanumeric, \
     twenty_char_nonalphanumeric, twenty_char_names_list, forty_char_names_list, \
     four_hundred_char_name_list, two_hundred_char_name_list, special_char, _assert, verify_org_etcd_entries
-from src.util import gateway_util
+# from src.util import gateway_util
+from src.util.twodotoh import org_util
 
 
 @pytest.mark.usefixtures('remove_orgs', 'gateway')
@@ -51,8 +53,10 @@ class TestCreateOrganizationsAPI(object):
         test_name = name_of_the_test_to_run + org_name + ' '
         self.header(test_name)
         self.mylog.info(test_name + ' STEP 1: Create Organization "%s"' % org_name)
-        status, created_org_id, created_org_name, error_message = \
-            gateway_util.create_organization(self, self.gateway, org_name)
+        create_result = org_util.create_organization(self, self.gateway, org_name)
+        status = create_result['status']
+        created_org_id = create_result['org_id']
+        created_org_name = create_result['org_name']
         if org_name == '':
             # TODO: According to @goller organization with empty name can be created. Currently there is a bug.
             # TODO: Create a bug (@gshif)
@@ -145,7 +149,7 @@ class TestCreateOrganizationsAPI(object):
         """
         REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
-        tests org name containing 10 random non-alphanumeric charactersd can be created and persisted in the etcd store.
+        tests org name containing 10 random non-alphanumeric characters can be created and persisted in the etcd store.
         """
         self.run_tests('test_create_orgs_10_char_nonalphanumeric_case ', ten_char_nonalphanumeric)
 
@@ -154,7 +158,7 @@ class TestCreateOrganizationsAPI(object):
         """
         REST API: http://<gateway>/api/v2/orgs
         METHOD: POST
-        tests org name containing 20 random non-alphanumeric charactersd can be created and persisted in the etcd store.
+        tests org name containing 20 random non-alphanumeric characters can be created and persisted in the etcd store.
         """
         self.run_tests('test_create_orgs_20_char_nonalphanumeric_case ', twenty_char_nonalphanumeric)
 
@@ -229,20 +233,22 @@ class TestCreateOrganizationsAPI(object):
         org_name = 'duporgname'
         self.header(test_name)
         self.mylog.info(test_name + ' STEP 1: Create Organization %s' % org_name)
-        (status, created_org_id, created_org_name, error_message) = \
-            gateway_util.create_organization(self, self.gateway, org_name)
+        create_result = org_util.create_organization(self, self.gateway, org_name)
+        status = create_result['status']
+        created_org_id = create_result['org_id']
+        created_org_name = create_result['org_name']
         _assert(self, status, 201, 'status code')
 
         self.mylog.info(test_name + 'STEP 2: Verify data was persisted in the etcd store')
         verify_org_etcd_entries(self, test_name, created_org_id, created_org_name, '')
 
         self.mylog.info(test_name + 'STEP 3: Creating org with the same name')
-        #TODO: According to @goller multiple organizations with the same name could be created,
-        #TODO: but with different ids, but currently it does not work
-        #TODO: filed a bug(gshif)
-        status, created_org_id, created_org_name, error_message = \
-            gateway_util.create_organization(self, self.gateway, org_name)
-        _assert(self, status, 201, 'status code', xfail=True, reason='status code is 500')
+        # TODO: According to @goller multiple organizations with the same name could be created,
+        # TODO: but with different ids, but currently it does not work
+        # TODO: filed a bug(gshif)
+        create_result = org_util.create_organization(self, self.gateway, org_name)
+        status = create_result['status']
+        _assert(self, status, 201, 'status code', xfail=True, reason='cannot create org with the same name')
         self.footer(test_name)
 
     @pytest.mark.parametrize('two_hundred_char_names', two_hundred_char_name_list)
@@ -262,4 +268,3 @@ class TestCreateOrganizationsAPI(object):
         tests org name containing 400 mix characters can be created and persisted in the etcd store.
         """
         self.run_tests('test_create_orgs_400_char_mix ', four_hundred_char_names)
-
