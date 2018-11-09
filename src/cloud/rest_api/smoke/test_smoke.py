@@ -5,7 +5,6 @@ import src.util.twodotoh.buckets_util as buckets_util
 import src.util.gateway_util as gateway_util
 import src.util.login_util as lu
 import json
-import subprocess
 
 from src.chronograf.lib import chronograf_rest_lib as crl
 from src.cloud.rest_api.conftest import _assert
@@ -14,7 +13,7 @@ from src.cloud.rest_api.conftest import _assert
 # remove authorization before removing users
 @pytest.mark.usefixtures('remove_orgs', 'remove_buckets', 'remove_auth',
                          'remove_users', 'gateway', 'flux', 'namespace',
-                         'kubeconf')
+                         'kubeconf', 'kubecluster')
 class TestSmoke(object):
     """
     TODO
@@ -85,25 +84,17 @@ class TestSmoke(object):
 
         self.mylog.info(test_name + 'STEP 5: Write point to a bucket')
         w_dic = gateway_util.write_points(self, self.gateway, r_dic['TOKEN'], org_name, bucket_name,
-                                          data='test_m,t=0000 f=1234')
+                                          data='test_m,t=hello\ world f=1234')
         _assert(self, w_dic['STATUS_CODE'], 204, 'Write Data Point To A Bucket')
 
-        # TODO need to be able to get the test namespace.
-        """
         self.mylog.info(test_name + 'STEP 6: Verify Data Was Written To Kafka')
-        kafka_result = \
-            subprocess.Popen('kubectl --kubeconfig="%s" --context=influx-internal exec kafka-0 -c k8skafka -n %s -- bash -c '
-                             '"(/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka-svc:9093 '
-                             '--topic ingress --from-beginning > /tmp/out.log 2>&1 &) && sleep 2 && egrep -a \"[0]{4}\" '
-                             '/tmp/out.log"' % (self.kubeconf, self.namespace),
-                             shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        kafka_result.wait()
-        out, error = kafka_result.communicate()
-        self.mylog.info(test_name + ' KAFKA RESULTS : ' + str(out) + ' ' + str(error))
-        self.mylog.info(test_name + '')
+        topics, data, err = gateway_util.kafka_find_data_by_tag(self, self.kubeconf, self.kubecluster,
+                                                                self.namespace, 'hello world')
+        _assert(self, '', err, 'ERROR GETTING DATA FROM KAFKA')
+        _assert(self, 1, len(data), 'SHOULD BE ONLY ONE RECORD')
+        _assert(self, True, 'hello world' in data[0], 'DATA SHOULD CONTAIN THE EXPECTED WORD')
 
-        """
-        self.mylog.info(test_name + 'STEP 6: Query Data using Queryd')
+        self.mylog.info(test_name + 'STEP 7: Query Data using Queryd')
         # need to give it up to 30 sec to get the results back
         end_time = time.time() + 30
         while time.time() <= end_time:
@@ -117,10 +108,10 @@ class TestSmoke(object):
         _assert(self, len(result['RESULT']), 1, ' NUMBER OF RECORDS')
         _assert(self, result['RESULT'][0]['_measurement'], 'test_m', 'Measurement')
         _assert(self, result['RESULT'][0]['_value'], '1234', 'Field Value')
-        _assert(self, result['RESULT'][0]['t'], '0000', 'Tag Value')
+        _assert(self, result['RESULT'][0]['t'], 'hello world', 'Tag Value')
 
         self.mylog.info('')
-        self.mylog.info(test_name + 'STEP 7: Query Data using Gateway')
+        self.mylog.info(test_name + 'STEP 8: Query Data using Gateway')
         # need to give it up to 30 sec to get the results back
         end_time = time.time() + 30
         while time.time() <= end_time:
@@ -134,4 +125,4 @@ class TestSmoke(object):
         _assert(self, len(result['RESULT']), 1, ' NUMBER OF RECORDS')
         _assert(self, result['RESULT'][0]['_measurement'], 'test_m', 'Measurement')
         _assert(self, result['RESULT'][0]['_value'], '1234', 'Field Value')
-        _assert(self, result['RESULT'][0]['t'], '0000', 'Tag Value')
+        _assert(self, result['RESULT'][0]['t'], 'hello world', 'Tag Value')

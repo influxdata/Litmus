@@ -3,6 +3,7 @@ import json
 import sys
 import traceback
 import csv
+import subprocess
 
 from src.util import litmus_utils
 from StringIO import StringIO
@@ -16,7 +17,7 @@ GATEWAY_QUERY = '/api/v2/query'
 QUERYD = '/api/v2/querysvc'
 
 
-# =================================================== TASKS =============================================================
+# =================================================== TASKS ============================================================
 
 def create_task(test_class_instance, url, org_id, task_name, flux, status='enabled', owners=None, last=None):
     """
@@ -80,7 +81,7 @@ def create_task(test_class_instance, url, org_id, task_name, flux, status='enabl
     return response.status_code, task_id, org_id, task_name, task_status, task_owners, flux, every, cron, last
 
 
-# ================================================== USERS ==============================================================
+# ================================================== USERS =============================================================
 
 def create_user(test_class_instance, url, user_name):
     """
@@ -296,7 +297,7 @@ def find_user_by_name(test_class_instance, user_name, list_of_users):
     return success
 
 
-# =================================================== PERMISSIONS =======================================================
+# ================================================== PERMISSIONS =======================================================
 
 def create_authorization(test_class_instance, url, user, userid, list_of_permission):
     """
@@ -349,7 +350,7 @@ def create_authorization(test_class_instance, url, user, userid, list_of_permiss
             "PERMISSIONS": permissions, "ERROR_MESSAGE": error_message}
 
 
-# ============================================== WRITE/QUERY DATA POINTS ================================================
+# ============================================== WRITE/QUERY DATA POINTS ===============================================
 
 def write_points(test_class_instance, url, token, organization, bucket, data):
     """
@@ -472,7 +473,55 @@ def queryd_query_data(test_class_instance, query, url, organization_id, timeout=
     return {'STATUS_CODE': status_code, 'RESULT': result_list, 'ERROR': error}
 
 
-# ========================================================== ETCD =======================================================
+def kafka_find_data_by_tag(test_class_instance, kube_config, kube_cluster, namespace, tag_value):
+    """
+
+    :param test_class_instance:
+    :param kube_config:
+    :param kube_cluster:
+    :param namespace:
+    :param tag_value:
+    :return:
+    """
+    err = ''
+    topics, data = [], []
+
+    test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() function is being called')
+    test_class_instance.mylog.info('--------------------------------------------------------------\n')
+    test_class_instance.mylog.info('Params: kube_config=%s\nkube_cluster=%s\nnamespace=%s\ntag_value=%s\n'
+                                   % (kube_config, kube_cluster, namespace, tag_value))
+    cmd = 'kubectl --kubeconfig=%s --context=%s exec kafka-0 -c k8skafka -n %s -- bash -c ' \
+          '"cd /var/lib/kafka/data/topics;grep -r -a --include=\*.log \"%s\""' \
+          % (kube_config, kube_cluster, namespace, tag_value)
+    test_class_instance.mylog.info('Executing Command : %s' % cmd)
+    k_result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if k_result.wait() != 0:
+        # kubectl failed for some reason, find out
+        err = k_result.communicate()[1]
+        test_class_instance.mylog.info('Execution of command failed with \'%s\' error' % err)
+        test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() function is done\n')
+        return topics, data, err
+    # get the result
+    out = k_result.communicate()[0]
+    # there could be potentially more than 1 data point with a tag value we are looking for
+    # we are getting a list of strings
+    out = out.split('\n')
+    # out entry could be:
+    # ingress-52/00000000000000000000.log:helloworld(\xde\xe5\xd1\xab\xd3\x05\xb9\x0c\x01fA\x00\t\x01\x10@(\xc3\xfc\xd3
+    # \r\x16F\x91\x02\x1860ffed7Ve\x01\x1d\x1d\x92\xcf\x00\x00\x00
+    for entry in out:
+        if entry != '':
+            # get the topic name
+            topics.append(entry.split('/')[0])
+            # get the data string
+            data.append(entry.split(':')[1])
+    test_class_instance.mylog.info('TOPICS : ' + str(topics))
+    test_class_instance.mylog.info('DATA : ' + str(data))
+    test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() function is done\n')
+    return topics, data, err
+
+
+# ========================================================== ETCD ======================================================
 
 def get_org_etcd(test_class_instance, etcd, org_id, get_index_values=False):
     """
