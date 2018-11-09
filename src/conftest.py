@@ -22,6 +22,12 @@ def pytest_addoption(parser):
     parser.addoption('--namespace', action='store')
     parser.addoption('--storage', action='store')
     parser.addoption('--kubeconf', action='store')
+    parser.addoption('--kubecluster', action='store')
+
+
+def get_kubecluster(request):
+    return request.config.getoption('--kubecluster')
+
 
 def get_kubeconfig(request):
     return request.config.getoption('--kubeconf')
@@ -104,6 +110,24 @@ def get_meta_auth(request):
 
 
 @pytest.fixture(scope='class')
+def kubecluster(request):
+    """
+
+    :param request:
+    :return:
+    """
+    request.cls.mylog.info('kubecluster() fixture is being called')
+    request.cls.mylog.info('-------------------------------------')
+    kubecluster = get_kubecluster(request)
+    request.cls.mylog.info('kubecluster() fixture : kubecluster=' + str(kubecluster))
+    request.cls.kubecluster = kubecluster
+    request.cls.mylog.info('kubecluster() fixture - done')
+    request.cls.mylog.info('----------------------------')
+    request.cls.mylog.info('')
+    return request.cls.kubecluster
+
+
+@pytest.fixture(scope='class')
 def kubeconf(request):
     """
 
@@ -149,10 +173,10 @@ def namespace(request):
     request.cls.mylog.info('namespace() fixture is being called')
     request.cls.mylog.info('-----------------------------------')
     namespace = get_namespace(request)
-    request.cls.mylog.info('namespace() fixture : gateway=' + str(gateway))
+    request.cls.mylog.info('namespace() fixture : namespace=' + str(namespace))
     request.cls.namespace = namespace
     request.cls.mylog.info('namespace() fixture - done')
-    request.cls.mylog.info('------------------------')
+    request.cls.mylog.info('--------------------------')
     request.cls.mylog.info('')
     return request.cls.namespace
 

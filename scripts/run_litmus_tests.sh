@@ -3,6 +3,7 @@ set -x
 
 KUBE_CONFIG=result/config
 export KUBECONFIG=$KUBE_CONFIG
+KUBE_CLUSTER=$KUBE_CLUSTER
 ETCD_HOST=$ETCD_HOST
 GATEWAY_HOST=$GATEWAY_HOST
 QUERYD_HOST=$QUERYD_HOST
@@ -22,7 +23,7 @@ if [ "X$TEST_LIST" != "X" ]; then
 	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST "`\
 	                                        `"--flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST "`\
 	                                        `"--namespace $NAMESPACE --storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
-	                                        `"--tests-list $TEST_LIST --product-version 2"
+	                                        `"--kubecluster $KUBE_CLUSTER --tests-list $TEST_LIST --product-version 2"
 	echo ""
 	python litmus_run_master.py --no-chronograf \
 	                            --etcd $ETCD_HOST \
@@ -33,13 +34,14 @@ if [ "X$TEST_LIST" != "X" ]; then
 	                            --storage $STORAGE_HOST \
 	                            --kubeconf $KUBE_CONFIG \
 	                            --tests-list $TEST_LIST \
+	                            --kubecluster $KUBE_CLUSTER \
 	                            --product-version 2
 elif [ "X$ONE_TEST" != "X" ]; then
 	echo ""
 	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST "`\
 	                                        `"--flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST "`\
 	                                        `"--namespace $NAMESPACE --storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
-	                                        `"--tests $ONE_TEST --product-version 2"
+	                                        `"--kubecluster $KUBE_CLUSTER --tests $ONE_TEST --product-version 2"
 	echo ""
 	python litmus_run_master.py --no-chronograf \
 	                            --etcd $ETCD_HOST \
@@ -49,6 +51,7 @@ elif [ "X$ONE_TEST" != "X" ]; then
 	                            --namespace $NAMESPACE \
 	                            --storage $STORAGE_HOST \
 	                            --kubeconf $KUBE_CONFIG \
+	                            --kubecluster $KUBE_CLUSTER \
 	                            --tests $ONE_TEST \
 	                            --product-version 2
 fi
