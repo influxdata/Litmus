@@ -301,10 +301,11 @@ def find_user_by_name(test_class_instance, user_name, list_of_users):
 
 def create_authorization(test_class_instance, url, user, userid, list_of_permission):
     """
-    :param userid:
+
     :param test_class_instance:
     :param url:
     :param user:
+    :param userid:
     :param list_of_permission:
     :return:
     """
@@ -346,8 +347,8 @@ def create_authorization(test_class_instance, url, user, userid, list_of_permiss
         test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
     test_class_instance.mylog.info('gateway_util.create_organization() function is done')
     test_class_instance.mylog.info('')
-    return {"STATUS_CODE": response.status_code, "ID": id, "USER": user_name, "USER_ID": user_id, "TOKEN": token,
-            "PERMISSIONS": permissions, "ERROR_MESSAGE": error_message}
+    return {'status': response.status_code, 'auth_id': id, 'user_name': user_name, 'user_id': user_id, 'token': token,
+            'permissions': permissions, 'error': error_message}
 
 
 # ============================================== WRITE/QUERY DATA POINTS ===============================================
@@ -355,12 +356,12 @@ def create_authorization(test_class_instance, url, user, userid, list_of_permiss
 def write_points(test_class_instance, url, token, organization, bucket, data):
     """
     Write point(s) to a bucket in organization given the correct credentials,=.
-    :param data:
     :param test_class_instance:
     :param url: gateway url, e.g. http://localhost:9999
     :param token: Token for a given user, with a read/write permissions for a given user
     :param organization: organization the bucket belongs to
     :param bucket: bucket to write data point(s) to
+    :param data:
     :return: dictionary of STATUS_CODE and ERROR_MESSAGE, if status code is 204, then error_message is an empty string,
             if status_code does not equal to 204, then error_message should not be an empty string
     """
@@ -377,7 +378,8 @@ def write_points(test_class_instance, url, token, organization, bucket, data):
     # in case if there is an error, then get the error_message
     if response.status_code != 204:
         error_message = response.headers['X-Influx-Error']
-    return {"STATUS_CODE": response.status_code, "ERROR_MESSAGE": error_message}
+    test_class_instance.mylog.info('gateway_util.write_points() function is done\n')
+    return {"status": response.status_code, "error": error_message}
 
 
 def gateway_query_data(test_class_instance, query, url, token, organization):
@@ -417,7 +419,7 @@ def gateway_query_data(test_class_instance, query, url, token, organization):
         for line in reader:
             result_list.append(line)
     test_class_instance.mylog.info('gateway_util.gateway_query_data() : result : ' + str(result_list))
-    return {'STATUS_CODE': response.status_code, 'ERROR': error, 'RESULT': result_list}
+    return {'status': response.status_code, 'error': error, 'result': result_list}
 
 
 def queryd_query_data(test_class_instance, query, url, organization_id, timeout=None, responsenone=None):
@@ -470,17 +472,18 @@ def queryd_query_data(test_class_instance, query, url, organization_id, timeout=
             for line in reader:
                 result_list.append(line)
             test_class_instance.mylog.info('gateway_util.queryd_query_data() : result : ' + str(result_list))
-    return {'STATUS_CODE': status_code, 'RESULT': result_list, 'ERROR': error}
+    return {'status': status_code, 'result': result_list, 'error': error}
 
 
-def kafka_find_data_by_tag(test_class_instance, kube_config, kube_cluster, namespace, tag_value):
+def kafka_find_data_by_tag(test_class_instance, kube_config, kube_cluster, namespace, tag_value, *args):
     """
 
-    :param test_class_instance:
-    :param kube_config:
-    :param kube_cluster:
-    :param namespace:
-    :param tag_value:
+    :param test_class_instance: (obj), instance of the test class
+    :param kube_config: (str), location of kubernetes config file
+    :param kube_cluster: (str), either influx-internal or local
+    :param namespace: (str), namespace where test cluster is deployed
+    :param tag_value: (str), the tag value that should be stored on one one of the kafka containers
+    :param *args, (tuple), kafka pods, e.g."kafka-0","kafka-1" or just one "kafka-0"
     :return:
     """
     err = ''
@@ -488,37 +491,99 @@ def kafka_find_data_by_tag(test_class_instance, kube_config, kube_cluster, names
 
     test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() function is being called')
     test_class_instance.mylog.info('--------------------------------------------------------------\n')
-    test_class_instance.mylog.info('Params: kube_config=%s\nkube_cluster=%s\nnamespace=%s\ntag_value=%s\n'
-                                   % (kube_config, kube_cluster, namespace, tag_value))
-    cmd = 'kubectl --kubeconfig=%s --context=%s exec kafka-0 -c k8skafka -n %s -- bash -c ' \
-          '"cd /var/lib/kafka/data/topics;grep -r -a --include=\*.log \"%s\""' \
-          % (kube_config, kube_cluster, namespace, tag_value)
-    test_class_instance.mylog.info('Executing Command : %s' % cmd)
-    k_result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if k_result.wait() != 0:
-        # kubectl failed for some reason, find out
-        err = k_result.communicate()[1]
-        test_class_instance.mylog.info('Execution of command failed with \'%s\' error' % err)
-        test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() function is done\n')
-        return topics, data, err
-    # get the result
-    out = k_result.communicate()[0]
-    # there could be potentially more than 1 data point with a tag value we are looking for
-    # we are getting a list of strings
-    out = out.split('\n')
-    # out entry could be:
-    # ingress-52/00000000000000000000.log:helloworld(\xde\xe5\xd1\xab\xd3\x05\xb9\x0c\x01fA\x00\t\x01\x10@(\xc3\xfc\xd3
-    # \r\x16F\x91\x02\x1860ffed7Ve\x01\x1d\x1d\x92\xcf\x00\x00\x00
-    for entry in out:
-        if entry != '':
-            # get the topic name
-            topics.append(entry.split('/')[0])
-            # get the data string
-            data.append(entry.split(':')[1])
+    test_class_instance.mylog.info('Params: kube_config=%s\nkube_cluster=%s\n'
+                                   'namespace=%s\ntag_value=%s\nkafka_pod=%s\n'
+                                   % (kube_config, kube_cluster, namespace, tag_value, args))
+    for kafka_pod in args:
+        cmd = 'kubectl --kubeconfig=%s --context=%s exec %s -c k8skafka -n %s -- bash -c ' \
+              '"cd /var/lib/kafka/data/topics;grep -r -a --include=\*.log \"%s\""' \
+              % (kube_config, kube_cluster, kafka_pod, namespace, tag_value)
+        test_class_instance.mylog.info('Executing Command : %s' % cmd)
+        k_result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if k_result.wait() != 0:
+            # kubectl failed for some reason, find out
+            err = k_result.communicate()[1]
+            test_class_instance.mylog.info('Execution of command failed with \'%s\' error, for \'%s\''
+                                           % (err, kafka_pod))
+            test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() function is done\n')
+            return topics, data, err
+        # get the result
+        out = k_result.communicate()[0]
+        # there could be potentially more than 1 data point with a tag value we are looking for
+        # we are getting a list of strings
+        out = out.split('\n')
+        # out entry could be:
+        # ingress-52/00000000000000000000.log:helloworld(\xde\xe5\xd1\xab\xd3\x05\xb9\x0c\x01fA\x00\t\x01\x10@(\xc3\xfc\xd3
+        # \r\x16F\x91\x02\x1860ffed7Ve\x01\x1d\x1d\x92\xcf\x00\x00\x00
+        for entry in out:
+            if entry != '':
+                # get the topic name
+                topics.append(entry.split('/')[0])
+                # get the data string
+                data.append(entry.split(':')[1])
     test_class_instance.mylog.info('TOPICS : ' + str(topics))
     test_class_instance.mylog.info('DATA : ' + str(data))
     test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() function is done\n')
     return topics, data, err
+
+
+def storage_find_data(test_class_instance, kube_config, kube_cluster, namespace, search_value, *args):
+    """
+    storage_find_data() function looking for a data on all of the storage nodes
+    :param test_class_instance: (obj), instance of the test class
+    :param kube_config: (str), location of kubernetes config file
+    :param kube_cluster: (str), either influx-internal or local
+    :param namespace: (str), namespace where test cluster is deployed
+    :param search_value: (str), the value that should be stored on one one of the storage containers
+    :param *args : (tuple), storage pods, e.g."storage-0","storage-1" or just one "storage-0"
+    :return: (tuple), list of absolute path to the file name or empty, list of data stored or empty,
+                        error string or empty
+    """
+    err = ''
+    engine, data = [], []
+
+    test_class_instance.mylog.info('gateway_util.storage_find_data() function is being called')
+    test_class_instance.mylog.info('---------------------------------------------------------\n')
+    test_class_instance.mylog.info('Params: kube_config=%s\nkube_cluster=%s\nnamespace=%s\nsearch_value=%s\nargs=%s\n'
+                                   % (kube_config, kube_cluster, namespace, search_value, args))
+    # if we have more than one storage pod, e.g. storage-0, storage-1, then we need to iterate over stirage containers
+    # in each pod
+    for storage_pod in args:
+        cmd = 'kubectl --kubeconfig=%s --context=%s exec %s -c storage -n %s -- bash -c ' \
+              '"cd /data;find . -name \"*.tsm\" -print | xargs grep -a \"%s\""' \
+              % (kube_config, kube_cluster, storage_pod, namespace, search_value)
+        test_class_instance.mylog.info('Executing Command : %s' % cmd)
+        k_result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if k_result.wait() != 0:
+            # kubectl failed for some reason, find out
+            err = k_result.communicate()[1]
+            test_class_instance.mylog.info('Execution of command failed with \'%s\' error for \%s\''
+                                           % (err, storage_pod))
+            test_class_instance.mylog.info('gateway_util.storage_find_data() function is done\n')
+            return engine, data, err
+        # get the result
+        out = k_result.communicate()[0]
+        # there could be potentially more than 1 data point with a tag value we are looking for
+        # we are getting a list of strings
+        out = out.split('\n')
+        # out entry could be:
+        # # the output of the command could be :
+        # ./17/engine/data/000000000-000000001.tsm:,_f=f,_m=test_m,t=hello\ world#!~#f
+        for entry in out:
+            test_class_instance.mylog.info('gateway_util.storage_find_data() Entry = ' + str(entry))
+            if entry != '':
+                entry = entry.split(':')
+                if len(entry) > 1:
+                    # get the engine name
+                    engine.append(entry[0])
+                    # get the data string
+                    data.append(entry[1])
+                elif len(entry) == 1:
+                    data.append(entry[0])
+    test_class_instance.mylog.info('ENGINE : ' + str(engine))
+    test_class_instance.mylog.info('DATA : ' + str(data))
+    test_class_instance.mylog.info('gateway_util.storage_find_data() function is done\n')
+    return engine, data, err
 
 
 # ========================================================== ETCD ======================================================

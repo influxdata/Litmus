@@ -562,6 +562,7 @@ else:
     # by default it would use a local kubernetes cluster
     pytest_parameters.append('--kubecluster=' + options.kubecluster)
     print 'USING KUBERNETEST CLUSTER : ' + options.kubecluster
+    print '---------------------------------------------------\n'
     ################
     # HEALTH CHECK #
     ################
