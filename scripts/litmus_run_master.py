@@ -35,6 +35,8 @@ parser.add_option('--transpilerde', action='store',
 parser.add_option('--namespace', action='store', help='KUBERNETES NAMESPACE')
 parser.add_option('--storage', action='store', help='STORAGE URL')
 parser.add_option('--kubeconf', action='store', help='LOCATION OF KUBE CONFIG FILE')
+parser.add_option('--kubecluster', action='store', default='docker-for-desktop',
+                  help='Set which Kubernetes cluster kubectl communicates with')
 
 # options for running REST tests (By default these options will be derived from the output o the pcl list command
 # chronograf is supported on both platforms 1.x and 2.0
@@ -302,7 +304,7 @@ def check_service_status(service, cmd_command, time_delay, time_sleep, restart=F
         service_error = subprocess.Popen(cmd_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         service_error.wait()
         out, err = service_error.communicate()
-        print out
+        print out, err
     else:
         print '%s SERVICE IS UP AND RUNNING' % service
         print '---------------------------------\n'
@@ -557,12 +559,16 @@ else:
         print 'LOCATION OF KUBE CONFIGURATION FILE IS NOT SPECIFIED. EXITING.'
         exit(1)
 
+    # by default it would use a local kubernetes cluster
+    pytest_parameters.append('--kubecluster=' + options.kubecluster)
+    print 'USING KUBERNETEST CLUSTER : ' + options.kubecluster
+    print '---------------------------------------------------\n'
     ################
     # HEALTH CHECK #
     ################
 
     # Need to check the health status of the different services, e.g.
-    # get the JSON output of curl -GET http://<gateway>:9999/healthz
+    # get the JSON output of curl -GET http://<gateway>:9999/health
     # see https://github.com/influxdata/Litmus/issues/87
 
     # gateway checks for etcd, kafka and gateway services,
@@ -571,6 +577,7 @@ else:
     # TODO: tasks and etcd-tasks services
     services_status = {}
     services = {'gateway': options.gateway, 'queryd': options.flux, 'transpilerde': options.transpilerde}
+    #            'storage':options.storage}
     for service in services:
         cmd_command = 'curl --max-time 20 -s -GET %s/health' % services[service]
         status = check_service_status(service, cmd_command, time_delay=180, time_sleep=2)
@@ -579,29 +586,39 @@ else:
     if 'unhealthy' in services_status.values():
         print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
         print '-----------------------------------------\n'
-        pods = subprocess.Popen('kubectl --context=influx-internal get pods -n %s' % options.namespace, shell=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        pods = subprocess.Popen('kubectl --context=%s get pods -n %s' % (options.kubecluster, options.namespace),
+                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         pods.wait()
         out, err = pods.communicate()
         print out, err
         exit(1)
-    print 'SERVICES ARE UP AND RUNNING.'
-    """
+    # print 'SERVICES ARE UP AND RUNNING.'
     # need to restart Storage Service
     cmd_command = 'curl --max-time 20 -s -GET %s/health' % options.storage
     status = check_service_status(service=options.storage, cmd_command=cmd_command, time_delay=180, time_sleep=2,
                                   restart=True, pod='storage-0')
-
+    services_status['storage'] = status
     # need to restart queryd to make sure it is connected to storage (should be fixed)
     # get the name pf the queryd pod:
-    queryd_pod = subprocess.Popen('kubectl --context=influx-internal get pods -n %s| grep queryd | awk \'{ print $1 }\''
-                                  % options.namespace, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    queryd_pod = subprocess.Popen('kubectl --context=%s get pods -n %s| grep queryd | awk \'{ print $1 }\''
+                                  % (options.kubecluster,options.namespace), shell=True, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
     queryd_pod.wait()
     out, error = queryd_pod.communicate()
     cmd_command = 'curl --max-time 20 -s -GET %s/health' % options.flux
     status = check_service_status(service=options.flux, cmd_command=cmd_command, time_delay=180, time_sleep=2,
                                   restart=True, pod=out.strip())
-    """
+    services_status['queryd'] = status
+    if 'unhealthy' in services_status.values():
+        print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
+        print '-----------------------------------------\n'
+        pods = subprocess.Popen('kubectl --context=%s get pods -n %s' % (options.kubecluster, options.namespace),
+                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        pods.wait()
+        out, err = pods.communicate()
+        print out, err
+        exit(1)
+    print 'SERVICES ARE UP AND RUNNING.'
 # passing a file containing the test suite(s)
 if options.tests is not None:
     pytest_parameters.extend(options.tests)
