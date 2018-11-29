@@ -4,81 +4,17 @@ import sys
 import traceback
 import csv
 import subprocess
+import re
 
 from src.util import litmus_utils
 from StringIO import StringIO
 
 
-TASKS_URL = '/api/v2/tasks'
 USERS_URL = '/api/v2/users'
 AUTHORIZATION_URL = '/api/v2/authorizations'
 FLUX_QUERY = '/api/v2/query'
 GATEWAY_QUERY = '/api/v2/query'
 QUERYD = '/api/v2/querysvc'
-
-
-# =================================================== TASKS ============================================================
-
-def create_task(test_class_instance, url, org_id, task_name, flux, status='enabled', owners=None, last=None):
-    """
-    Wrapper function to create a new task, i.e. Flux script that runs in background
-    :param test_class_instance: instance of the test calss,i.e. self
-    :param url: (string) Gateway URL, e.g. http://localhost:9999
-    :param org_id: ID of the organization that owns this task
-    :param task_name: name of the task
-    :param flux: The Flux script to run for the task
-    :param status: current status of the task (enabled/disabled), default is enabled
-    :param owners: ???
-    :param last: ???
-    :return: returns status_code, task_id, org_id, task_name, task_status, task_owners, flux, every, cron, last tuple
-    """
-    test_class_instance.mylog.info('gateway_util.create_task() function is being called')
-    test_class_instance.mylog.info('---------------------------------------------------')
-    test_class_instance.mylog.info('')
-    test_class_instance.mylog.info('gateway_util.create_task() Creating Task with Organization ID : \'%s\','
-                                   ' Task Name : \'%s\', Flux Script: \'%s\', Status : \'%s\', owners : \'%s\' '
-                                   'and Last : \'%s\'') % (org_id, task_name, flux, status, owners, last)
-    data = '{"organization":"%s", "name":"%s", "flux":"%s", "status":"%s", "owners":"%s", "last":"%s"}' % org_id, \
-           task_name, flux, status, owners, last
-    task_id, org_id, task_name, task_status, task_owners, flux, every, cron, last = None, None, None, None, None, \
-                                                                                    None, None, None, None
-    response = test_class_instance.rl.post(base_url=url, path=TASKS_URL, data=data)
-    try:
-        task_id = response.json().get('id')
-        org_id = response.json().get('organization')
-        task_name = response.json().get('name')
-        task_status = response.json().get('status')
-        task_owners = response.json().get('owners')
-        flux = response.json().get('flux')
-        every = response.json().get('every')
-        cron = response.json().get('cron')
-        last = response.json().get('last')
-        # based on current swagger doc the required keys in response schema are: organization, name and flux
-        # may change!!!!
-        if task_id and org_id and task_name and task_status and flux:
-            test_class_instance.mylog.info('gateway_util.create_task() : TASK_ID=' + str(task_id))
-            test_class_instance.mylog.info('gateway_util.create_task() : ORG_ID=' + str(org_id))
-            test_class_instance.mylog.info('gateway_util.create_task() : TASK_NAME=' + str(task_name))
-            test_class_instance.mylog.info('gateway_util.create_task() : TASK_STATUS=' + str(task_status))
-            test_class_instance.mylog.info('gateway_util.create_task() : TASK_OWNER=' + str(task_owners))
-            test_class_instance.mylog.info('gateway_util.create_task() : FLUX_SCRIPT=' + str(flux))
-            test_class_instance.mylog.info('gateway_util.create_task() : EVERY=' + str(every))
-            test_class_instance.mylog.info('gateway_util.create_task() : CRON=' + str(cron))
-            test_class_instance.mylog.info('gateway_util.create_task() : LAST=' + str(last))
-        else:
-            test_class_instance.mylog.info('gateway_util.create_task() : One of the requested params are None: '
-                                           'TASK_ID=\'%s\', ORG_ID=\'%s\', TASK_NAME=\'%s\', FLUX=\'%s\'')
-            error_message = response.json()['message']
-            test_class_instance.mylog.info('gateway_util.create_task() ERROR=' + error_message)
-    except:
-        test_class_instance.mylog.info('gateway_util.create_task() Exception:')
-        clt_error_type, clt_error_message, clt_error_traceback = sys.exc_info()
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(traceback.extract_tb(clt_error_traceback)))
-        test_class_instance.mylog.info('litmus_util.execCmd:' + str(clt_error_message))
-    test_class_instance.mylog.info('gateway_util.create_task() function is done')
-    test_class_instance.mylog.info('')
-    return response.status_code, task_id, org_id, task_name, task_status, task_owners, flux, every, cron, last
 
 
 # ================================================== USERS =============================================================
@@ -410,14 +346,35 @@ def gateway_query_data(test_class_instance, query, url, token, organization):
         error = response.headers['X-Influx-Error']
     else:
         test_class_instance.mylog.info('gateway_util.gateway_query_data() : content : ' + str(response.content))
+        # content:
+        """
+        ,result,table,_start,_stop,_time,_value,_field,_measurement,t\r\n,
+        result,table,2018-11-27T01:14:38.06866663Z,2018-11-27T01:19:38.06866663Z,2018-11-27T01:19:34.347106196Z,1234,f,
+        test_b,hello world\r\n\r\n
+        """
         result = '\r\n'.join(response.content.split('\r\n')[:-2])
         test_class_instance.mylog.info('gateway_util.gateway_query_data() : result : ' + str(result))
+        # result"
+        """
+        ,result,table,_start,_stop,_time,_value,_field,_measurement,t\r\n
+        ,result,table,2018-11-27T01:14:38.06866663Z,2018-11-27T01:19:38.06866663Z,2018-11-27T01:19:34.347106196Z,1234,f,
+        test_b,hello world
+        """
         # read the query results into buffer
         buffer = StringIO(result)
         reader = csv.DictReader(buffer)
         # iterate over reader object
         for line in reader:
             result_list.append(line)
+        # result_list: list of dictionaries.
+        """
+        [
+            {   '': '', '_field': 'f', '_measurement': 'test_b', '_stop': '2018-11-27T01:19:38.06866663Z', 
+                '_value': '1234', '_time': '2018-11-27T01:19:34.347106196Z', 'result': 'result', 'table': 'table', 
+                '_start': '2018-11-27T01:14:38.06866663Z', 't': 'hello world'
+            }
+        ]
+        """
     test_class_instance.mylog.info('gateway_util.gateway_query_data() : result : ' + str(result_list))
     return {'status': response.status_code, 'error': error, 'result': result_list}
 
@@ -515,12 +472,14 @@ def kafka_find_data_by_tag(test_class_instance, kube_config, kube_cluster, names
         # out entry could be:
         # ingress-52/00000000000000000000.log:helloworld(\xde\xe5\xd1\xab\xd3\x05\xb9\x0c\x01fA\x00\t\x01\x10@(\xc3\xfc\xd3
         # \r\x16F\x91\x02\x1860ffed7Ve\x01\x1d\x1d\x92\xcf\x00\x00\x00
+        # also, entry might have ':' appear more than once,
         for entry in out:
             if entry != '':
-                # get the topic name
-                topics.append(entry.split('/')[0])
-                # get the data string
-                data.append(entry.split(':')[1])
+                test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() : entry = ' + str(entry))
+                # get the topic name, split on a first occurrence of a '/'
+                topics.append(entry.split('/', 1)[0])
+                # get the data string, split on a first occurrence of a ':'
+                data.append(entry.split(':', 1)[1])
     test_class_instance.mylog.info('TOPICS : ' + str(topics))
     test_class_instance.mylog.info('DATA : ' + str(data))
     test_class_instance.mylog.info('gateway_util.kafka_find_data_by_tag() function is done\n')
@@ -563,6 +522,7 @@ def storage_find_data(test_class_instance, kube_config, kube_cluster, namespace,
             return engine, data, err
         # get the result
         out = k_result.communicate()[0]
+        test_class_instance.mylog.info('gateway_util.storage_find_data() : initial data = ' + str(out))
         # there could be potentially more than 1 data point with a tag value we are looking for
         # we are getting a list of strings
         out = out.split('\n')
@@ -572,7 +532,7 @@ def storage_find_data(test_class_instance, kube_config, kube_cluster, namespace,
         for entry in out:
             test_class_instance.mylog.info('gateway_util.storage_find_data() Entry = ' + str(entry))
             if entry != '':
-                entry = entry.split(':')
+                entry = entry.split(':', 1) # split on a first occurrence of a ':'
                 if len(entry) > 1:
                     # get the engine name
                     engine.append(entry[0])
@@ -699,3 +659,47 @@ def get_bucket_etcd(test_class_instance, etcd, bucket_id):
         test_class_instance.mylog.info(
             'gateway_util.get_bucket_etcd() : actual_bucket_name = \'%s\'' % actual_bucket_name)
     return actual_bucket_id, actual_bucket_name, actual_rp, error
+
+
+def get_tasks_etcd(test_class_instance, etcd_tasks, task_id):
+    """
+    Function get_tasks_etcd() gets information about specific task
+    :param test_class_instance: instance of the test class, i.e. self
+    :param etcd_tasks: url of the etcd-tasks service
+    :param task_id: id of the task
+    :return: {'flux_script':flux_script, 'error':error, 'task_name':name, 'org_id':org_id, 'user_id':user_id,
+            'status':status, 'schedule':schedule}
+    """
+    out, actual_bucket_name, flux_script, error = '', '', '', ''
+    schedule, name, org_id, user_id, status = '', '', '', '', ''
+    test_class_instance.mylog.info('gateway_util.get_tasks_etcd() function is being called')
+    test_class_instance.mylog.info('------------------------------------------------------')
+    test_class_instance.mylog.info('gateway_util.get_tasks_etcd(): params: task_id \'%s\'' % task_id)
+    test_class_instance.mylog.info('')
+    cmd_flux_script = 'ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "/tasks/v1/tasks/%s" ' \
+                      '--print-value-only' % (etcd_tasks, task_id)
+    cmd_meta_data = 'ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints %s get --prefix "/tasks/v1/task_meta/%s" ' \
+                    '--print-value-only' % (etcd_tasks, task_id)
+    out, error = litmus_utils.execCmd(test_class_instance, cmd_flux_script, status='OUT_STATUS')
+    # ('option task = {name:"task_1", every:2m} from(bucket:"test_bucket") |> range(start:-5h)\n', '')
+    if out != '':
+        flux_script = out.strip('\n')
+        test_class_instance.mylog.info('gateway_util.get_tasks_etcd() : flux_script = \'%s\'' % flux_script)
+    out, error = litmus_utils.execCmd(test_class_instance, cmd_meta_data, status='OUT_STATUS')
+    # etcd returns meta data: schedule (active, every); task_name; org_id; user_id
+    # ('\x08\x01\x10\xc8\xe8\xbc\xdf\x05\x1a\x06active*\x0b@every 2m0s\ntask_1\n02f288f282b44000\n02f288f30a344000\n'
+    # , '')
+    if out != '':
+        meta_data_list = out.strip('\n').split('\n')
+        # ['\x08\x01\x10\x98\xfd\xbc\xdf\x05\x1a\x06active*\x0b@every 2m0s', 'task_1', '02f288f282b44000',
+        # '02f288f30a344000']
+        # need to parse out the control characters, x08, x01, etc
+        if len(meta_data_list) > 0:
+            test_class_instance.mylog.info('gateway_util.get_tasks_etcd(): meta_data_list = ' +str(meta_data_list))
+            name = meta_data_list[2]
+            org_id = meta_data_list[3]
+            user_id = meta_data_list[4]
+            status = re.search(r'active|inactive', meta_data_list[0]).group(0)
+            schedule = re.search(r'((cron|every) .*$)', meta_data_list[1]).group(0)
+    return {'flux_script':flux_script, 'error':error, 'task_name':name, 'org_id':org_id, 'user_id':user_id,
+            'status':status, 'schedule':schedule}

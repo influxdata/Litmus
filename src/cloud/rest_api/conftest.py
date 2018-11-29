@@ -193,6 +193,48 @@ etcdctl = 'ETCDCTL_API=3 /usr/local/bin/etcdctl'
 
 
 @pytest.fixture(scope='class')
+def remove_tasks(request, etcd_tasks):
+    """
+    Remove all references for the specific tasks from etcd-tasks store using ETCDCTL command
+    https://github.com/influxdata/idpe/blob/49ae6f73546b05e8597d2284a3957c20999c5bdd/task/store/etcd/store.go
+    #L1195-L1214
+    delTask := clientv3.OpDelete(path.Join(tasksPath, idStr))
+    delTaskMeta := clientv3.OpDelete(path.Join(taskMetaPath, idStr)+"/", clientv3.WithPrefix())
+    delOrgTask := clientv3.OpDelete(path.Join(orgsPath, org, idStr))
+
+    // Only release the lease task but now the owner. When in a cluster
+    // we will most likely not be the owner of this lease.
+    delClaimTask := clientv3.OpDelete(path.Join(claimPath, idStr))
+    delUserTask := clientv3.OpDelete(path.Join(usersPath, user, idStr))
+
+    where:
+    tasksPath     = basePath + "tasks"
+    orgsPath      = basePath + "orgs"
+    usersPath     = basePath + "users"
+    taskMetaPath  = basePath + "task_meta"
+    claimPath     = basePath + "claims"
+    orgDelPath    = basePath + "org_deletions"
+    userDelPath   = basePath + "user_deletions"
+    cancelRunPath = basePath + "runs"
+    basePath = "/tasks/v1/"
+
+    :param request:
+    :param etcd_tasks:
+    :return:
+    """
+    # Should change to remove the above and leave /tasks/v1/claims/02f8d98a004e0000/owner
+    #                                               tasks-7dcc47895c-mvpql
+    request.cls.mylog.info('remove_tasks() fixture is being called')
+    request.cls.mylog.info('--------------------------------------')
+    cmd = '%s --endpoints %s del --prefix "/tasks/v1"' % (etcdctl, etcd_tasks)
+    exit = litmus_utils.execCmd(request.cls, cmd)
+    request.cls.mylog.info('remove_tasks() fixture is done')
+    request.cls.mylog.info('------------------------------')
+    request.cls.mylog.info('')
+    assert exit == 0, request.cls.mylog('remove_tasks() fixture exit status is not 0')
+
+
+@pytest.fixture(scope='class')
 def remove_auth(request, etcd):
     """
 

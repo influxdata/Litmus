@@ -30,6 +30,7 @@ parser.add_option('--gateway', action='store',
                   help='GATEWAY URL THAT HANDLES EXTERNAL REQUESTS, e.g. http://localhost:9999')
 parser.add_option('--flux', action='store', help='QUERY URL THAT HANDLES FLUX REQUESTS, e.g http://localhost:8093')
 parser.add_option('--etcd', action='store', help='ETCD URL FOR DISTRIBUTED KEY-VALUE STORE')
+parser.add_option('--etcd_tasks', action='store', help='ETCD URL FOR DISTRIBUTED KEY-VALUE STORE TO STORE TASKS DATA')
 parser.add_option('--transpilerde', action='store',
                   help='TRANSPILERDE URL THAT HANDLES REQUESTS TO TRANSLATE INFLUXQL QUERIES TO FLUX')
 parser.add_option('--namespace', action='store', help='KUBERNETES NAMESPACE')
@@ -248,7 +249,8 @@ def check_service_status(service, cmd_command, time_delay, time_sleep, restart=F
     general_status, service_status, out, health = 'unhealthy', 'unhealthy', '', None
     if restart:
         print 'RESTARTING %s POD' % pod
-        restart = subprocess.Popen('kubectl --context=influx-internal delete pod %s -n %s' % (pod, options.namespace),
+        restart = subprocess.Popen('kubectl --context=%s delete pod %s -n %s'
+                                   % (options.kubecluster, pod, options.namespace),
                                    shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         restart.wait()
         if restart.poll() is None or restart.poll() > 0:
@@ -513,6 +515,17 @@ else:
         print '--------------------------\n'
     else:
         print 'ETCD URL IS NOT SPECIFIED. EXITING'
+        exit(1)
+
+    ##################
+    # ETCD TASKS URL #
+    ##################
+    if options.etcd_tasks:
+        pytest_parameters.append('--etcd_tasks=' + options.etcd_tasks)
+        print 'ETCD TASKS URL : ' + options.etcd_tasks
+        print '--------------------------------------\n'
+    else:
+        print 'ETCD TASKS URL IS NOT SPECIFIED. EXITING'
         exit(1)
 
     ####################
