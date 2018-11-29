@@ -28,6 +28,7 @@ node('dind') {
 						sh "printenv"
 						sh """
                 			docker run --rm -e ETCD_HOST=http://etcd."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:2379 \
+                			                -e ETCD_TASKS_HOST=http://etcd-tasks."lit-${env.BRANCH_NAME}-${env.BUILD_ID}".svc.cluster.local:2379 \
                 			                -e GATEWAY_HOST=http://gateway."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:9999 \
                 			                -e QUERYD_HOST=http://queryd."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:8093 \
                 			                -e TRANSPILERDE_HOST=http://transpilerde."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:8098 \
