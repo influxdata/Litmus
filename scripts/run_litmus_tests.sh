@@ -3,16 +3,9 @@ set -x
 
 KUBE_CONFIG=result/config
 export KUBECONFIG=$KUBE_CONFIG
-KUBE_CLUSTER=$KUBE_CLUSTER
-ETCD_HOST=$ETCD_HOST
-GATEWAY_HOST=$GATEWAY_HOST
-QUERYD_HOST=$QUERYD_HOST
-TRANSPILERDE_HOST=$TRANSPILERDE_HOST
-NAMESPACE=$NAMESPACE
-STORAGE_HOST=$STORAGE_HOST
-TEST_LIST=$TEST_LIST
-ONE_TEST=$ONE_TEST
-
+if [ "X$KUBE_CLUSTER" == "X" ]; then
+    KUBE_CLUSTER=docker-for-desktop
+fi
 
 if [ "X$TEST_LIST" != "X" ] && [ "X$ONE_TEST" != "X" ]; then
 	echo "SHOULD ONLY PROVIDE ONE OF THE TWO OPTIONS. EITHER TEST_LIST OR ONE_TEST TO RUN"
@@ -21,14 +14,16 @@ fi
 if [ "X$TEST_LIST" != "X" ]; then
 	echo ""
 	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST "`\
-	                                        `"--flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST "`\
-	                                        `"--namespace $NAMESPACE --storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
+	                                        `"--flux $QUERYD_HOST --etcd_tasks $ETCD_TASKS_HOST "`\
+	                                        `"--transpilerde $TRANSPILERDE_HOST --namespace $NAMESPACE "`\
+	                                        `"--storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
 	                                        `"--kubecluster $KUBE_CLUSTER --tests-list $TEST_LIST --product-version 2"
 	echo ""
 	python litmus_run_master.py --no-chronograf \
 	                            --etcd $ETCD_HOST \
 	                            --gateway $GATEWAY_HOST \
 	                            --flux $QUERYD_HOST \
+	                            --etcd_tasks $ETCD_TASKS_HOST \
 	                            --transpilerde $TRANSPILERDE_HOST \
 	                            --namespace $NAMESPACE \
 	                            --storage $STORAGE_HOST \
@@ -39,14 +34,16 @@ if [ "X$TEST_LIST" != "X" ]; then
 elif [ "X$ONE_TEST" != "X" ]; then
 	echo ""
 	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST "`\
-	                                        `"--flux $QUERYD_HOST --transpilerde $TRANSPILERDE_HOST "`\
-	                                        `"--namespace $NAMESPACE --storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
+	                                        `"--flux $QUERYD_HOST --etcd_tasks $ETCD_TASKS_HOST "`\
+	                                        `"--transpilerde $TRANSPILERDE_HOST --namespace $NAMESPACE "`\
+	                                        `"--storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
 	                                        `"--kubecluster $KUBE_CLUSTER --tests $ONE_TEST --product-version 2"
 	echo ""
 	python litmus_run_master.py --no-chronograf \
 	                            --etcd $ETCD_HOST \
 	                            --gateway $GATEWAY_HOST \
 	                            --flux $QUERYD_HOST \
+	                            --etcd_tasks $ETCD_TASKS_HOST \
 	                            --transpilerde $TRANSPILERDE_HOST \
 	                            --namespace $NAMESPACE \
 	                            --storage $STORAGE_HOST \

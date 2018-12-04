@@ -41,6 +41,7 @@ class RestLib(BaseLib):
             self.log.info('RestLib.post() response code=' + str(response.status_code))
             self.log.info('RestLib.get() - response headers = ' + str(response.headers))
             self.log.info('RestLib.get() - response url = ' + str(response.url))
+            self.log.info('RestLib.get() - response text = ' + str(response.text))
         except requests.ConnectionError, e:
             self.log.info('RestLib.post() - ConnectionError : ' + str(e.message))
             response = None

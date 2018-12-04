@@ -18,6 +18,7 @@ def pytest_addoption(parser):
     parser.addoption('--gateway', action='store')
     parser.addoption('--flux', action='store')
     parser.addoption('--etcd', action='store')
+    parser.addoption('--etcd_tasks', action='store')
     parser.addoption('--transpilerde', action='store')
     parser.addoption('--namespace', action='store')
     parser.addoption('--storage', action='store')
@@ -51,6 +52,10 @@ def get_flux(request):
 
 def get_etcd(request):
     return request.config.getoption('--etcd')
+
+
+def get_etcd_tasks(request):
+    return request.config.getoption('--etcd_tasks')
 
 
 def get_transpilerde(request):
@@ -213,6 +218,22 @@ def flux(request):
     request.cls.mylog.info('---------------------')
     request.cls.mylog.info('')
     return request.cls.flux
+
+
+@pytest.fixture(scope='class')
+def etcd_tasks(request):
+    """
+    :param request:
+    :return:
+    """
+    request.cls.mylog.info('etcd_tasks() fixture is being called')
+    request.cls.mylog.info('------------------------------------')
+    etcd_tasks = get_etcd_tasks(request)
+    request.cls.mylog.info('etcd_tasks() fixture : etcd_tasks=' + str(etcd_tasks))
+    request.cls.etcd_tasks = etcd_tasks
+    request.cls.mylog.info('etcd_tasks() fixture - done')
+    request.cls.mylog.info('---------------------------\n')
+    return request.cls.etcd_tasks
 
 
 @pytest.fixture(scope='class')
