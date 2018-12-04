@@ -33,6 +33,7 @@ parser.add_option('--etcd', action='store', help='ETCD URL FOR DISTRIBUTED KEY-V
 parser.add_option('--etcd_tasks', action='store', help='ETCD URL FOR DISTRIBUTED KEY-VALUE STORE TO STORE TASKS DATA')
 parser.add_option('--transpilerde', action='store',
                   help='TRANSPILERDE URL THAT HANDLES REQUESTS TO TRANSLATE INFLUXQL QUERIES TO FLUX')
+parser.add_option('--tasks', action='store', help='TASKS SERVICE URL')
 parser.add_option('--namespace', action='store', help='KUBERNETES NAMESPACE')
 parser.add_option('--storage', action='store', help='STORAGE URL')
 parser.add_option('--kubeconf', action='store', help='LOCATION OF KUBE CONFIG FILE')
@@ -528,6 +529,17 @@ else:
         print 'ETCD TASKS URL IS NOT SPECIFIED. EXITING'
         exit(1)
 
+    #########
+    # TASKS #
+    #########
+    if options.tasks:
+        pytest_parameters.append('--tasks=' + options.tasks)
+        print 'TASKS URL : ' + options.tasks
+        print '-----------------------------\n'
+    else:
+        print 'TASKS URL IS NOT SPECIFIED. EXITING.'
+        exit(1)
+
     ####################
     # TRANSPILERDE URL #
     ####################
@@ -584,18 +596,21 @@ else:
     # get the JSON output of curl -GET http://<gateway>:9999/health
     # see https://github.com/influxdata/Litmus/issues/87
 
-    # gateway checks for etcd, kafka and gateway services,
-    # queryd checks for queryd and storage services
-    # transpilerde checks for transpilerde service
-    # TODO: tasks and etcd-tasks services
+    # gateway checks for etcd, kafka and gateway services.
+    # queryd checks for queryd and storage services.
+    # transpilerde checks for transpilerde service.
+    # asks checks for kafka and queryd services.
     services_status = {}
-    services = {'gateway': options.gateway, 'queryd': options.flux, 'transpilerde': options.transpilerde}
-    #            'storage':options.storage}
+    services = {'gateway': options.gateway, 'storage': options.storage, 'queryd': options.flux,
+                'transpilerde': options.transpilerde, 'tasks': options.tasks}
     for service in services:
         cmd_command = 'curl --max-time 20 -s -GET %s/health' % services[service]
         status = check_service_status(service, cmd_command, time_delay=180, time_sleep=2)
         services_status[service] = status
-    print str(datetime.datetime.now()) + ' STATUS OF THE SERVICES : ' + str(services_status) + '\n'
+    print str(datetime.datetime.now()) + ' STATUS OF THE SERVICES : \n'
+    for service in services_status:
+        print str(service) + ' ===> ' + str(services_status[service])
+    print '\n'
     if 'unhealthy' in services_status.values():
         print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
         print '-----------------------------------------\n'
@@ -605,23 +620,32 @@ else:
         out, err = pods.communicate()
         print out, err
         exit(1)
-    # print 'SERVICES ARE UP AND RUNNING.'
-    # need to restart Storage Service
-    cmd_command = 'curl --max-time 20 -s -GET %s/health' % options.storage
-    status = check_service_status(service=options.storage, cmd_command=cmd_command, time_delay=180, time_sleep=2,
-                                  restart=True, pod='storage-0')
-    services_status['storage'] = status
-    # need to restart queryd to make sure it is connected to storage (should be fixed)
-    # get the name pf the queryd pod:
-    queryd_pod = subprocess.Popen('kubectl --context=%s get pods -n %s| grep queryd | awk \'{ print $1 }\''
-                                  % (options.kubecluster,options.namespace), shell=True, stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-    queryd_pod.wait()
-    out, error = queryd_pod.communicate()
-    cmd_command = 'curl --max-time 20 -s -GET %s/health' % options.flux
-    status = check_service_status(service=options.flux, cmd_command=cmd_command, time_delay=180, time_sleep=2,
-                                  restart=True, pod=out.strip())
-    services_status['queryd'] = status
+    # check if storage is connected to kafka, for now the pod is storage-0 (only one)
+    conn_cmd = 'kubectl --context=%s -n %s logs storage-0 -c storage' \
+               ' | grep "Connected to broker at kafka-svc:9093"' % (options.kubecluster, options.namespace)
+    conn = subprocess.Popen(conn_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # wait for the command to complete
+    conn.wait()
+    # if storage is connected to kafka, the command will return status 0, otherwise > 1
+    if conn.poll() is None or conn.poll() > 0:
+        print str(datetime.datetime.now()) + ' ' + str(conn.communicate())
+        print str(datetime.datetime.now()) + ' STORAGE IS RESTARTING.\n'
+        # restart storage and then restart queryd
+        cmd_command = 'curl --max-time 20 -s -GET %s/health' % options.storage
+        status = check_service_status(service=options.storage, cmd_command=cmd_command, time_delay=180, time_sleep=2,
+                                      restart=True, pod='storage-0')
+        services_status['storage'] = status
+        # need to restart queryd to make sure it is connected to storage (should be fixed)
+        # get the name pf the queryd pod:
+        queryd_pod = subprocess.Popen('kubectl --context=%s get pods -n %s -l app=queryd-a | grep queryd | '
+                                      'awk \'{ print $1 }\'' % (options.kubecluster, options.namespace), shell=True,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        queryd_pod.wait()
+        out, error = queryd_pod.communicate()
+        cmd_command = 'curl --max-time 20 -s -GET %s/health' % options.flux
+        status = check_service_status(service=options.flux, cmd_command=cmd_command, time_delay=180, time_sleep=2,
+                                      restart=True, pod=out.strip())
+        services_status['queryd'] = status
     if 'unhealthy' in services_status.values():
         print 'SERVICES ARE NOT UP AND RUNNING. EXITING.'
         print '-----------------------------------------\n'

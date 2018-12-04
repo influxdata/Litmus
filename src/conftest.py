@@ -24,6 +24,11 @@ def pytest_addoption(parser):
     parser.addoption('--storage', action='store')
     parser.addoption('--kubeconf', action='store')
     parser.addoption('--kubecluster', action='store')
+    parser.addoption('--tasks', action='store')
+
+
+def get_tasks(request):
+    return request.config.getoption('--tasks')
 
 
 def get_kubecluster(request):
@@ -112,6 +117,23 @@ def get_ldap_auth(request):
 
 def get_meta_auth(request):
     return request.config.getoption('--metaauth')
+
+
+@pytest.fixture(scope='class')
+def tasks(request):
+    """
+     :param request:
+    :return:
+    """
+    request.cls.mylog.info('tasks() fixture is being called')
+    request.cls.mylog.info('-------------------------------')
+    tasks = get_tasks(request)
+    request.cls.mylog.info('tasks() fixture : tasks=' + str(tasks))
+    request.cls.tasks = tasks
+    request.cls.mylog.info('tasks() fixture - done')
+    request.cls.mylog.info('----------------------')
+    request.cls.mylog.info('')
+    return request.cls.tasks
 
 
 @pytest.fixture(scope='class')

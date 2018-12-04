@@ -1,7 +1,6 @@
 import sys
 import traceback
 import json
-import ast
 
 
 TASKS_URL = '/api/v2/tasks'
