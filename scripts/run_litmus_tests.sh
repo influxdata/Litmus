@@ -15,6 +15,7 @@ if [ "X$TEST_LIST" != "X" ]; then
 	echo ""
 	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST "`\
 	                                        `"--flux $QUERYD_HOST --etcd_tasks $ETCD_TASKS_HOST "`\
+	                                        `"--tasks $TASKS_HOST "`\
 	                                        `"--transpilerde $TRANSPILERDE_HOST --namespace $NAMESPACE "`\
 	                                        `"--storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
 	                                        `"--kubecluster $KUBE_CLUSTER --tests-list $TEST_LIST --product-version 2"
@@ -24,6 +25,7 @@ if [ "X$TEST_LIST" != "X" ]; then
 	                            --gateway $GATEWAY_HOST \
 	                            --flux $QUERYD_HOST \
 	                            --etcd_tasks $ETCD_TASKS_HOST \
+	                            --tasks $TASKS_HOST \
 	                            --transpilerde $TRANSPILERDE_HOST \
 	                            --namespace $NAMESPACE \
 	                            --storage $STORAGE_HOST \
@@ -35,6 +37,7 @@ elif [ "X$ONE_TEST" != "X" ]; then
 	echo ""
 	echo "RUNNING python litmus_run_master.py --no-chronograf --etcd $ETCD_HOST --gateway $GATEWAY_HOST "`\
 	                                        `"--flux $QUERYD_HOST --etcd_tasks $ETCD_TASKS_HOST "`\
+	                                        `"--tasks $TASKS_HOST "`\
 	                                        `"--transpilerde $TRANSPILERDE_HOST --namespace $NAMESPACE "`\
 	                                        `"--storage $STORAGE_HOST --kubeconf $KUBE_CONFIG "`\
 	                                        `"--kubecluster $KUBE_CLUSTER --tests $ONE_TEST --product-version 2"
@@ -44,6 +47,7 @@ elif [ "X$ONE_TEST" != "X" ]; then
 	                            --gateway $GATEWAY_HOST \
 	                            --flux $QUERYD_HOST \
 	                            --etcd_tasks $ETCD_TASKS_HOST \
+	                            --tasks $TASKS_HOST \
 	                            --transpilerde $TRANSPILERDE_HOST \
 	                            --namespace $NAMESPACE \
 	                            --storage $STORAGE_HOST \

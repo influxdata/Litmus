@@ -28,12 +28,12 @@ node('dind') {
 						sh "printenv"
 						sh """
                 			docker run --rm -e ETCD_HOST=http://etcd."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:2379 \
-                			                -e ETCD_TASKS_HOST=http://etcd-tasks."lit-${env.BRANCH_NAME}-${env.BUILD_ID}".svc.cluster.local:2379 \
+                			                -e ETCD_TASKS_HOST=http://etcd-tasks."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:2379 \
                 			                -e GATEWAY_HOST=http://gateway."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:9999 \
                 			                -e QUERYD_HOST=http://queryd."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:8093 \
                 			                -e TRANSPILERDE_HOST=http://transpilerde."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:8098 \
                 			                -e NAMESPACE="lit-${env.JOB_NAME}-${env.BUILD_ID}" \
-                			                -e STORAGE_HOST=http://storage."lit-bucket-${env.BUILD_ID}".svc.cluster.local:6060 \
+                			                -e STORAGE_HOST=http://storage."lit-${env.JOB_NAME}-${env.BUILD_ID}".svc.cluster.local:6060 \
                 			                -e KUBE_CLUSTER=influx-internal \
                 			                -e TEST_LIST=tests_lists/gateway_api_tests.list \
                 			                -v "${env.WORKSPACE}":/Litmus/result quay.io/influxdb/litmus:latest
